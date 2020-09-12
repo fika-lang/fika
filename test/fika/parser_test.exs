@@ -184,4 +184,68 @@ defmodule Fika.ParserTest do
       ]
     end
   end
+
+  describe "match expression" do
+    test "simple match" do
+      str = """
+      x = 1
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+
+      assert result == [
+        {{:=, {1, 0, 5}}, {:identifier, {1, 0, 1}, :x}, {:integer, {1, 0, 5}, 1}}
+      ]
+    end
+
+    test "multiple match" do
+      str = """
+      x = y = 1
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+
+      assert result == [
+        {
+          {:=, {1, 0, 9}},
+          {:identifier, {1, 0, 1}, :x},
+          {
+            {:=, {1, 0, 9}},
+            {:identifier, {1, 0, 5}, :y},
+            {:integer, {1, 0, 9}, 1}
+          }
+        }
+      ]
+    end
+
+    test "errors when non match exps come on the left of the match" do
+      str = """
+      x + y = 1
+      """
+
+      assert {:error, "expected end of string", "= 1\n", _, _, _} = Parser.expression(str)
+    end
+
+    test "match exps can exist as a whole exp" do
+      str = """
+      1 + (x = 2)
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+
+      assert result == [
+        {:call,
+          {:+, {1, 0, 11}},
+          [
+            {:integer, {1, 0, 1}, 1},
+            {
+              {:=, {1, 0, 10}},
+              {:identifier, {1, 0, 6}, :x},
+              {:integer, {1, 0, 10}, 2}
+            }
+          ],
+        :kernel}
+      ]
+    end
+  end
 end

@@ -95,6 +95,15 @@ defmodule Fika.Parser do
     ])
     |> label("function call")
 
+  exp_match =
+    identifier
+    |> concat(allow_space)
+    |> ignore(string("="))
+    |> concat(allow_space)
+    |> parsec(:exp)
+    |> label("match expression")
+    |> Helper.to_ast(:exp_match)
+
   factor =
     choice([
       integer,
@@ -128,7 +137,11 @@ defmodule Fika.Parser do
     Helper.to_ast(exp_bin_op, :exp_bin_op)
 
   exp =
-    exp_add_op
+    choice([
+      exp_match,
+      exp_add_op
+    ])
+    |> label("an expression")
 
   exps =
     parsec(:exp)
