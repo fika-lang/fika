@@ -14,11 +14,11 @@ Here's a quick walkthrough of Fika's syntax.
 A function in Fika looks like this:
 
 ```elixir
-fn foo : Int do
-  1 + 2
+fn sum(a: Int, b: Int) : Int do
+  a + b
 end
 ```
 
-This is a function named `foo` which returns an integer.
+This is a function named `sum` which takes two integers and returns another integer.
 Identifiers in Fika are written in snake_case (similar to Ruby, Elixir or Python).
 Types are written in CamelCase.
