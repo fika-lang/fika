@@ -1,4 +1,4 @@
-# Fika
+<img src="https://github.com/fika-lang/assets/blob/master/logo.png?raw=true" width="150"/> 
 
 Fika is a modern programming language for the web.
 It is statically typed, functional and runs on the BEAM (Erlang VM).
