@@ -75,6 +75,7 @@ defmodule Fika.TypeChecker do
     Logger.debug "Integer #{integer} found. Type: #{:Int}"
     {:ok, :Int, env}
   end
+
   # Variables
   def infer_exp(env, {:identifier, _line, name}) do
     type = Env.scope_get(env, name)
@@ -84,6 +85,49 @@ defmodule Fika.TypeChecker do
     else
       Logger.debug "Variable type not found in scope: #{name}"
       {:error, "Unknown variable: #{name}"}
+    end
+  end
+
+  # Function calls
+  def infer_exp(env, {:call, {name, _line}, args, module}) do
+    exp = %{args: args, name: name}
+    module_name = module || Env.current_module(env)
+    Logger.debug "Inferring type of function: #{name}"
+    infer_args(env, exp, module_name)
+  end
+
+  def infer_args(env, exp, module) do
+    case do_infer_args(env, exp) do
+      {:ok, type_acc, env} ->
+        signature = get_signature(module, exp.name, type_acc)
+        get_type_by_signature(env, signature)
+
+      error ->
+        error
+    end
+  end
+
+  defp do_infer_args(env, exp) do
+    Enum.reduce_while(exp.args, {:ok, [], env}, fn arg, {:ok, type_acc, env} ->
+      case infer_exp(env, arg) do
+        {:ok, type, env} ->
+          Logger.debug "Argument of #{exp.name} is type: #{type}"
+          {:cont, {:ok, [type | type_acc], env}}
+        error ->
+          Logger.debug "Argument of #{exp.name} cannot be inferred"
+          {:halt, error}
+      end
+    end)
+  end
+
+  defp get_type_by_signature(env, signature) do
+    type = Env.get_function_type(env, signature)
+    if type do
+      Logger.debug "Type of function signature: #{signature} is: #{type}"
+      {:ok, type, env}
+    else
+      Logger.debug "Type of function signature: #{signature} not found"
+      {:error, "Unknown function: #{signature}"}
     end
   end
 

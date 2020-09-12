@@ -13,6 +13,14 @@ defmodule Fika.TypeCheckerTest do
     assert {:ok, :Int, _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
+  test "infer type of arithmetic expressions" do
+    str = "1 + 2"
+
+    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+    assert {:ok, :Int, _} = TypeChecker.infer_exp(Env.init(), ast)
+  end
+
   test "infer undefined variable" do
     str = "foo"
 

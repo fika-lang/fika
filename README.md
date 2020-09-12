@@ -22,3 +22,15 @@ end
 This is a function named `sum` which takes two integers and returns another integer.
 Identifiers in Fika are written in snake_case (similar to Ruby, Elixir or Python).
 Types are written in CamelCase.
+
+Fika has a type checker which makes sure your function actually return what
+they say they do. For example, the type checker will report an error for
+the following code:
+
+```elixir
+fn sum(a: Int, b: Int) : Float do
+  a + b
+end
+
+# Error: "Expected type: Float, got: Int"
+```
