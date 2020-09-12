@@ -108,5 +108,31 @@ defmodule Fika.ParserTest do
           {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}}
       ]
     end
+
+  test "with args" do
+    str = """
+    fn foo(x: Int, y: Int) : Int do
+      x + y
+    end
+    """
+
+    {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+
+    assert result == [
+      {:function, [position: {3, 40, 43}],
+        {:foo,
+          [
+            {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, "Int"}},
+            {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, "Int"}}
+          ],
+          {:type, {1, 0, 28}, "Int"},
+          [
+            {:call, {:+, {2, 32, 39}},
+              [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
+          ]
+        }
+      }
+    ]
+  end
   end
 end

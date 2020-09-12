@@ -31,9 +31,8 @@ defmodule Fika.ParserHelper do
     {:identifier, line, String.to_atom(name)}
   end
 
-  def do_to_ast({[name, type, exps], line}, :function_def) do
+  def do_to_ast({[name, args, type, exps], line}, :function_def) do
     {:identifier, _, name} = name
-    args = []
     {:function, [position: line], {name, args, type, exps}}
   end
 
@@ -47,5 +46,9 @@ defmodule Fika.ParserHelper do
 
   def do_to_ast({[name], line}, :simple_type) do
     {:type, line, name}
+  end
+
+  def do_to_ast({[identifier, type], _line}, :arg) do
+    {identifier, type}
   end
 end

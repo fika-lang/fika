@@ -64,6 +64,7 @@ defmodule Fika.Parser do
   factor =
     choice([
       integer,
+      identifier,
       exp_paren
     ])
 
@@ -106,6 +107,34 @@ defmodule Fika.Parser do
   type =
     simple_type
 
+  arg =
+    identifier
+    |> concat(allow_space)
+    |> ignore(string(":"))
+    |> concat(allow_space)
+    |> concat(type)
+    |> Helper.to_ast(:arg)
+
+  args =
+    arg
+    |> optional(
+      allow_space
+      |> ignore(string(","))
+      |> concat(allow_space)
+      |> parsec(:args)
+    )
+
+  arg_parens =
+    choice([
+      ignore(string("("))
+      |> concat(allow_space)
+      |> wrap(args)
+      |> concat(allow_space)
+      |> ignore(string(")")),
+
+      empty() |> wrap()
+    ])
+
   return_type =
     optional(
       allow_space
@@ -120,6 +149,7 @@ defmodule Fika.Parser do
     |> ignore(string("fn"))
     |> concat(require_space)
     |> concat(identifier)
+    |> concat(arg_parens)
     |> concat(return_type)
     |> concat(require_space)
     |> ignore(string("do"))
@@ -145,6 +175,7 @@ defmodule Fika.Parser do
   defcombinatorp :exps, exps
   defcombinatorp :exp_bin_op, exp_bin_op
   defcombinatorp :term, term
+  defcombinatorp :args, args
 
   defparsec :parse, module
 
