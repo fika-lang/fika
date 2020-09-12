@@ -14,6 +14,7 @@ Here's a quick walkthrough of Fika's syntax.
 A function in Fika looks like this:
 
 ```elixir
+# example.fi
 fn sum(a: Int, b: Int) : Int do
   a + b
 end
@@ -33,4 +34,51 @@ fn sum(a: Int, b: Int) : Float do
 end
 
 # Error: "Expected type: Float, got: Int"
+```
+
+All functions in Fika are nested inside modules.
+Module names in Fika are inferred from their file paths, so a Fika file named
+`example.fi` will become a module named `example`. All functions inside this
+file will belong to this module.
+
+The `sum` function can be called like so:
+
+```elixir
+# Calling locally within the module
+sum(40, 2)
+
+# Calling remotely outside the module
+example.sum(40, 2)
+```
+
+#### Basic types and operators
+
+Fika currently has only integers, variables, assignments and basic arithmetic
+while it's still in the proof-of-concept stage. Here's how you assign
+variables:
+
+```elixir
+a = 40
+b = 2
+c = sum(a, b)
+```
+
+
+### Running Fika programs
+
+Fika is written in Elixir, so make sure you have that installed.
+Follow [these instructions](https://elixir-lang.org/install.html) to install
+Elixir.
+
+```
+# Clone and cd into fika, then run the following:
+mix deps.get
+iex -S mix
+
+# In the elixir shell, compile and load a Fika file using the following:
+> Fika.Code.load_file("example.fi")
+
+# Now you can run functions from the module like this:
+> :example.sum(40, 2)
+> 42
 ```
