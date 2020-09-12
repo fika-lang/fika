@@ -44,6 +44,12 @@ defmodule Fika.Parser do
     |> label("identifier")
     |> Helper.to_ast(:identifier)
 
+  simple_type =
+    ascii_string([?A..?Z], 1)
+    |> ascii_string([?a..?z, ?A..?Z], min: 0)
+    |> reduce({Enum, :join, [""]})
+    |> Helper.to_ast(:simple_type)
+
   integer =
     integer(min: 1)
     |> label("integer")
@@ -95,11 +101,26 @@ defmodule Fika.Parser do
       |> parsec(:exps)
     )
 
+  # Right now it's just simple one-worded types.
+  # More complex types will come in here.
+  type =
+    simple_type
+
+  return_type =
+    optional(
+      allow_space
+      |> ignore(string(":"))
+      |> concat(allow_space)
+      |> concat(type)
+    )
+    |> Helper.to_ast(:return_type)
+
   function_def =
     allow_space
     |> ignore(string("fn"))
     |> concat(require_space)
     |> concat(identifier)
+    |> concat(return_type)
     |> concat(require_space)
     |> ignore(string("do"))
     |> concat(require_space)

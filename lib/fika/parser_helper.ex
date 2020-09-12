@@ -31,10 +31,21 @@ defmodule Fika.ParserHelper do
     {:identifier, line, String.to_atom(name)}
   end
 
-  def do_to_ast({[name, exps], line}, :function_def) do
-    {:identifier, name_line, name} = name
+  def do_to_ast({[name, type, exps], line}, :function_def) do
+    {:identifier, _, name} = name
     args = []
-    type = {:type, name_line, "Nothing"}
     {:function, [position: line], {name, args, type, exps}}
+  end
+
+  def do_to_ast({[], line}, :return_type) do
+    {:type, line, "Nothing"}
+  end
+
+  def do_to_ast({[type], _line}, :return_type) do
+    type
+  end
+
+  def do_to_ast({[name], line}, :simple_type) do
+    {:type, line, name}
   end
 end
