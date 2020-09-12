@@ -56,7 +56,7 @@ defmodule Fika.TypeChecker do
 
   def infer_block(env, []) do
     Logger.debug "Block is empty."
-    {:ok, :Nothing, env}
+    {:ok, "Nothing", env}
   end
   def infer_block(env, [exp]) do
     Logger.debug "Block has one exp left"
@@ -72,8 +72,8 @@ defmodule Fika.TypeChecker do
 
   # Integer literals
   def infer_exp(env, {:integer, _line, integer}) do
-    Logger.debug "Integer #{integer} found. Type: #{:Int}"
-    {:ok, :Int, env}
+    Logger.debug "Integer #{integer} found. Type: Int"
+    {:ok, "Int", env}
   end
 
   # Variables
@@ -100,7 +100,16 @@ defmodule Fika.TypeChecker do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->
         signature = get_signature(module, exp.name, type_acc)
-        get_type_by_signature(env, signature)
+
+        if module == Env.current_module(env) && !Env.known_function?(env, signature) do
+          Logger.debug "Checking unknown function #{signature} in module: #{module}"
+          case check_by_signature(env, signature) do
+            {:ok, _, _} = result -> result
+            error -> error
+          end
+        else
+          get_type_by_signature(env, signature)
+        end
 
       error ->
         error
@@ -160,5 +169,19 @@ defmodule Fika.TypeChecker do
 
   defp get_signature(module, name, arg_types) do
     "#{module}.#{name}(#{Enum.join(arg_types, ",")})"
+  end
+
+  defp check_by_signature(env, signature) do
+    functions = Env.ast_functions(env)
+    module = Env.current_module(env)
+    function =
+      Enum.find(functions, fn function ->
+        signature(function, module) == signature
+      end)
+    if function do
+      check(function, env)
+    else
+      {:error, "Undefined function: #{signature} in module #{module}"}
+    end
   end
 end

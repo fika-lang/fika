@@ -76,6 +76,55 @@ defmodule Fika.ParserTest do
           ], :kernel}
       ]
     end
+
+
+    test "local function call without args" do
+      str = """
+      my_func()
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      assert result == [{:call, {:my_func, {1, 0, 9}}, [], nil}]
+    end
+
+    test "local function call with args" do
+      str = """
+      my_func(x, 123)
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      args = [
+        {:identifier, {1, 0, 9}, :x},
+        {:integer, {1, 0, 14}, 123}
+      ]
+      assert result == [{:call, {:my_func, {1, 0, 15}}, args, nil}]
+    end
+
+    test "remote function call with args" do
+      str = """
+      my_module.my_func(x, 123)
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      args = [
+        {:identifier, {1, 0, 19}, :x},
+        {:integer, {1, 0, 24}, 123}
+      ]
+      assert result == [{:call, {:my_func, {1, 0, 25}}, args, :my_module}]
+    end
+
+    test "function calls with another function call as arg" do
+      str = """
+      foo(x, bar(y))
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      args = [
+        {:identifier, {1, 0, 5}, :x},
+        {:call, {:bar, {1, 0, 13}}, [{:identifier, {1, 0, 12}, :y}], nil}
+      ]
+      assert result == [{:call, {:foo, {1, 0, 14}}, args, nil}]
+    end
   end
 
   describe "function definition" do
@@ -109,30 +158,30 @@ defmodule Fika.ParserTest do
       ]
     end
 
-  test "with args" do
-    str = """
-    fn foo(x: Int, y: Int) : Int do
-      x + y
-    end
-    """
+    test "with args" do
+      str = """
+      fn foo(x: Int, y: Int) : Int do
+        x + y
+      end
+      """
 
-    {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
 
-    assert result == [
-      {:function, [position: {3, 40, 43}],
-        {:foo,
-          [
-            {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, "Int"}},
-            {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, "Int"}}
-          ],
-          {:type, {1, 0, 28}, "Int"},
-          [
-            {:call, {:+, {2, 32, 39}},
-              [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
-          ]
+      assert result == [
+        {:function, [position: {3, 40, 43}],
+          {:foo,
+            [
+              {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, "Int"}},
+              {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, "Int"}}
+            ],
+            {:type, {1, 0, 28}, "Int"},
+            [
+              {:call, {:+, {2, 32, 39}},
+                [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
+            ]
+          }
         }
-      }
-    ]
-  end
+      ]
+    end
   end
 end

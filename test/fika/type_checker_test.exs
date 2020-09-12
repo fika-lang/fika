@@ -10,7 +10,7 @@ defmodule Fika.TypeCheckerTest do
 
     {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
 
-    assert {:ok, :Int, _} = TypeChecker.infer_exp(Env.init(), ast)
+    assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
   test "infer type of arithmetic expressions" do
@@ -18,7 +18,7 @@ defmodule Fika.TypeCheckerTest do
 
     {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
 
-    assert {:ok, :Int, _} = TypeChecker.infer_exp(Env.init(), ast)
+    assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
   test "infer undefined variable" do
@@ -59,5 +59,28 @@ defmodule Fika.TypeCheckerTest do
       |> Env.init_module_env("test", ast)
 
     assert {:error, "Expected type: Float, got: Int"} = TypeChecker.check(function, env)
+  end
+
+  test "infer return type of another function in the module" do
+    str = """
+    fn foo(a: Int) : Int do
+      bar(a) + 100
+    end
+
+    fn bar(a: Int) : Int do
+      a + 20
+    end
+    """
+
+    {:module, _, [foo, _bar]} = ast = Fika.Parser.parse_module(str, "test")
+
+    env =
+      Env.init()
+      |> Env.init_module_env("test", ast)
+
+    assert {:ok, "Int", env} = TypeChecker.infer(foo, env)
+
+    assert Env.get_function_type(env, "test.foo(Int)") == "Int"
+    assert Env.get_function_type(env, "test.bar(Int)") == "Int"
   end
 end

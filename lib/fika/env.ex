@@ -10,25 +10,25 @@ defmodule Fika.Env do
       # This is a map of known function signatures and their return types.
       # As a hack for now, we store kernel function signatures right here.
       function_types: %{
-        "kernel.+(Int,Int)" => :Int,
-        "kernel.+(Int,Float)" => :Float,
-        "kernel.+(Float,Int)" => :Float,
-        "kernel.+(Float,Float)" => :Float,
+        "kernel.+(Int,Int)" => "Int",
+        "kernel.+(Int,Float)" => "Float",
+        "kernel.+(Float,Int)" => "Float",
+        "kernel.+(Float,Float)" => "Float",
 
-        "kernel.-(Int,Int)" => :Int,
-        "kernel.-(Int,Float)" => :Float,
-        "kernel.-(Float,Int)" => :Float,
-        "kernel.-(Float,Float)" => :Float,
+        "kernel.-(Int,Int)" => "Int",
+        "kernel.-(Int,Float)" => "Float",
+        "kernel.-(Float,Int)" => "Float",
+        "kernel.-(Float,Float)" => "Float",
 
-        "kernel.*(Int,Int)" => :Int,
-        "kernel.*(Int,Float)" => :Float,
-        "kernel.*(Float,Int)" => :Float,
-        "kernel.*(Float,Float)" => :Float,
+        "kernel.*(Int,Int)" => "Int",
+        "kernel.*(Int,Float)" => "Float",
+        "kernel.*(Float,Int)" => "Float",
+        "kernel.*(Float,Float)" => "Float",
 
-        "kernel./(Int,Int)" => :Float,
-        "kernel./(Int,Float)" => :Float,
-        "kernel./(Float,Int)" => :Float,
-        "kernel./(Float,Float)" => :Float,
+        "kernel./(Int,Int)" => "Float",
+        "kernel./(Int,Float)" => "Float",
+        "kernel./(Float,Int)" => "Float",
+        "kernel./(Float,Float)" => "Float",
       }
     }
   end
@@ -71,5 +71,10 @@ defmodule Fika.Env do
 
   defp add_known_function(env, signature) do
     update_in(env, [:module_env, :known_functions], & [signature | &1])
+  end
+
+  def ast_functions(env) do
+    {:module, _module_name, functions} = get_in(env, [:module_env, :ast])
+    functions
   end
 end

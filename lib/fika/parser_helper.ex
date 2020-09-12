@@ -51,4 +51,15 @@ defmodule Fika.ParserHelper do
   def do_to_ast({[identifier, type], _line}, :arg) do
     {identifier, type}
   end
+
+  def do_to_ast({[name, args], line}, :local_function_call) do
+    {:identifier, _, name} = name
+    {:call, {name, line}, args, nil}
+  end
+
+  def do_to_ast({[module_alias, name, args], line}, :remote_function_call) do
+    {:identifier, _, module_alias} = module_alias
+    {:identifier, _, name} = name
+    {:call, {name, line}, args, module_alias}
+  end
 end
