@@ -77,4 +77,21 @@ defmodule Fika.ParserTest do
       ]
     end
   end
+
+  describe "function definition" do
+    test "without args or type" do
+      str = """
+      fn foo do
+        123
+      end
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+
+      assert result == [
+        {:function, [position: {3, 16, 19}],
+          {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 10, 15}, 123}]}}
+      ]
+    end
+  end
 end

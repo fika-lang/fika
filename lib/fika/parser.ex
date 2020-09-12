@@ -19,10 +19,30 @@ defmodule Fika.Parser do
     choice([vertical_space, horizontal_space])
     |> label("space or newline")
 
+  require_space =
+    space
+    |> times(min: 1)
+    |> ignore()
+
   allow_space =
     space
     |> repeat()
     |> ignore()
+
+  keyword =
+    choice([
+      string("fn"),
+      string("do"),
+      string("end")
+    ])
+
+  identifier =
+    lookahead_not(keyword)
+    |> ascii_string([?a..?z], 1)
+    |> ascii_string([?a..?z, ?_, ?0..?9], min: 0)
+    |> reduce({Enum, :join, [""]})
+    |> label("identifier")
+    |> Helper.to_ast(:identifier)
 
   integer =
     integer(min: 1)
@@ -68,11 +88,46 @@ defmodule Fika.Parser do
   exp =
     exp_add_op
 
+  exps =
+    parsec(:exp)
+    |> optional(
+      require_space
+      |> parsec(:exps)
+    )
+
+  function_def =
+    allow_space
+    |> ignore(string("fn"))
+    |> concat(require_space)
+    |> concat(identifier)
+    |> concat(require_space)
+    |> ignore(string("do"))
+    |> concat(require_space)
+    |> wrap(exps)
+    |> concat(require_space)
+    |> ignore(string("end"))
+    |> label("function definition")
+    |> Helper.to_ast(:function_def)
+
+  module =
+    function_def
+    |> times(min: 1)
+    |> concat(allow_space)
+    |> eos()
+
+  def parse_module(str, module_name) do
+    {:ok, ast, _, _, _, _} = parse(str)
+    {:module, module_name, ast}
+  end
 
   defcombinatorp :exp, exp
+  defcombinatorp :exps, exps
   defcombinatorp :exp_bin_op, exp_bin_op
   defcombinatorp :term, term
 
+  defparsec :parse, module
+
   # For testing
   defparsec :expression, exp |> concat(allow_space) |> eos()
+  defparsec :function_def, function_def
 end

@@ -26,4 +26,15 @@ defmodule Fika.ParserHelper do
   def do_to_ast({[result], _line}, :exp_bin_op) do
     result
   end
+
+  def do_to_ast({[name], line}, :identifier) do
+    {:identifier, line, String.to_atom(name)}
+  end
+
+  def do_to_ast({[name, exps], line}, :function_def) do
+    {:identifier, name_line, name} = name
+    args = []
+    type = {:type, name_line, "Nothing"}
+    {:function, [position: line], {name, args, type, exps}}
+  end
 end
