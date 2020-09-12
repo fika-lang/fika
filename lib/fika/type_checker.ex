@@ -96,6 +96,18 @@ defmodule Fika.TypeChecker do
     infer_args(env, exp, module_name)
   end
 
+  # =
+  def infer_exp(env, {{:=, _}, {:identifier, _line, left}, right}) do
+    case infer_exp(env, right) do
+      {:ok, type, env} ->
+        Logger.debug "Adding variable to scope: #{left}:#{type}"
+        env = Env.scope_add(env, left, type)
+        {:ok, type, env}
+      error ->
+        error
+    end
+  end
+
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->

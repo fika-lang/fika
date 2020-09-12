@@ -83,4 +83,28 @@ defmodule Fika.TypeCheckerTest do
     assert Env.get_function_type(env, "test.foo(Int)") == "Int"
     assert Env.get_function_type(env, "test.bar(Int)") == "Int"
   end
+
+  test "infer function with variable assignments which get used in function calls" do
+    str = """
+    fn foo(a:Int, b:Float) : Float do
+      x = 123
+      y = 456
+      z = test2.div(test2.add(x, test2.add(y, a)), b)
+    end
+    """
+
+    {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+
+    env =
+      Env.init()
+      |> Env.init_module_env("test", ast)
+      |> Env.add_function_type("test2.div(Float,Int)", "Float")
+      |> Env.add_function_type("test2.div(Int,Float)", "Float")
+      |> Env.add_function_type("test2.add(Float,Int)", "Float")
+      |> Env.add_function_type("test2.add(Int,Float)", "Float")
+      |> Env.add_function_type("test2.add(Int,Int)", "Int")
+
+    assert {:ok, "Float", _} = TypeChecker.infer(function, env)
+    assert {:ok, "Float", _} = TypeChecker.check(function, env)
+  end
 end
