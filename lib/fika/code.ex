@@ -23,8 +23,9 @@ defmodule Fika.Code do
       ast = Parser.parse_module(module_str, module_name)
       {:ok, _env} = TypeChecker.check_module(ast, Env.init())
       forms = ErlTranslate.translate(ast, file)
-      {:module, module} = load_forms(forms, file)
+      {:module, module} = result = load_forms(forms, file)
       Logger.debug "Loaded module #{module}"
+      result
     else
       {:error, "Invalid filename. Make sure it's something like foo/bar/baz.fi"}
     end

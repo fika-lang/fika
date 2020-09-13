@@ -1,4 +1,4 @@
-<img src="https://github.com/fika-lang/assets/blob/master/logo.png?raw=true" width="150"/> 
+<img src="https://github.com/fika-lang/assets/blob/master/logo.png?raw=true" width="150"/>
 
 Fika is a modern programming language for the web.
 It is statically typed, functional and runs on the BEAM (Erlang VM).
@@ -68,17 +68,29 @@ c = sum(a, b)
 
 Fika is written in Elixir, so make sure you have that installed.
 Follow [these instructions](https://elixir-lang.org/install.html) to install
-Elixir.
+Elixir. Next, clone this repo, cd into the directory and then follow the below instructions.
+
+#### Using Elixir shell
 
 ```
-# Clone and cd into fika, then run the following:
+# Install dependencies and run the Elixir shell
 mix deps.get
 iex -S mix
 
-# In the elixir shell, compile and load a Fika file using the following:
+# In the Elixir shell, compile and load a Fika file using the following:
 > Fika.Code.load_file("example.fi")
 
 # Now you can run functions from the module like this:
 > :example.sum(40, 2)
 > 42
+```
+
+#### Using `fika` executable
+
+```
+# Create the executable
+mix escript.build
+
+# Call the function example.sum(1, 2) from the file example.fi
+./fika exec --function="sum(1, 2)" example.fi
 ```
