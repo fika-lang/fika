@@ -107,4 +107,12 @@ defmodule Fika.TypeCheckerTest do
     assert {:ok, "Float", _} = TypeChecker.infer(function, env)
     assert {:ok, "Float", _} = TypeChecker.check(function, env)
   end
+
+  test "string" do
+    str = "\"Hello world\""
+
+    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+    assert {:ok, "String", _} = TypeChecker.infer_exp(Env.init(), ast)
+  end
 end

@@ -55,6 +55,12 @@ defmodule Fika.Parser do
     |> label("integer")
     |> Helper.to_ast(:integer)
 
+  string_exp =
+    ignore(string("\""))
+    |> repeat(choice([string("\\\""), utf8_char([not: ?"])]))
+    |> ignore(string("\""))
+    |> Helper.to_ast(:string)
+
   exp_paren =
     ignore(string("("))
     |> parsec(:exp)
@@ -107,6 +113,7 @@ defmodule Fika.Parser do
   factor =
     choice([
       integer,
+      string_exp,
       exp_paren,
       function_call,
       identifier

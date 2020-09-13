@@ -2,16 +2,16 @@ defmodule Fika.ParserTest do
   use ExUnit.Case
   alias Fika.Parser
 
-  describe "expressions" do
-    test "integer" do
-      str = """
-      123
-      """
+  test "integer" do
+    str = """
+    123
+    """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
-      assert result ==  [{:integer, {1, 0, 3}, 123}]
-    end
+    {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+    assert result ==  [{:integer, {1, 0, 3}, 123}]
+  end
 
+  describe "arithmetic" do
     test "arithmetic with add and mult" do
       str = """
       2 + 3 * 4
@@ -76,8 +76,10 @@ defmodule Fika.ParserTest do
           ], :kernel}
       ]
     end
+  end
 
 
+  describe "function calls" do
     test "local function call without args" do
       str = """
       my_func()
@@ -246,6 +248,28 @@ defmodule Fika.ParserTest do
           ],
         :kernel}
       ]
+    end
+  end
+
+  describe "strings" do
+    test "parses a simple string" do
+      str = """
+      "Hello world"
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+
+      assert result ==  [{:string, {1, 0, 13}, "Hello world"}]
+    end
+
+    test "parses a string with escaped double quotes" do
+      str = """
+      "Hello \\\"world\\\""
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+
+      assert result ==  [{:string, {1, 0, 17}, "Hello \\\"world\\\""}]
     end
   end
 end

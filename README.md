@@ -53,16 +53,18 @@ example.sum(40, 2)
 
 #### Basic types and operators
 
-Fika currently has only integers, variables, assignments and basic arithmetic
-while it's still in the proof-of-concept stage. Here's how you assign
-variables:
+Fika is currently a proof of concept so its data types and operators are quite
+limited.
+
+Data types - integers and strings.
+Operators - assignment and arithmetic.
 
 ```elixir
 a = 40
 b = 2
-c = sum(a, b)
+c = a + b
+str = "Hello world"
 ```
-
 
 ### Running Fika programs
 

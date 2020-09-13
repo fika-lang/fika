@@ -66,4 +66,8 @@ defmodule Fika.ParserHelper do
   def do_to_ast({[identifier, exp], line}, :exp_match) do
     {{:=, line}, identifier, exp}
   end
+
+  def do_to_ast({value, line}, :string) do
+    {:string, line, to_string(value)}
+  end
 end

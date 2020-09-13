@@ -108,6 +108,12 @@ defmodule Fika.TypeChecker do
     end
   end
 
+  # String
+  def infer_exp(env, {:string, _line, string}) do
+    Logger.debug "String #{string} found. Type: String"
+    {:ok, "String", env}
+  end
+
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->

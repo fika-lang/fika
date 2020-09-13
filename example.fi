@@ -1,3 +1,7 @@
 fn sum(a: Int, b: Int) : Int do
   a + b
 end
+
+fn hello : String do
+  "World"
+end
