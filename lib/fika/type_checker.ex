@@ -114,6 +114,11 @@ defmodule Fika.TypeChecker do
     {:ok, "String", env}
   end
 
+  # List
+  def infer_exp(env, {:list, _, exps}) do
+    infer_list_exps(env, exps)
+  end
+
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->
@@ -132,6 +137,31 @@ defmodule Fika.TypeChecker do
       error ->
         error
     end
+  end
+
+  defp infer_list_exps(env, []) do
+    {:ok, "List(Nothing)", env}
+  end
+  defp infer_list_exps(env, [exp]) do
+    case infer_exp(env, exp) do
+      {:ok, type, env} -> {:ok, "List(#{type})", env}
+      error -> error
+    end
+  end
+  defp infer_list_exps(env, [exp | rest]) do
+    {:ok, type, env} = infer_exp(env, exp)
+    Enum.reduce_while(rest, {:ok, "List(#{type})", env}, fn exp, {:ok, acc_type, acc_env} ->
+      case infer_exp(acc_env, exp) do
+        {:ok, ^type, env} ->
+          acc = {:ok, acc_type, env}
+          {:cont, acc}
+        {:ok, diff_type, _} ->
+          error = {:error, "Elements of list have different types. Expected: #{type}, got: #{diff_type}"}
+          {:halt, error}
+        error ->
+          {:halt, error}
+      end
+    end)
   end
 
   defp do_infer_args(env, exp) do

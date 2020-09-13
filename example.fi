@@ -5,3 +5,7 @@ end
 fn hello : String do
   "World"
 end
+
+fn foo : List(Int) do
+  [1, 2, 3]
+end

@@ -115,4 +115,54 @@ defmodule Fika.TypeCheckerTest do
 
     assert {:ok, "String", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
+
+  describe "lists" do
+    test "list of integers" do
+      str = "[1, 2, 3]"
+
+      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+      assert {:ok, "List(Int)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "list of integers and floats" do
+      str = "[1, 2/3, 3]"
+
+      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+      assert {:error, "Elements of list have different types. Expected: Int, got: Float"} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "list of floats inferred from fn calls" do
+      str = "[1/2, 2/3]"
+
+      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+      assert {:ok, "List(Float)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "List of strings" do
+      str = "[\"foo\", \"bar\"]"
+
+      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+      assert {:ok, "List(String)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "List of list of integers" do
+      str = "[[1, 2], [3, 4]]"
+
+      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+      assert {:ok, "List(List(Int))", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "empty list" do
+      str = "[]"
+
+      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+      assert {:ok, "List(Nothing)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+  end
 end

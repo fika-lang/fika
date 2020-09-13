@@ -65,4 +65,16 @@ defmodule Fika.ErlTranslate do
   defp translate_exp({:string, {line, _, _}, value}) do
     {:string, line, String.to_charlist(value)}
   end
+
+  defp translate_exp({:list, {line, _, _}, value}) do
+    do_translate_list(value, line)
+  end
+
+  defp do_translate_list([head | rest], line) do
+    {:cons, line, translate_exp(head), do_translate_list(rest, line)}
+  end
+
+  defp do_translate_list([], line) do
+    {nil, line}
+  end
 end

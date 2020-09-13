@@ -61,6 +61,24 @@ defmodule Fika.Parser do
     |> ignore(string("\""))
     |> Helper.to_ast(:string)
 
+  list_rest =
+    ignore(string(","))
+    |> concat(allow_space)
+    |> parsec(:exp)
+
+  list_content =
+    parsec(:exp)
+    |> concat(allow_space)
+    |> repeat(list_rest)
+
+  exp_list =
+    ignore(string("["))
+    |> concat(allow_space)
+    |> optional(list_content)
+    |> concat(allow_space)
+    |> ignore(string("]"))
+    |> Helper.to_ast(:exp_list)
+
   exp_paren =
     ignore(string("("))
     |> parsec(:exp)
@@ -116,7 +134,8 @@ defmodule Fika.Parser do
       string_exp,
       exp_paren,
       function_call,
-      identifier
+      identifier,
+      exp_list
     ])
 
   term =
@@ -157,17 +176,35 @@ defmodule Fika.Parser do
       |> parsec(:exps)
     )
 
-  # Right now it's just simple one-worded types.
-  # More complex types will come in here.
+  type_args =
+    allow_space
+    |> string(",")
+    |> concat(allow_space)
+    |> parsec(:type)
+    |> parsec(:type_args)
+
+  type_parens =
+    string("(")
+    |> concat(allow_space)
+    |> parsec(:type)
+    |> optional(type_args)
+    |> concat(allow_space)
+    |> string(")")
+
   type =
     simple_type
+    |> optional(type_parens)
+
+  parse_type =
+    type
+    |> Helper.to_ast(:type)
 
   arg =
     identifier
     |> concat(allow_space)
     |> ignore(string(":"))
     |> concat(allow_space)
-    |> concat(type)
+    |> concat(parse_type)
     |> Helper.to_ast(:arg)
 
   args =
@@ -195,7 +232,7 @@ defmodule Fika.Parser do
       allow_space
       |> ignore(string(":"))
       |> concat(allow_space)
-      |> concat(type)
+      |> concat(parse_type)
     )
     |> Helper.to_ast(:return_type)
 
@@ -232,6 +269,8 @@ defmodule Fika.Parser do
   defcombinatorp :term, term
   defcombinatorp :args, args
   defcombinatorp :call_args, call_args
+  defcombinatorp :type, type
+  defcombinatorp :type_args, type_args
 
   defparsec :parse, module
 

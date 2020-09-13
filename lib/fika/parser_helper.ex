@@ -44,8 +44,14 @@ defmodule Fika.ParserHelper do
     type
   end
 
-  def do_to_ast({[name], line}, :simple_type) do
-    {:type, line, name}
+  def do_to_ast({[name], _line}, :simple_type) do
+    name
+  end
+
+  def do_to_ast({types, line}, :type) do
+    type = Enum.join(types)
+
+    {:type, line, type}
   end
 
   def do_to_ast({[identifier, type], _line}, :arg) do
@@ -69,5 +75,9 @@ defmodule Fika.ParserHelper do
 
   def do_to_ast({value, line}, :string) do
     {:string, line, to_string(value)}
+  end
+
+  def do_to_ast({result, line}, :exp_list) do
+    {:list, line, result}
   end
 end

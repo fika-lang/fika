@@ -160,6 +160,22 @@ defmodule Fika.ParserTest do
       ]
     end
 
+    test "with type params" do
+      str = """
+      fn foo(a: List(String)) : List(Int) do
+        x
+      end
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+
+      assert result == [
+        {:function, [position: {3, 43, 46}],
+          {:foo, [{{:identifier, {1, 0, 8}, :a}, {:type, {1, 0, 22}, "List(String)"}}],
+            {:type, {1, 0, 35}, "List(Int)"}, [{:identifier, {2, 39, 42}, :x}]}}
+      ]
+    end
+
     test "with args" do
       str = """
       fn foo(x: Int, y: Int) : Int do
@@ -270,6 +286,53 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
       assert result ==  [{:string, {1, 0, 17}, "Hello \\\"world\\\""}]
+    end
+  end
+
+  describe "list" do
+    test "parses empty list" do
+      str = """
+      []
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      assert result == [{:list, {1, 0, 2}, []}]
+    end
+
+    test "parses list with one element" do
+      str = """
+      [1]
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      assert result == [{:list, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]}]
+    end
+
+    test "parses list with multiple elements" do
+      str = """
+      [1, 2, 3]
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      assert result == [{:list, {1, 0, 9}, [
+        {:integer, {1, 0, 2}, 1},
+        {:integer, {1, 0, 5}, 2},
+        {:integer, {1, 0, 8}, 3},
+      ]}]
+    end
+
+    test "parses list with match exps" do
+      str = """
+      [a = 1, 2, 3]
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+
+      assert result == [{:list, {1, 0, 13}, [
+        {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
+        {:integer, {1, 0, 9}, 2},
+        {:integer, {1, 0, 12}, 3},
+      ]}]
     end
   end
 end
