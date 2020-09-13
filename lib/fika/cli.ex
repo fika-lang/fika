@@ -21,4 +21,12 @@ defmodule Fika.Cli do
     {result, _binding} = Code.eval_string(":#{module}.#{function}")
     IO.inspect result
   end
+
+  defp parse_args(["start" | rest]) do
+    path = List.first(rest)
+    case Fika.start(path) do
+      :ok -> :timer.sleep(:infinity)
+      :error -> :error
+    end
+  end
 end

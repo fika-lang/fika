@@ -102,3 +102,49 @@ mix escript.build
 # Call the function example.sum(1, 2) from the file example.fi
 ./fika exec --function="sum(1, 2)" example.fi
 ```
+
+### Your first HTTP server
+
+Fika comes with a webserver which allows you to quickly create HTTP request
+handlers. By default, Fika looks for routes in a function called
+`router.routes()`, so you need to define that first:
+
+```elixir
+# Inside router.fi
+fn routes : List(List(String)) do
+  [
+    ["GET", "/", "greet"]
+  ]
+end
+
+fn greet : String do
+  "Hello world"
+end
+```
+
+Now start the webserver in one of two ways:
+
+#### Using Elixir shell
+
+```
+# router.fi is in the `examples` folder
+> Fika.start("examples")
+
+# Reload routes after changing routes.fi
+> Fika.RouteStore.reload_routes()
+```
+
+#### Using `fika` executable
+
+```
+# Create the executable
+mix escript.build
+
+# router.fi is in the `examples` folder
+./fika start examples
+
+# Re-run the command after making changes to routes.fi
+```
+
+Now open `http://localhost:6060` in the browser to see "Hello world" served
+by Fika.

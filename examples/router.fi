@@ -1,0 +1,14 @@
+fn routes : List(List(String)) do
+  [
+    ["GET", "/", "hello"],
+    ["GET", "/foo", "bar"]
+  ]
+end
+
+fn hello : String do
+  "Hello world"
+end
+
+fn bar: String do
+  "Bar"
+end
