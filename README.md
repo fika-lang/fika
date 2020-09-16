@@ -5,6 +5,8 @@ It is statically typed, functional and runs on the BEAM (Erlang VM).
 Fika is designed for building and maintaining scalable web apps without
 compromising on programmer ergonomics.
 
+Project status: Actively developed. Not ready for production.
+
 ### Syntax
 
 Here's a quick walkthrough of Fika's syntax.
@@ -24,7 +26,7 @@ This is a function named `sum` which takes two integers and returns another inte
 Identifiers in Fika are written in snake_case (similar to Ruby, Elixir or Python).
 Types are written in CamelCase.
 
-Fika has a type checker which makes sure your function actually return what
+Fika has a type checker which makes sure your functions actually return what
 they say they do. For example, the type checker will report an error for
 the following code:
 
