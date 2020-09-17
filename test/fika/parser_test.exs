@@ -360,6 +360,48 @@ defmodule Fika.ParserTest do
         {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
       ]}]
     end
+  end
+
+  describe "types" do
+    test "types with no args" do
+      str = "Int"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+
+      assert result == [{:type, {1, 0, 3}, "Int"}]
+    end
+
+    test "parses types with an arg" do
+      str = "List(Int)"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+
+      assert result == [{:type, {1, 0, 9}, "List(Int)"}]
+    end
+
+    test "parses types with nested args" do
+      str = "List(List(String))"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+
+      assert result == [{:type, {1, 0, 18}, "List(List(String))"}]
+    end
+
+    test "parses function type with no args" do
+      str = "Fn(-> Int)"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+
+      assert result == [{:type, {1, 0, 10}, "Fn(->Int)"}]
+    end
+
+    test "parses function type with args" do
+      str = "Fn(Int, Int -> Int)"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+
+      assert result == [{:type, {1, 0, 19}, "Fn(Int,Int->Int)"}]
+    end
 
     test "record type" do
       str = "{foo: Int, bar: String}"

@@ -207,17 +207,19 @@ defmodule Fika.Parser do
     )
 
   type_args =
-    allow_space
-    |> string(",")
-    |> concat(allow_space)
-    |> parsec(:type)
-    |> parsec(:type_args)
+    optional(
+      allow_space
+      |> string(",")
+      |> concat(allow_space)
+      |> parsec(:type)
+      |> parsec(:type_args)
+    )
 
   type_parens =
     string("(")
     |> concat(allow_space)
     |> parsec(:type)
-    |> optional(type_args)
+    |> concat(type_args)
     |> concat(allow_space)
     |> string(")")
 
@@ -249,8 +251,20 @@ defmodule Fika.Parser do
     |> reduce({Enum, :join, []})
     |> label("record type")
 
+  function_type =
+    string("Fn")
+    |> string("(")
+    |> optional(parsec(:type) |> concat(type_args))
+    |> concat(allow_space)
+    |> string("->")
+    |> concat(allow_space)
+    |> parsec(:type)
+    |> string(")")
+
   type =
     choice([
+      function_type,
+
       simple_type
       |> optional(type_parens),
 
@@ -344,5 +358,5 @@ defmodule Fika.Parser do
   # For testing
   defparsec :expression, exp |> concat(allow_space) |> eos()
   defparsec :function_def, function_def
-  defparsec :type_str, parse_type
+  defparsec :type_str, parse_type |> concat(allow_space) |> eos()
 end
