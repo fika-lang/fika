@@ -81,8 +81,8 @@ defmodule Fika.ParserHelper do
     {:list, line, result}
   end
 
-  def do_to_ast({[{:identifier, _, key}, v], _line}, :key_value) do
-    {key, v}
+  def do_to_ast({[k, v], _line}, :key_value) do
+    {k, v}
   end
 
   def do_to_ast({[name | key_values], line}, :record) do

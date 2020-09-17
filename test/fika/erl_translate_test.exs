@@ -63,4 +63,15 @@ defmodule Fika.ErlTranslateTest do
     ]
     assert result == forms
   end
+
+  test "record" do
+    str = "{foo: 1}"
+    ast = Parser.expression!(str)
+    result = ErlTranslate.translate_expression(ast)
+
+    assert result == {:map, 1, [
+        {:map_field_assoc, 1, {:atom, 0, :__record__}, {nil, 0}},
+        {:map_field_assoc, 1, {:atom, 1, :foo}, {:integer, 1, 1}}
+    ]}
+  end
 end

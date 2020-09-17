@@ -342,10 +342,10 @@ defmodule Fika.ParserTest do
       {}
       """
 
-      error = "expected identifier while processing key value pair" <>
-      " inside record inside expression"
+      error = "expected snake_case string while processing identifier" <>
+      " inside key value pair inside record inside expression"
 
-      assert {:error, ^error, "}\n", %{}, {1, 0}, 1} = Parser.expression(str)
+      assert {:error, error, "}\n", %{}, {1, 0}, 1} == Parser.expression(str)
     end
 
     test "parses a record" do
@@ -356,9 +356,16 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
       assert result == [{:record, {1, 0, 26}, nil, [
-        {:hello, {:string, {1, 0, 15}, "World"}},
-        {:foo, {:integer, {1, 0, 25}, 123}}
+        {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, "World"}},
+        {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
       ]}]
+    end
+
+    test "record type" do
+      str = "{foo: Int, bar: String}"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      assert result == [{:type, {1, 0, 23}, "{foo:Int,bar:String}"}]
     end
   end
 end

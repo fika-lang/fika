@@ -9,3 +9,7 @@ end
 fn foo : List(Int) do
   [1, 2, 3]
 end
+
+fn rec : {foo: List(Int)} do
+  {foo: [1, 2, 3]}
+end

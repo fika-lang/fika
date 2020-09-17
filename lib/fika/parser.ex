@@ -36,11 +36,15 @@ defmodule Fika.Parser do
       string("end")
     ])
 
-  identifier =
-    lookahead_not(keyword)
-    |> ascii_string([?a..?z], 1)
+  identifier_str =
+    ascii_string([?a..?z], 1)
     |> ascii_string([?a..?z, ?_, ?0..?9], min: 0)
     |> reduce({Enum, :join, [""]})
+    |> label("snake_case string")
+
+  identifier =
+    lookahead_not(keyword)
+    |> concat(identifier_str)
     |> label("identifier")
     |> Helper.to_ast(:identifier)
 
@@ -217,9 +221,41 @@ defmodule Fika.Parser do
     |> concat(allow_space)
     |> string(")")
 
+  type_key_value =
+    allow_space
+    |> concat(identifier_str)
+    |> concat(allow_space)
+    |> string(":")
+    |> concat(allow_space)
+    |> parsec(:type)
+    |> label("key value pair")
+    |> reduce({Enum, :join, []})
+
+  type_key_values =
+    type_key_value
+    |> repeat(
+      allow_space
+      |> ignore(string(","))
+      |> concat(allow_space)
+      |> concat(type_key_value)
+    )
+    |> reduce({Enum, :join, [","]})
+
+
+  record_type =
+    string("{")
+    |> concat(type_key_values)
+    |> string("}")
+    |> reduce({Enum, :join, []})
+    |> label("record type")
+
   type =
-    simple_type
-    |> optional(type_parens)
+    choice([
+      simple_type
+      |> optional(type_parens),
+
+      record_type
+    ])
 
   parse_type =
     type
@@ -289,6 +325,11 @@ defmodule Fika.Parser do
     {:module, module_name, ast}
   end
 
+  def expression!(str) do
+    {:ok, [result], _rest, _context, _line, _byte_offset} = expression(str)
+    result
+  end
+
   defcombinatorp :exp, exp
   defcombinatorp :exps, exps
   defcombinatorp :exp_bin_op, exp_bin_op
@@ -303,4 +344,5 @@ defmodule Fika.Parser do
   # For testing
   defparsec :expression, exp |> concat(allow_space) |> eos()
   defparsec :function_def, function_def
+  defparsec :type_str, parse_type
 end

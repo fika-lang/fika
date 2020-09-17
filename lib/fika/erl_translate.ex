@@ -70,6 +70,26 @@ defmodule Fika.ErlTranslate do
     do_translate_list(value, line)
   end
 
+  defp translate_exp({:record, {line, _, _}, name, k_vs}) do
+    k_vs = Enum.map(k_vs, fn {{:identifier, {l, _, _}, k}, v} ->
+      {:map_field_assoc, l, {:atom, l, k}, translate_exp(v)}
+    end)
+    k_vs = add_record_meta(k_vs, name, line)
+
+    {:map, line, k_vs}
+  end
+
+  defp add_record_meta(k_vs, name, line) do
+    name =
+      if name do
+         {:atom, 0, String.to_atom(name)}
+      else
+        {nil, 0}
+      end
+
+    [{:map_field_assoc, line, {:atom, 0, :__record__}, name} | k_vs]
+  end
+
   defp do_translate_list([head | rest], line) do
     {:cons, line, translate_exp(head), do_translate_list(rest, line)}
   end

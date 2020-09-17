@@ -144,7 +144,8 @@ defmodule Fika.TypeChecker do
     Enum.reduce_while(key_values, {:ok, [], env}, fn {k, v}, {:ok, acc, env} ->
       case infer_exp(env, v) do
         {:ok, type, env} ->
-          {:cont, {:ok, ["#{k}:#{type}" | acc], env}}
+          {:identifier, _, key} = k
+          {:cont, {:ok, ["#{key}:#{type}" | acc], env}}
         error -> {:halt, error}
       end
     end)
