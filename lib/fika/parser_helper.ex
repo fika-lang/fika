@@ -80,4 +80,18 @@ defmodule Fika.ParserHelper do
   def do_to_ast({result, line}, :exp_list) do
     {:list, line, result}
   end
+
+  def do_to_ast({[{:identifier, _, key}, v], _line}, :key_value) do
+    {key, v}
+  end
+
+  def do_to_ast({[name | key_values], line}, :record) do
+    name =
+      case name do
+        [] -> nil
+        [name] -> name
+      end
+
+    {:record, line, name, key_values}
+  end
 end

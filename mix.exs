@@ -9,7 +9,8 @@ defmodule Fika.MixProject do
       start_permanent: Mix.env() == :prod,
       escript: [main_module: Fika.Cli],
       deps: deps(),
-      xref: [exclude: [:router]]
+      xref: [exclude: [:router]],
+      elixirc_paths: elixirc_paths(Mix.env),
     ]
   end
 
@@ -31,4 +32,8 @@ defmodule Fika.MixProject do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:dev), do: ["lib"]
+  defp elixirc_paths(_), do: ["lib"]
 end

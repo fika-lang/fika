@@ -119,6 +119,37 @@ defmodule Fika.TypeChecker do
     infer_list_exps(env, exps)
   end
 
+  # Record
+  def infer_exp(env, {:record, _, name, key_values}) do
+    if name do
+      # Lookup type of name, ensure it matches.
+      Logger.error "Not implemented"
+    else
+      case do_infer_key_values(key_values, env) do
+
+        {:ok, k_v_types, env} ->
+          k_v_types =
+            k_v_types
+            |> Enum.reverse()
+            |> Enum.join(",")
+
+          {:ok, "{#{k_v_types}}", env}
+        error ->
+          error
+      end
+    end
+  end
+
+  defp do_infer_key_values(key_values, env) do
+    Enum.reduce_while(key_values, {:ok, [], env}, fn {k, v}, {:ok, acc, env} ->
+      case infer_exp(env, v) do
+        {:ok, type, env} ->
+          {:cont, {:ok, ["#{k}:#{type}" | acc], env}}
+        error -> {:halt, error}
+      end
+    end)
+  end
+
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->

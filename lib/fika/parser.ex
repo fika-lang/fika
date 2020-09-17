@@ -128,6 +128,31 @@ defmodule Fika.Parser do
     |> label("match expression")
     |> Helper.to_ast(:exp_match)
 
+  key_value =
+    allow_space
+    |> concat(identifier)
+    |> concat(allow_space)
+    |> ignore(string(":"))
+    |> concat(allow_space)
+    |> parsec(:exp)
+    |> label("key value pair")
+    |> Helper.to_ast(:key_value)
+
+  record =
+    wrap(optional(string("Foo")))
+    |> ignore(string("{"))
+    |> concat(key_value)
+    |> repeat(
+      allow_space
+      |> ignore(string(","))
+      |> concat(allow_space)
+      |> concat(key_value)
+    )
+    |> optional(ignore(string(",")))
+    |> ignore(string("}"))
+    |> label("record")
+    |> Helper.to_ast(:record)
+
   factor =
     choice([
       integer,
@@ -135,7 +160,8 @@ defmodule Fika.Parser do
       exp_paren,
       function_call,
       identifier,
-      exp_list
+      exp_list,
+      record
     ])
 
   term =
@@ -167,7 +193,7 @@ defmodule Fika.Parser do
       exp_match,
       exp_add_op
     ])
-    |> label("an expression")
+    |> label("expression")
 
   exps =
     parsec(:exp)

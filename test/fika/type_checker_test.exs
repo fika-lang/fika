@@ -165,4 +165,22 @@ defmodule Fika.TypeCheckerTest do
       assert {:ok, "List(Nothing)", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
   end
+
+  describe "record" do
+    test "unnamed record" do
+      str = "{foo: 123, bar: \"Baz\"}"
+
+      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+      assert {:ok, "{foo:Int,bar:String}", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "error" do
+      str = "{foo: x, bar: \"Baz\"}"
+
+      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+      assert {:error, "Unknown variable: x"} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+  end
 end
