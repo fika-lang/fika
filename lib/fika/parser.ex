@@ -65,6 +65,29 @@ defmodule Fika.Parser do
     |> ignore(string("\""))
     |> Helper.to_ast(:string)
 
+  type_args_list =
+    optional(
+      allow_space
+      |> ignore(string(","))
+      |> concat(allow_space)
+      |> parsec(:type)
+      |> parsec(:type_args_list)
+    )
+
+  function_ref_type_parens =
+    ignore(string("("))
+    |> concat(allow_space)
+    |> parsec(:type)
+    |> concat(type_args_list)
+    |> ignore(string(")"))
+
+  function_ref =
+    ignore(string("&"))
+    |> optional(identifier |> ignore(string(".")))
+    |> concat(identifier)
+    |> optional(wrap(function_ref_type_parens))
+    |> Helper.to_ast(:function_ref)
+
   list_rest =
     ignore(string(","))
     |> concat(allow_space)
@@ -165,7 +188,8 @@ defmodule Fika.Parser do
       function_call,
       identifier,
       exp_list,
-      record
+      record,
+      function_ref
     ])
 
   term =
@@ -352,6 +376,7 @@ defmodule Fika.Parser do
   defcombinatorp :call_args, call_args
   defcombinatorp :type, type
   defcombinatorp :type_args, type_args
+  defcombinatorp :type_args_list, type_args_list
 
   defparsec :parse, module
 

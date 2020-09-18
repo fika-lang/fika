@@ -94,4 +94,19 @@ defmodule Fika.ParserHelper do
 
     {:record, line, name, key_values}
   end
+
+  def do_to_ast({ast, line}, :function_ref) do
+    case ast do
+      [function] ->
+        {:function_ref, line, {nil, value_from_identifier(function), []}}
+      [module, function] ->
+        {:function_ref, line, {value_from_identifier(module), value_from_identifier(function), []}}
+      [module, function, arg_types] ->
+        {:function_ref, line, {value_from_identifier(module), value_from_identifier(function), arg_types}}
+    end
+  end
+
+  defp value_from_identifier({:identifier, _line, value}) do
+    value
+  end
 end

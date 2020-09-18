@@ -341,11 +341,7 @@ defmodule Fika.ParserTest do
       str = """
       {}
       """
-
-      error = "expected snake_case string while processing identifier" <>
-      " inside key value pair inside record inside expression"
-
-      assert {:error, error, "}\n", %{}, {1, 0}, 1} == Parser.expression(str)
+      assert {:error, _, "{}\n", %{}, {1, 0}, 0} = Parser.expression(str)
     end
 
     test "parses a record" do
@@ -408,6 +404,49 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
       assert result == [{:type, {1, 0, 23}, "{foo:Int,bar:String}"}]
+    end
+  end
+
+  describe "function reference" do
+    test "parses a function ref with no args" do
+      str = """
+      &foo
+      """
+
+      result = Parser.expression!(str)
+
+      assert result == {:function_ref, {1, 0, 4}, {nil, :foo, []}}
+    end
+
+    test "parses a remote function ref with no args" do
+      str = """
+      &foo.bar
+      """
+
+      result = Parser.expression!(str)
+
+      assert result == {:function_ref, {1, 0, 8}, {
+        :foo,
+        :bar,
+        []
+      }}
+    end
+
+    test "parses a function ref with arg types" do
+      str = """
+      &foo.bar(Int, Int)
+      """
+
+      result = Parser.expression!(str)
+
+      assert result == {:function_ref, {1, 0, 18}, {
+        :foo,
+        :bar,
+        [
+          "Int",
+          "Int"
+        ]
+      }}
     end
   end
 end
