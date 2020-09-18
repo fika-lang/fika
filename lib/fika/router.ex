@@ -17,8 +17,8 @@ defmodule Fika.Router do
   defp get_resp(method, path) do
     case Fika.RouteStore.get_route(method, path) do
       nil -> {404, "Not found"}
-      {module, function} ->
-        body = apply(module, function, [])
+      function ->
+        body = function.()
         {200, body}
     end
   end

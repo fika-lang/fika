@@ -18,8 +18,8 @@ defmodule Fika.RouteStore do
 
     if function_exported?(:router, :routes, 0) do
       routes = :router.routes()
-      Enum.into(routes, %{}, fn [method, path, function] ->
-          {"#{method}:#{path}", {:router, str_to_atom(function)}}
+      Enum.into(routes, %{}, fn %{method: method, path: path, handler: function} ->
+          {"#{method}:#{path}", function}
       end)
     else
       Logger.error "Router has no function routes/0"
@@ -40,11 +40,5 @@ defmodule Fika.RouteStore do
 
   def list_routes do
     Agent.get(__MODULE__, fn routes -> routes end)
-  end
-
-  defp str_to_atom(str) do
-    str
-    |> to_string()
-    |> String.to_atom()
   end
 end

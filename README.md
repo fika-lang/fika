@@ -114,11 +114,14 @@ Fika comes with a webserver which allows you to quickly create HTTP request
 handlers. By default, Fika looks for routes in a function called
 `router.routes()`, so you need to define that first:
 
+Note: This webserver is a prototype for now and only responds with strings and
+a 200 status code.
+
 ```elixir
 # Inside router.fi
-fn routes : List(List(String)) do
+fn routes : List({method: String, path: String, handler: Fn(->String)}) do
   [
-    ["GET", "/", "greet"]
+    {method: "GET", path: "/", handler: &greet}
   ]
 end
 

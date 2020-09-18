@@ -1,7 +1,7 @@
-fn routes : List(List(String)) do
+fn routes : List({method: String, path: String, handler: Fn(->String)}) do
   [
-    ["GET", "/", "hello"],
-    ["GET", "/foo", "bar"]
+    {method: "GET", path: "/", handler: &hello},
+    {method: "GET", path: "/foo", handler: &bar}
   ]
 end
 
@@ -9,6 +9,6 @@ fn hello : String do
   "Hello world"
 end
 
-fn bar: String do
+fn bar : String do
   "Bar"
 end
