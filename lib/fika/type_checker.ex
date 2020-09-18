@@ -140,6 +140,33 @@ defmodule Fika.TypeChecker do
     end
   end
 
+  # Function ref
+  def infer_exp(env, {:function_ref, _, {module, function_name, arg_types}}) do
+    Logger.debug "Inferring type of function: #{function_name}"
+
+    module_name = module || Env.current_module(env)
+    signature = get_signature(module_name, function_name, arg_types)
+
+    result =
+      if module_name == Env.current_module(env) && !Env.known_function?(env, signature) do
+        Logger.debug "Checking unknown function #{signature} in module: #{module_name}"
+        case check_by_signature(env, signature) do
+          {:ok, _, _} = result -> result
+          error -> error
+        end
+      else
+        get_type_by_signature(env, signature)
+      end
+
+    case result do
+      {:ok, type, env} ->
+        args = Enum.join(arg_types, ",")
+        {:ok, "Fn(#{args}->#{type})", env}
+      error ->
+        error
+    end
+  end
+
   defp do_infer_key_values(key_values, env) do
     Enum.reduce_while(key_values, {:ok, [], env}, fn {k, v}, {:ok, acc, env} ->
       case infer_exp(env, v) do

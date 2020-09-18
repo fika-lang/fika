@@ -79,6 +79,17 @@ defmodule Fika.ErlTranslate do
     {:map, line, k_vs}
   end
 
+  defp translate_exp({:function_ref, {line, _, _}, {module, function, arg_types}}) do
+    arity = length(arg_types)
+    f =
+      if module do
+        {:function, {:atom, line, module}, {:atom, line, function}, {:integer, line, arity}}
+      else
+        {:function, function, arity}
+      end
+    {:fun, line, f}
+  end
+
   defp add_record_meta(k_vs, name, line) do
     name =
       if name do

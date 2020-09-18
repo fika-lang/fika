@@ -83,9 +83,9 @@ defmodule Fika.Parser do
 
   function_ref =
     ignore(string("&"))
-    |> optional(identifier |> ignore(string(".")))
+    |> wrap(optional(identifier |> ignore(string("."))))
     |> concat(identifier)
-    |> optional(wrap(function_ref_type_parens))
+    |> wrap(optional(function_ref_type_parens))
     |> Helper.to_ast(:function_ref)
 
   list_rest =

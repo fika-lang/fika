@@ -183,4 +183,30 @@ defmodule Fika.TypeCheckerTest do
       assert {:error, "Unknown variable: x"} = TypeChecker.infer_exp(Env.init(), ast)
     end
   end
+
+  describe "function reference" do
+    test "with args" do
+      str = "&bar.sum(Int, Int)"
+      ast = Fika.Parser.expression!(str)
+
+      env =
+        Env.init()
+        |> Env.init_module_env("test", ast)
+        |> Env.add_function_type("bar.sum(Int,Int)", "Int")
+
+      assert {:ok, "Fn(Int,Int->Int)", _} = TypeChecker.infer_exp(env, ast)
+    end
+
+    test "without args" do
+      str = "&bar.sum"
+      ast = Fika.Parser.expression!(str)
+
+      env =
+        Env.init()
+        |> Env.init_module_env("test", ast)
+        |> Env.add_function_type("bar.sum()", "Int")
+
+      assert {:ok, "Fn(->Int)", _} = TypeChecker.infer_exp(env, ast)
+    end
+  end
 end

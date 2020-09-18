@@ -74,4 +74,24 @@ defmodule Fika.ErlTranslateTest do
         {:map_field_assoc, 1, {:atom, 1, :foo}, {:integer, 1, 1}}
     ]}
   end
+
+  describe "function reference" do
+    test "with module" do
+      str = "&my_module.foo(Int, Int)"
+      ast = Parser.expression!(str)
+      result = ErlTranslate.translate_expression(ast)
+
+      assert result == {:fun, 1,
+        {:function, {:atom, 1, :my_module}, {:atom, 1, :foo}, {:integer, 1, 2}}}
+    end
+
+    test "without module" do
+      str = "&foo(Int, Int)"
+      ast = Parser.expression!(str)
+      result = ErlTranslate.translate_expression(ast)
+
+      assert result == {:fun, 1,
+        {:function, :foo, 2}}
+    end
+  end
 end
