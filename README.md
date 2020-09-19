@@ -156,3 +156,9 @@ mix escript.build
 
 Now open `http://localhost:6060` in the browser to see "Hello world" served
 by Fika.
+
+### Fika together!
+
+If you'd like to talk to us and join the Fika community, please consider joining
+our [Discord server](https://discord.gg/zNs6Gs5). That's the best place to
+ask questions and get guidance on contributing to Fika.
