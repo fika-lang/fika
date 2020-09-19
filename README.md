@@ -5,7 +5,7 @@ It is statically typed, functional and runs on the BEAM (Erlang VM).
 Fika is designed for building and maintaining scalable web apps without
 compromising on programmer ergonomics.
 
-Project status: Actively developed. Not ready for production.
+Project status: Actively developed. Not ready for production use or HackerNews.
 
 ### Syntax
 
