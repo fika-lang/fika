@@ -161,6 +161,6 @@ by Fika.
 
 ### Fika together!
 
-If you'd like to talk to us and join the Fika community, please consider joining
+If you'd like to be part of the Fika community, please consider joining
 our [Discord server](https://discord.gg/zNs6Gs5). That's the best place to
-ask questions and get guidance on contributing to Fika.
+ask questions or get guidance on contributing to Fika.
