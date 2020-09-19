@@ -9,6 +9,11 @@ defmodule Fika.Parser do
       string("\t")
     ])
 
+  comment =
+    string("#")
+    |> repeat(utf8_char([not: ?\n]))
+    |> string("\n")
+
   vertical_space =
     choice([
       string("\r"),
@@ -16,7 +21,7 @@ defmodule Fika.Parser do
     ])
 
   space =
-    choice([vertical_space, horizontal_space])
+    choice([vertical_space, horizontal_space, comment])
     |> label("space or newline")
 
   require_space =

@@ -62,6 +62,8 @@ Data types - integers, strings, lists and records.
 Operators - assignment and arithmetic.
 
 ```elixir
+# This is a comment
+
 # Type: Int
 a = 40
 b = 2

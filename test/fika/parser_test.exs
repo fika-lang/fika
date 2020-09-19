@@ -449,4 +449,63 @@ defmodule Fika.ParserTest do
       }}
     end
   end
+
+  describe "comments" do
+    test "before function def" do
+      str = """
+      # This is a comment
+      fn foo do
+        123
+      end
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+
+      assert result == [
+        {:function, [position: {4, 36, 39}],
+          {:foo, [], {:type, {2, 20, 26}, "Nothing"}, [{:integer, {3, 30, 35}, 123}]}}
+      ]
+    end
+
+    test "At end of line" do
+      str = """
+      fn foo do # Comment 1
+        123 # Comment 2
+      end # Comment 3
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+
+      assert result == [
+        {:function, [position: {3, 40, 43}],
+          {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 22, 27}, 123}]}}
+      ]
+    end
+
+    test "Can't appear in between characters" do
+      str = """
+      fn foo #Comment do
+        123
+      end
+      """
+
+      assert {:error, _error, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+    end
+
+    test "Strings can have # in them" do
+      str = """
+      fn foo do
+        "foo#bar"
+      end
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+
+      assert result == [
+        {:function, [position: {3, 22, 25}],
+          {:foo, [], {:type, {1, 0, 6}, "Nothing"},
+            [{:string, {2, 10, 21}, "foo#bar"}]}}
+      ]
+    end
+  end
 end
