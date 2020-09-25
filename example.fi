@@ -17,3 +17,7 @@ end
 fn sum_ref : Fn(Int, Int -> Int) do
   &sum(Int, Int)
 end
+
+fn bool : Bool do
+  true
+end

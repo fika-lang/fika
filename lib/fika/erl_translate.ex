@@ -50,6 +50,10 @@ defmodule Fika.ErlTranslate do
     {:integer, line, value}
   end
 
+  defp translate_exp({:boolean, {line, _, _}, value}) do
+    {:atom, line, value}
+  end
+
   defp translate_exp({{:=, {line, _, _}}, pattern, exp}) do
     {:match, line, translate_exp(pattern), translate_exp(exp)}
   end

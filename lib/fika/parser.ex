@@ -64,6 +64,14 @@ defmodule Fika.Parser do
     |> label("integer")
     |> Helper.to_ast(:integer)
 
+  boolean =
+    choice([
+      string("true"),
+      string("false")
+    ])
+    |> label("boolean")
+    |> Helper.to_ast(:boolean)
+
   string_exp =
     ignore(string("\""))
     |> repeat(choice([string("\\\""), utf8_char([not: ?"])]))
@@ -188,6 +196,7 @@ defmodule Fika.Parser do
   factor =
     choice([
       integer,
+      boolean,
       string_exp,
       exp_paren,
       function_call,

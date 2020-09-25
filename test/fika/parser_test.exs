@@ -11,6 +11,22 @@ defmodule Fika.ParserTest do
     assert result ==  [{:integer, {1, 0, 3}, 123}]
   end
 
+  describe "boolean" do
+    test "true" do
+      str = "true"
+  
+      result = Parser.expression!(str)
+      assert result ==  {:boolean, {1, 0, 4}, true}
+    end
+  
+    test "false" do
+      str = "false"
+  
+      result = Parser.expression!(str)
+      assert result ==  {:boolean, {1, 0, 5}, false}
+    end
+  end
+
   describe "arithmetic" do
     test "arithmetic with add and mult" do
       str = """
