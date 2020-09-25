@@ -94,4 +94,12 @@ defmodule Fika.ErlTranslateTest do
         {:function, :foo, 2}}
     end
   end
+
+  test "boolean" do
+    str = "true"
+    ast = Parser.expression!(str)
+    result = ErlTranslate.translate_expression(ast)
+  
+    assert result == {:atom, 1, true}
+  end
 end

@@ -76,6 +76,12 @@ defmodule Fika.TypeChecker do
     {:ok, "Int", env}
   end
 
+  # Booleans
+  def infer_exp(env, {:boolean, _line, boolean}) do
+    Logger.debug "Boolean #{boolean} found. Type: Bool"
+    {:ok, "Bool", env}
+  end
+  
   # Variables
   def infer_exp(env, {:identifier, _line, name}) do
     type = Env.scope_get(env, name)
