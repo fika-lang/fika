@@ -1,11 +1,26 @@
-<img src="https://github.com/fika-lang/assets/blob/master/logo.png?raw=true" width="150"/>
+<img src="https://github.com/fika-lang/assets/blob/master/logo.png?raw=true" width="150"/> &nbsp; ![](https://img.shields.io/github/forks/fika-lang/fika?style=social) ![](https://img.shields.io/github/stars/fika-lang/fika?style=social) ![](https://img.shields.io/github/watchers/fika-lang/fika?style=social) <br>
+
+![](https://img.shields.io/github/repo-size/fika-lang/fika) ![](https://img.shields.io/github/license/fika-lang/fika?color=red)<br>
+![](https://img.shields.io/github/issues/fika-lang/fika?color=green) ![](https://img.shields.io/github/issues-pr/fika-lang/fika?color=green) ![](https://img.shields.io/github/downloads/fika-lang/fika/total) ![](https://img.shields.io/github/last-commit/fika-lang/fika) ![](https://img.shields.io/github/contributors/fika-lang/fika)
+
+---
 
 Fika is a modern programming language for the web.
 It is statically typed, functional and runs on the BEAM (Erlang VM).
 Fika is designed for building and maintaining scalable web apps without
 compromising on programmer ergonomics.
 
-Project status: Actively developed. Not ready for production use or HackerNews.
+**Project status**: Actively developed. Not ready for production use or HackerNews.
+
+### Clone git repository
+
+```sh
+    $ Git clone "https://github.com/fika-lang/fika"
+```
+
+You can run and edit the algorithms or contribute to them using [Gitpod.io](https://www.gitpod.io/), a free online development environment, with a single click.
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](http://gitpod.io/#https://github.com/fika-lang/fika)
 
 ### Syntax
 
@@ -87,7 +102,7 @@ Elixir. Next, clone this repo, cd into the directory and then follow the below i
 
 #### Using Elixir shell
 
-```
+```sh
 # Install dependencies and run the Elixir shell
 mix deps.get
 iex -S mix
@@ -102,7 +117,7 @@ iex -S mix
 
 #### Using `fika` executable
 
-```
+```sh
 # Create the executable
 mix escript.build
 
@@ -136,7 +151,7 @@ Now start the webserver in one of two ways:
 
 #### Using Elixir shell
 
-```
+```sh
 # router.fi is in the `examples` folder
 > Fika.start("examples")
 
@@ -146,7 +161,7 @@ Now start the webserver in one of two ways:
 
 #### Using `fika` executable
 
-```
+```sh
 # Create the executable
 mix escript.build
 
@@ -164,3 +179,28 @@ by Fika.
 If you'd like to be part of the Fika community, please consider joining
 our [Discord server](https://discord.gg/zNs6Gs5). That's the best place to
 ask questions or get guidance on contributing to Fika.
+
+## License
+
+Licensed under the [MIT License](LICENSE)
+
+## Contributors
+
+| <a href="http://emilsoman.com/"><img src="https://avatars.githubusercontent.com/emilsoman" width="150px" height="150px" /></a> |
+| :----------------------------------------------------------------------------------------------------------------------------: |
+|                                            **[Emil Soman](http://emilsoman.com/)**                                             |
+
+<hr/>
+
+<p align="center">
+
+```bash
+ _____ _                 _     __   __
+|_   _| |               | |    \ \ / /
+  | | | |__   __ _ _ __ | | __  \ V /___  _   _
+  | | | '_ \ / _` | '_ \| |/ /   \ // _ \| | | |
+  | | | | | | (_| | | | |   <    | | (_) | |_| |
+  \_/ |_| |_|\__,_|_| |_|_|\_\   \_/\___/ \__,_|
+```
+
+</p>
