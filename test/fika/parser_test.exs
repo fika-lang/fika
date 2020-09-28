@@ -26,7 +26,6 @@ defmodule Fika.ParserTest do
       assert result ==  {:boolean, {1, 0, 5}, false}
     end
   end
-
   describe "arithmetic" do
     test "arithmetic with add and mult" do
       str = """
@@ -216,6 +215,21 @@ defmodule Fika.ParserTest do
           }
         }
       ]
+    end
+  end
+
+  describe "if-else expression" do
+    test "simple if-else" do
+      str = """
+      if 1 + 2 do
+        a = 1
+        b = 2
+      else
+        c = 3
+      end
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.exp_if_else(str)
     end
   end
 
