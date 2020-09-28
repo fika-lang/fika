@@ -384,6 +384,24 @@ defmodule Fika.Parser do
     |> label("function definition")
     |> Helper.to_ast(:function_def)
 
+  exp_if_else =
+    allow_space
+    |> ignore(string("if"))
+    |> concat(require_space)
+    |> parsec(:exp)
+    |> concat(require_space)
+    |> ignore(string("do"))
+    |> concat(require_space)
+    |> times(exp, min: 1)
+    |> concat(require_space)
+    |> ignore(string("else"))
+    |> concat(require_space)
+    |> times(exp, min: 1)
+    |> concat(require_space)
+    |> ignore(string("end"))
+    |> label("if-else expression")
+    |> Helper.to_ast(:exp_if_else)
+
   module =
     function_def
     |> times(min: 1)
@@ -415,5 +433,6 @@ defmodule Fika.Parser do
   # For testing
   defparsec :expression, exp |> concat(allow_space) |> eos()
   defparsec :function_def, function_def
+  defparsec :exp_if_else, exp_if_else
   defparsec :type_str, parse_type |> concat(allow_space) |> eos()
 end
