@@ -199,6 +199,24 @@ defmodule Fika.Parser do
     |> wrap(call_args)
     |> ignore(string(")"))
 
+  exp_if_else =
+    allow_space
+    |> ignore(string("if"))
+    |> concat(require_space)
+    |> parsec(:exp)
+    |> concat(require_space)
+    |> ignore(string("do"))
+    |> concat(require_space)
+    |> wrap(parsec(:exps))
+    |> concat(require_space)
+    |> ignore(string("else"))
+    |> concat(require_space)
+    |> wrap(parsec(:exps))
+    |> concat(require_space)
+    |> ignore(string("end"))
+    |> label("if-else expression")
+    |> Helper.to_ast(:exp_if_else)
+
   literal_exps =
     choice([
       integer,
@@ -206,7 +224,8 @@ defmodule Fika.Parser do
       string_exp,
       exp_list,
       record,
-      function_ref
+      function_ref,
+      exp_if_else
     ])
 
   non_literal_exps =
@@ -384,24 +403,6 @@ defmodule Fika.Parser do
     |> label("function definition")
     |> Helper.to_ast(:function_def)
 
-  exp_if_else =
-    allow_space
-    |> ignore(string("if"))
-    |> concat(require_space)
-    |> concat(exp)
-    |> concat(require_space)
-    |> ignore(string("do"))
-    |> concat(require_space)
-    |> wrap(exps)
-    |> concat(require_space)
-    |> ignore(string("else"))
-    |> concat(require_space)
-    |> wrap(exps)
-    |> concat(require_space)
-    |> ignore(string("end"))
-    |> label("if-else expression")
-    |> Helper.to_ast(:exp_if_else)
-
   module =
     function_def
     |> times(min: 1)
@@ -433,6 +434,5 @@ defmodule Fika.Parser do
   # For testing
   defparsec :expression, exp |> concat(allow_space) |> eos()
   defparsec :function_def, function_def
-  defparsec :exp_if_else, exp_if_else
   defparsec :type_str, parse_type |> concat(allow_space) |> eos()
 end
