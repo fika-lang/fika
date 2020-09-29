@@ -4,6 +4,7 @@ defmodule Fika.TypeCheckerTest do
     Env,
     TypeChecker
   }
+  alias Fika.Types.FunctionRef
 
   test "infer type of integer literals" do
     str = "123"
@@ -194,7 +195,8 @@ defmodule Fika.TypeCheckerTest do
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("bar.sum(Int,Int)", "Int")
 
-      assert {:ok, "Fn(Int,Int->Int)", _} = TypeChecker.infer_exp(env, ast)
+      assert {:ok, %FunctionRef{arg_types: ["Int", "Int"],
+        return_type: "Int"}, _} = TypeChecker.infer_exp(env, ast)
     end
 
     test "without args" do
@@ -206,23 +208,81 @@ defmodule Fika.TypeCheckerTest do
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("bar.sum()", "Int")
 
-      assert {:ok, "Fn(->Int)", _} = TypeChecker.infer_exp(env, ast)
+      assert {:ok, %FunctionRef{arg_types: [], return_type: "Int"}, _} =
+        TypeChecker.infer_exp(env, ast)
     end
   end
-  
+
   describe "boolean" do
     test "true" do
       str = "true"
       ast = Fika.Parser.expression!(str)
-  
+
       assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
-  
+
     test "false" do
       str = "false"
       ast = Fika.Parser.expression!(str)
-  
+
       assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+  end
+
+  describe "function calls using reference" do
+    test "valid reference" do
+      str = """
+      fn foo do
+        x = &test2.bar(String, Int)
+        x.("hello", 123)
+      end
+      """
+
+      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+
+      env =
+        Env.init()
+        |> Env.init_module_env("test", ast)
+        |> Env.add_function_type("test2.bar(String,Int)", "Bool")
+
+      assert {:ok, "Bool", _} = TypeChecker.infer(function, env)
+    end
+
+    test "identifier is not a reference" do
+      str = """
+      fn foo do
+        x = 123
+        x.()
+      end
+      """
+
+      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+
+      env =
+        Env.init()
+        |> Env.init_module_env("test", ast)
+
+      assert {:error, "Expected a function reference, but got type: Int"} =
+        TypeChecker.infer(function, env)
+    end
+
+    test "function ref when given wrong types" do
+      str = """
+      fn foo do
+        x = &test2.bar(String, Int)
+        x.(123)
+      end
+      """
+
+      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+
+      env =
+        Env.init()
+        |> Env.init_module_env("test", ast)
+        |> Env.add_function_type("test2.bar(String,Int)", "Bool")
+
+      error = "Expected function reference to be called with arguments (String,Int), but it was called with arguments (Int)"
+      assert {:error, ^error} = TypeChecker.infer(function, env)
     end
   end
 end

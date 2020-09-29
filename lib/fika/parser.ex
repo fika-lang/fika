@@ -193,17 +193,35 @@ defmodule Fika.Parser do
     |> label("record")
     |> Helper.to_ast(:record)
 
-  factor =
+  function_ref_call =
+    ignore(string("."))
+    |> ignore(string("("))
+    |> wrap(call_args)
+    |> ignore(string(")"))
+
+  literal_exps =
     choice([
       integer,
       boolean,
       string_exp,
-      exp_paren,
-      function_call,
-      identifier,
       exp_list,
       record,
       function_ref
+    ])
+
+  non_literal_exps =
+    choice([
+      exp_paren,
+      function_call,
+      identifier
+    ])
+    |> optional(function_ref_call)
+    |> Helper.to_ast(:function_ref_call)
+
+  factor =
+    choice([
+      literal_exps,
+      non_literal_exps
     ])
 
   term =

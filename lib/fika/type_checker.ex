@@ -1,5 +1,6 @@
 defmodule Fika.TypeChecker do
   alias Fika.Env
+  alias Fika.Types.FunctionRef
   require Logger
 
   # Given the AST of a module, this function type checks each of the
@@ -52,6 +53,7 @@ defmodule Fika.TypeChecker do
     env
     |> infer_block(exprs)
     |> add_function_type(name, args)
+    |> to_str()
   end
 
   def infer_block(env, []) do
@@ -81,7 +83,7 @@ defmodule Fika.TypeChecker do
     Logger.debug "Boolean #{boolean} found. Type: Bool"
     {:ok, "Bool", env}
   end
-  
+
   # Variables
   def infer_exp(env, {:identifier, _line, name}) do
     type = Env.scope_get(env, name)
@@ -100,6 +102,28 @@ defmodule Fika.TypeChecker do
     module_name = module || Env.current_module(env)
     Logger.debug "Inferring type of function: #{name}"
     infer_args(env, exp, module_name)
+  end
+
+  # Function calls using reference
+  # exp has to be a function ref type
+  def infer_exp(env, {:call, {exp, _line}, args}) do
+    case infer_exp(env, exp) do
+      {:ok, %FunctionRef{arg_types: arg_types, return_type: type}, env} ->
+        case do_infer_args_without_name(env, args) do
+          {:ok, ^arg_types, env} ->
+            {:ok, type, env}
+          {:ok, other_arg_types, _env} ->
+            error = "Expected function reference to be called with" <>
+              " arguments (#{Enum.join(arg_types, ",")}), but it was called " <>
+                "with arguments (#{Enum.join(other_arg_types, ",")})"
+
+            {:error, error}
+        end
+      {:ok, type, _} ->
+        {:error, "Expected a function reference, but got type: #{type}"}
+      error ->
+        error
+    end
   end
 
   # =
@@ -166,8 +190,8 @@ defmodule Fika.TypeChecker do
 
     case result do
       {:ok, type, env} ->
-        args = Enum.join(arg_types, ",")
-        {:ok, "Fn(#{args}->#{type})", env}
+        type = %FunctionRef{arg_types: arg_types, return_type: type}
+        {:ok, type, env}
       error ->
         error
     end
@@ -242,6 +266,19 @@ defmodule Fika.TypeChecker do
     end)
   end
 
+  defp do_infer_args_without_name(env, args) do
+    Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, type_acc, env} ->
+      case infer_exp(env, arg) do
+        {:ok, type, env} ->
+          Logger.debug "Argument is type: #{type}"
+          {:cont, {:ok, type_acc ++ [type], env}}
+        error ->
+          Logger.debug "Argument cannot be inferred"
+          {:halt, error}
+      end
+    end)
+  end
+
   defp get_type_by_signature(env, signature) do
     type = Env.get_function_type(env, signature)
     if type do
@@ -295,6 +332,15 @@ defmodule Fika.TypeChecker do
       check(function, env)
     else
       {:error, "Undefined function: #{signature} in module #{module}"}
+    end
+  end
+
+  defp to_str(result) do
+    case result do
+      {:ok, type, env} ->
+        {:ok, to_string(type), env}
+      error ->
+        error
     end
   end
 end

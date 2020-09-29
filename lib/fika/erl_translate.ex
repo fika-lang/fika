@@ -46,6 +46,11 @@ defmodule Fika.ErlTranslate do
     {:call, line, m_f, translate_exps(args)}
   end
 
+  # Call function ref using an identifier
+  defp translate_exp({:call, {identifier, {line, _, _}}, args}) do
+    {:call, line, translate_exp(identifier), translate_exps(args)}
+  end
+
   defp translate_exp({:integer, {line, _, _}, value}) do
     {:integer, line, value}
   end

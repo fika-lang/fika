@@ -73,6 +73,15 @@ defmodule Fika.ParserHelper do
     {:call, {name, line}, args, module_alias}
   end
 
+  def do_to_ast({val, line}, :function_ref_call) do
+    case val do
+      [exp, args] ->
+        {:call, {exp, line}, args}
+      [val] ->
+        val
+    end
+  end
+
   def do_to_ast({[identifier, exp], line}, :exp_match) do
     {{:=, line}, identifier, exp}
   end

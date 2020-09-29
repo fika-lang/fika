@@ -14,14 +14,14 @@ defmodule Fika.ParserTest do
   describe "boolean" do
     test "true" do
       str = "true"
-  
+
       result = Parser.expression!(str)
       assert result ==  {:boolean, {1, 0, 4}, true}
     end
-  
+
     test "false" do
       str = "false"
-  
+
       result = Parser.expression!(str)
       assert result ==  {:boolean, {1, 0, 5}, false}
     end
@@ -522,6 +522,36 @@ defmodule Fika.ParserTest do
           {:foo, [], {:type, {1, 0, 6}, "Nothing"},
             [{:string, {2, 10, 21}, "foo#bar"}]}}
       ]
+    end
+  end
+
+  describe "call using function reference" do
+    test "using identifier" do
+      str = "foo.(x, y)"
+      result = Parser.expression!(str)
+
+      args = [
+        {:identifier, {1, 0, 6}, :x},
+        {:identifier, {1, 0, 9}, :y}
+      ]
+      assert result == {:call, {{:identifier, {1, 0, 3}, :foo}, {1, 0, 10}}, args}
+    end
+
+    test "using function call" do
+      str = "foo().(x, y)"
+      result = Parser.expression!(str)
+
+      args = [
+        {:identifier, {1, 0, 8}, :x},
+        {:identifier, {1, 0, 11}, :y}
+      ]
+      exp = {:call, {:foo, {1, 0, 5}}, [], nil}
+      assert result == {:call, {exp, {1, 0, 12}}, args}
+    end
+
+    test "using literal expression fails" do
+      str = "123.(x, y)"
+      assert {:error, _, _, _, _, _} = Parser.expression(str)
     end
   end
 end
