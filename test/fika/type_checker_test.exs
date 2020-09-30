@@ -268,6 +268,20 @@ defmodule Fika.TypeCheckerTest do
       ast = Fika.Parser.expression!(str)
       {:halt, _if_type, _else_type} = TypeChecker.infer_exp(Env.init(), ast)
     end
+
+    test "with multiple expressions in blocks" do
+      str =  """
+      if true do
+        a = "done"
+        a
+      else
+        "500"
+      end
+      """
+
+      ast = Fika.Parser.expression!(str)
+      {:ok, "String", _env} = TypeChecker.infer_exp(Env.init(), ast)
+    end
   end
 
   describe "function calls using reference" do
