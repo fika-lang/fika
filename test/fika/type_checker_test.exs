@@ -229,6 +229,47 @@ defmodule Fika.TypeCheckerTest do
     end
   end
 
+  describe "if-else expression" do
+    test "halts when condition expression has non-boolean type" do
+      str =  """
+      if "true" do
+        "foo"
+      else
+        "bar"
+      end
+      """
+
+      ast = Fika.Parser.expression!(str)
+      {:halt, {:ok, "String", _}} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "completes when if and else blocks have same return type" do
+      str =  """
+      if true do
+        "done"
+      else
+        "500"
+      end
+      """
+
+      ast = Fika.Parser.expression!(str)
+      {:ok, "String", _env} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "halts when if and else blocks have different return types" do
+      str =  """
+      if false do
+        "done"
+      else
+        500
+      end
+      """
+
+      ast = Fika.Parser.expression!(str)
+      {:halt, _if_type, _else_type} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+  end
+
   describe "function calls using reference" do
     test "valid reference" do
       str = """
