@@ -221,13 +221,16 @@ defmodule Fika.TypeChecker do
   defp infer_if_else_blocks(env, if_block, else_block) do
     if_type = infer_block(env, if_block)
     else_type = infer_block(env, else_block)
-    unless if_type == else_type do
+
+    unless if_else_block_type_matches?(if_type, else_type) do
       Logger.debug("if and else block have different types")
       {:halt, if_type, else_type}
     else
       if_type
     end
   end
+
+  defp if_else_block_type_matches?({_, if_type, _}, {_, else_type, _}), do: if_type == else_type
 
   defp do_infer_key_values(key_values, env) do
     Enum.reduce_while(key_values, {:ok, [], env}, fn {k, v}, {:ok, acc, env} ->
