@@ -240,7 +240,9 @@ defmodule Fika.TypeCheckerTest do
       """
 
       ast = Fika.Parser.expression!(str)
-      {:halt, {:ok, "String", _}} = TypeChecker.infer_exp(Env.init(), ast)
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      {:halt, {:ok, "String", _}} = TypeChecker.infer_exp(env, ast)
     end
 
     test "completes when if and else blocks have same return type" do
@@ -253,7 +255,9 @@ defmodule Fika.TypeCheckerTest do
       """
 
       ast = Fika.Parser.expression!(str)
-      {:ok, "String", _env} = TypeChecker.infer_exp(Env.init(), ast)
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      {:ok, "String", _env} = TypeChecker.infer_exp(env, ast)
     end
 
     test "halts when if and else blocks have different return types" do
@@ -266,7 +270,9 @@ defmodule Fika.TypeCheckerTest do
       """
 
       ast = Fika.Parser.expression!(str)
-      {:halt, _if_type, _else_type} = TypeChecker.infer_exp(Env.init(), ast)
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      {:halt, _if_type, _else_type} = TypeChecker.infer_exp(env, ast)
     end
 
     test "with multiple expressions in blocks" do
@@ -280,7 +286,9 @@ defmodule Fika.TypeCheckerTest do
       """
 
       ast = Fika.Parser.expression!(str)
-      {:ok, "String", _env} = TypeChecker.infer_exp(Env.init(), ast)
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      {:ok, "String", _env} = TypeChecker.infer_exp(env, ast)
     end
   end
 
