@@ -38,7 +38,9 @@ defmodule Fika.Parser do
     choice([
       string("fn"),
       string("do"),
-      string("end")
+      string("end"),
+      string("if"),
+      string("else")
     ])
 
   identifier_str =
