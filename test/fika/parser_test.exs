@@ -229,7 +229,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      result = Parser.expression!(str)
+      {{:if, _line}, _condition, _true_block, _false_block} = Parser.expression!(str)
     end
   end
 
