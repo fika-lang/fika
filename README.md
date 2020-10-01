@@ -82,6 +82,26 @@ list_of_ints = [1, 2, 3]
 record = {foo: 123}
 ```
 
+### If-Else expressions
+An if-else expression in Fika looks like this:
+
+```
+if true do
+  a = "we have if-else now!"
+  200
+else
+  404
+end
+```
+
+if-else expression has three main parts:
+1. conditional expression: The conditional expression must always return a `Bool` type.
+2. if block: The if block of the expression can have multiple expression. The return type of the block is same as that of the last expression in the block.
+3. else block: The else block of the expression can have multiple expression. The return type of the block is same as that of the last expression in the block.
+
+Note: the if block and else block should always have the same return type
+
+
 ### Running Fika programs
 
 Fika is written in Elixir, so make sure you have that installed.
