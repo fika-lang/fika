@@ -202,8 +202,7 @@ defmodule Fika.Parser do
     |> ignore(string(")"))
 
   exp_if_else =
-    allow_space
-    |> ignore(string("if"))
+    ignore(string("if"))
     |> concat(require_space)
     |> parsec(:exp)
     |> concat(require_space)
