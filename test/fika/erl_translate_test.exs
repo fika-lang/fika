@@ -99,7 +99,26 @@ defmodule Fika.ErlTranslateTest do
     str = "true"
     ast = Parser.expression!(str)
     result = ErlTranslate.translate_expression(ast)
-  
+
     assert result == {:atom, 1, true}
+  end
+
+  test "if-else expression" do
+    str =  """
+    if true do
+      "foo"
+    else
+      "bar"
+    end
+    """
+
+    ast = Fika.Parser.expression!(str)
+    result = ErlTranslate.translate_expression(ast) |> IO.inspect()
+    assert {:case, {5, 32, 35}, {:atom, 1, true},
+      [
+        {:clause, {2, 11, 18}, {:atom, {2, 11, 18}, true}, [], [{:string, 2, 'foo'}]},
+        {:clause, {4, 24, 31}, {:atom, {4, 24, 31}, false}, [], [{:string, 4, 'bar'}]}
+      ]
+    } = result
   end
 end
