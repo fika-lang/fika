@@ -212,25 +212,28 @@ defmodule Fika.TypeChecker do
       {:ok, "Bool", env} ->
         Logger.debug("if-else condition has return type: Bool")
         {:ok, "Bool", env}
+
       {_, inferred_type, _env} = error ->
-        Logger.debug("if-else condition has return type: #{inferred_type}")
-        {:halt, error}
+        Logger.debug("if-else condition has wrong return type: #{inferred_type}")
+        {:error, "Wrong type for if condition. Expected: Bool, Got: #{inferred_type}"}
     end
   end
 
   defp infer_if_else_blocks(env, if_block, else_block) do
-    if_type = infer_block(env, if_block)
-    else_type = infer_block(env, else_block)
+    {_, if_type_val, _} = if_type = infer_block(env, if_block)
+    {_, else_type_val, _} = else_type = infer_block(env, else_block)
 
-    unless if_else_block_type_matches?(if_type, else_type) do
+    unless if_type_val == else_type_val do
       Logger.debug("if and else block have different types")
-      {:halt, if_type, else_type}
+
+      error = "Expected if and else blocks to have same return type. " <>
+        "Got #{if_type_val} and #{else_type_val}"
+
+      {:error, error}
     else
       if_type
     end
   end
-
-  defp if_else_block_type_matches?({_, if_type, _}, {_, else_type, _}), do: if_type == else_type
 
   defp do_infer_key_values(key_values, env) do
     Enum.reduce_while(key_values, {:ok, [], env}, fn {k, v}, {:ok, acc, env} ->
