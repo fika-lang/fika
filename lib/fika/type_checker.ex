@@ -213,7 +213,7 @@ defmodule Fika.TypeChecker do
         Logger.debug("if-else condition has return type: Bool")
         {:ok, "Bool", env}
 
-      {_, inferred_type, _env} = error ->
+      {_, inferred_type, _env} ->
         Logger.debug("if-else condition has wrong return type: #{inferred_type}")
         {:error, "Wrong type for if condition. Expected: Bool, Got: #{inferred_type}"}
     end
