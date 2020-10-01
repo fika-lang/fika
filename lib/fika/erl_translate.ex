@@ -99,7 +99,7 @@ defmodule Fika.ErlTranslate do
     {:fun, line, f}
   end
 
-  defp translate_exp({{:if, line}, condition, if_block, else_block}) do
+  defp translate_exp({{:if, {line, _, _}}, condition, if_block, else_block}) do
     {
       :case,
       line,
