@@ -100,18 +100,15 @@ defmodule Fika.ErlTranslate do
   end
 
   defp translate_exp({{:if, line}, condition, if_block, else_block}) do
-    if_erl_clause_expressions = translate_if_else_blocks(true, if_block)
-    else_erl_clause_expressions = translate_if_else_blocks(false, else_block)
     {
       :case,
       line,
       translate_exp(condition),
-      [if_erl_clause_expressions, else_erl_clause_expressions]
+      [
+        {:clause, line, [{:atom, line, true}], [], translate_exps(if_block)},
+        {:clause, line, [{:atom, line, false}], [], translate_exps(else_block)}
+      ]
     }
-  end
-
-  defp translate_if_else_blocks(boolean_value, [{_, start_line, _} | _] = block) do
-    {:clause, start_line, {:atom, start_line, boolean_value}, [] ,translate_exps(block)}
   end
 
   defp add_record_meta(k_vs, name, line) do

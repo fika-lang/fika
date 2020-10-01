@@ -113,11 +113,11 @@ defmodule Fika.ErlTranslateTest do
     """
 
     ast = Fika.Parser.expression!(str)
-    result = ErlTranslate.translate_expression(ast) |> IO.inspect()
+    result = ErlTranslate.translate_expression(ast)
     assert {:case, {5, 32, 35}, {:atom, 1, true},
       [
-        {:clause, {2, 11, 18}, {:atom, {2, 11, 18}, true}, [], [{:string, 2, 'foo'}]},
-        {:clause, {4, 24, 31}, {:atom, {4, 24, 31}, false}, [], [{:string, 4, 'bar'}]}
+        {:clause, {5, 32, 35}, [{:atom, {5, 32, 35}, true}], [], [{:string, 2, 'foo'}]},
+        {:clause, {5, 32, 35}, [{:atom, {5, 32, 35}, false}], [], [{:string, 4, 'bar'}]}
       ]
     } = result
   end
