@@ -221,7 +221,7 @@ defmodule Fika.ParserTest do
   describe "if-else expression" do
     test "simple if-else" do
       str = """
-      if 1 + 2 do
+      if true do
         a = 1
         b = 2
       else
@@ -229,7 +229,20 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {{:if, _line}, _condition, _true_block, _false_block} = Parser.expression!(str)
+      assert {
+        {:if, {6, 40, 43}}, parsed_condition, parsed_if_block, parsed_else_block,
+      } = Parser.expression!(str)
+
+      assert {:boolean, {1, 0, 7}, true} = parsed_condition
+
+      assert [
+        {{:=, {2, 11, 18}}, {:identifier, {2, 11, 14}, :a}, {:integer, {2, 11, 18}, 1}},
+        {{:=, {3, 19, 26}}, {:identifier, {3, 19, 22}, :b}, {:integer, {3, 19, 26}, 2}}
+      ] = parsed_if_block
+
+      assert [
+        {{:=, {5, 32, 39}}, {:identifier, {5, 32, 35}, :c}, {:integer, {5, 32, 39}, 3}}
+      ] = parsed_else_block
     end
   end
 

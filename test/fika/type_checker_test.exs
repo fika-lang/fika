@@ -230,7 +230,7 @@ defmodule Fika.TypeCheckerTest do
   end
 
   describe "if-else expression" do
-    test "halts when condition expression has non-boolean type" do
+    test "error when condition expression has non-boolean type" do
       str =  """
       if "true" do
         "foo"
@@ -242,7 +242,10 @@ defmodule Fika.TypeCheckerTest do
       ast = Fika.Parser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
-      assert {:halt, {:ok, "String", _}} = TypeChecker.infer_exp(env, ast)
+      assert {
+        :error,
+        "Wrong type for if condition. Expected: Bool, Got: String"
+      } = TypeChecker.infer_exp(env, ast)
     end
 
     test "completes when if and else blocks have same return type" do
@@ -260,7 +263,7 @@ defmodule Fika.TypeCheckerTest do
       assert {:ok, "String", _env} = TypeChecker.infer_exp(env, ast)
     end
 
-    test "halts when if and else blocks have different return types" do
+    test "error when if and else blocks have different return types" do
       str =  """
       if false do
         "done"
@@ -272,7 +275,10 @@ defmodule Fika.TypeCheckerTest do
       ast = Fika.Parser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
-      assert {:halt, _if_type, _else_type} = TypeChecker.infer_exp(env, ast)
+      assert {
+        :error,
+        "Expected if and else blocks to have same return type. Got String and Int"
+      } = TypeChecker.infer_exp(env, ast)
     end
 
     test "with multiple expressions in blocks" do
