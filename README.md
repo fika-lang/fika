@@ -53,6 +53,17 @@ sum(40, 2)
 example.sum(40, 2)
 ```
 
+#### If-Else expressions
+An if-else expression in Fika looks like this:
+```
+if true do
+  a = "we have if-else now!"
+  200
+else
+  404
+end
+```
+
 #### Basic types and operators
 
 Fika is currently a proof of concept so its data types and operators are quite
@@ -81,26 +92,6 @@ list_of_ints = [1, 2, 3]
 # Type: {foo: Int}
 record = {foo: 123}
 ```
-
-### If-Else expressions
-An if-else expression in Fika looks like this:
-
-```
-if true do
-  a = "we have if-else now!"
-  200
-else
-  404
-end
-```
-
-if-else expression has three main parts:
-1. conditional expression: The conditional expression must always return a `Bool` type.
-2. if block: The if block of the expression can have multiple expression. The return type of the block is same as that of the last expression in the block.
-3. else block: The else block of the expression can have multiple expression. The return type of the block is same as that of the last expression in the block.
-
-Note: the if block and else block should always have the same return type
-
 
 ### Running Fika programs
 
