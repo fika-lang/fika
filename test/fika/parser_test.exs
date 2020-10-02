@@ -28,22 +28,6 @@ defmodule Fika.ParserTest do
   end
 
   describe "atom" do
-    test "parses single-char atom" do
-      # assert that for each letter in the alphabet,
-      # we generate a valid atom
-      0..25
-      |> Enum.each(fn offset ->
-        # Trick to offset from a to z
-        c = [hd('a') + offset]
-        # charlists are interpolated as strings, to offset = 1 yields 'b'
-        # which in turn is interpolated to yield str = ":b"
-        atom = :"#{c}"
-        str = ":#{atom}"
-
-        assert Parser.expression!(str) == {:atom, {1, 0, 2}, atom}
-      end)
-    end
-
     test "parses multi-char atoms" do
       atom = :foobar
       str = ":#{atom}"
