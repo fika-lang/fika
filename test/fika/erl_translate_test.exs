@@ -105,7 +105,7 @@ defmodule Fika.ErlTranslateTest do
         assert result == {:atom, 1, unquote(bool)}
       end
 
-      test "#{bool} as literal" do
+      test "#{bool} as atom" do
         str = ":#{unquote(bool)}"
         ast = Parser.expression!(str)
         result = ErlTranslate.translate_expression(ast)
