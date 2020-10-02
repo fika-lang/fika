@@ -1,5 +1,11 @@
 <img src="https://github.com/fika-lang/assets/blob/master/logo.png?raw=true" width="150"/>
 
+<a href="https://fossunited.org/" target="_blank" rel="noopener noreferrer">
+  <img src="http://fossunited.org/files/fossunited-badge.svg" alt="Supported by FOSSUnited">
+</a>
+
+-----
+
 Fika is a modern programming language for the web.
 It is statically typed, functional and runs on the BEAM (Erlang VM).
 Fika is designed for building and maintaining scalable web apps without
@@ -178,3 +184,8 @@ by Fika.
 If you'd like to be part of the Fika community, please consider joining
 our [Discord server](https://discord.gg/zNs6Gs5). That's the best place to
 ask questions or get guidance on contributing to Fika.
+
+### Thanks
+
+Fika's development is supported by its many contributors and [the grant from
+FOSSUnited](https://forum.fossunited.org/t/foss-hack-2020-results/424). Thank you!
