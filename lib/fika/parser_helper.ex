@@ -59,7 +59,6 @@ defmodule Fika.ParserHelper do
           acc <> ":#{value}"
 
         type, acc ->
-          IO.inspect(type)
           acc <> type
       end)
 

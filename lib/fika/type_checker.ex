@@ -200,7 +200,7 @@ defmodule Fika.TypeChecker do
   # Literal value
   def infer_exp(env, {:literal, _line, atom}) do
     Logger.debug "Literal value #{atom} found. Type: literal"
-    {:ok, {:literal, atom}, env}
+    {:ok, ":#{atom}", env}
   end
 
   defp do_infer_key_values(key_values, env) do
