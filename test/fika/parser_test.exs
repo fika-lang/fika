@@ -40,7 +40,7 @@ defmodule Fika.ParserTest do
         atom = :"#{c}"
         str = ":#{atom}"
 
-        assert Parser.expression!(str) == {:literal, {1, 0, 2}, atom}
+        assert Parser.expression!(str) == {:atom, {1, 0, 2}, atom}
       end)
     end
   end

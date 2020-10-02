@@ -84,7 +84,7 @@ defmodule Fika.Parser do
     |> ignore()
     |> concat(identifier)
     |> label("literal")
-    |> Helper.to_ast(:literal)
+    |> Helper.to_ast(:atom)
 
   type_args_list =
     optional(
