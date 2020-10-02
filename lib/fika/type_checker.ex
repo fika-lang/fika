@@ -220,8 +220,8 @@ defmodule Fika.TypeChecker do
   end
 
   defp infer_if_else_blocks(env, if_block, else_block) do
-    {_, if_type_val, _} = if_type = infer_block(env, if_block)
-    {_, else_type_val, _} = infer_block(env, else_block)
+    {_, if_type_val, env} = infer_block(env, if_block)
+    {_, else_type_val, _} = type = infer_block(env, else_block)
 
     unless if_type_val == else_type_val do
       Logger.debug("if and else block have different types")
@@ -231,7 +231,7 @@ defmodule Fika.TypeChecker do
 
       {:error, error}
     else
-      if_type
+      type
     end
   end
 
