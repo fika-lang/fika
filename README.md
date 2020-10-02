@@ -58,7 +58,7 @@ example.sum(40, 2)
 Fika is currently a proof of concept so its data types and operators are quite
 limited.
 
-Data types - integers, strings, booleans, lists and records.
+Data types - atoms, integers, strings, booleans, lists and records.
 Operators - assignment and arithmetic.
 
 ```elixir
