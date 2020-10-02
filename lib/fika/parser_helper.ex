@@ -22,6 +22,10 @@ defmodule Fika.ParserHelper do
     {:boolean, line, value == "true"}
   end
 
+  def do_to_ast({[condition, true_block, false_block], line}, :exp_if_else) do
+    {{:if, line}, condition, true_block, false_block}
+  end
+
   def do_to_ast({[left, bin_op, right | rest], line}, :exp_bin_op) when bin_op in ["+", "-", "*", "/"] do
     new_left = {:call, {String.to_atom(bin_op), line}, [left, right], :kernel}
     do_to_ast({[new_left | rest], line}, :exp_bin_op)

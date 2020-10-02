@@ -245,6 +245,75 @@ defmodule Fika.TypeCheckerTest do
     end
   end
 
+  describe "if-else expression" do
+    test "error when condition expression has non-boolean type" do
+      str =  """
+      if "true" do
+        "foo"
+      else
+        "bar"
+      end
+      """
+
+      ast = Fika.Parser.expression!(str)
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      assert {
+        :error,
+        "Wrong type for if condition. Expected: Bool, Got: String"
+      } = TypeChecker.infer_exp(env, ast)
+    end
+
+    test "completes when if and else blocks have same return type" do
+      str =  """
+      if true do
+        "done"
+      else
+        "500"
+      end
+      """
+
+      ast = Fika.Parser.expression!(str)
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      assert {:ok, "String", _env} = TypeChecker.infer_exp(env, ast)
+    end
+
+    test "error when if and else blocks have different return types" do
+      str =  """
+      if false do
+        "done"
+      else
+        500
+      end
+      """
+
+      ast = Fika.Parser.expression!(str)
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      assert {
+        :error,
+        "Expected if and else blocks to have same return type. Got String and Int"
+      } = TypeChecker.infer_exp(env, ast)
+    end
+
+    test "with multiple expressions in blocks" do
+      str =  """
+      if true do
+        a = "done"
+        a
+      else
+        "500"
+      end
+      """
+
+      ast = Fika.Parser.expression!(str)
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      assert {:ok, "String", _env} = TypeChecker.infer_exp(env, ast)
+    end
+  end
+
   describe "function calls using reference" do
     test "valid reference" do
       str = """

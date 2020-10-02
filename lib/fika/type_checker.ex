@@ -202,6 +202,44 @@ defmodule Fika.TypeChecker do
     Logger.debug("Atom value found. Type: #{atom}")
     {:ok, ":#{atom}", env}
   end
+  
+  # if-else expression
+  def infer_exp(env, {{:if, _line}, condition, if_block, else_block}) do
+    Logger.debug "Inferring an if-else expression"
+
+    case infer_if_else_condition(env, condition) do
+      {:ok, "Bool", env} -> infer_if_else_blocks(env, if_block, else_block)
+      error -> error
+    end
+  end
+
+  defp infer_if_else_condition(env, condition) do
+    case infer_exp(env, condition) do
+      {:ok, "Bool", env} ->
+        Logger.debug("if-else condition has return type: Bool")
+        {:ok, "Bool", env}
+
+      {_, inferred_type, _env} ->
+        Logger.debug("if-else condition has wrong return type: #{inferred_type}")
+        {:error, "Wrong type for if condition. Expected: Bool, Got: #{inferred_type}"}
+    end
+  end
+
+  defp infer_if_else_blocks(env, if_block, else_block) do
+    {_, if_type_val, env} = infer_block(env, if_block)
+    {_, else_type_val, _} = type = infer_block(env, else_block)
+
+    unless if_type_val == else_type_val do
+      Logger.debug("if and else block have different types")
+
+      error = "Expected if and else blocks to have same return type. " <>
+        "Got #{if_type_val} and #{else_type_val}"
+
+      {:error, error}
+    else
+      type
+    end
+  end
 
   defp do_infer_key_values(key_values, env) do
     Enum.reduce_while(key_values, {:ok, [], env}, fn {k, v}, {:ok, acc, env} ->
