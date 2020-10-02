@@ -38,7 +38,9 @@ defmodule Fika.Parser do
     choice([
       string("fn"),
       string("do"),
-      string("end")
+      string("end"),
+      string("if"),
+      string("else")
     ])
 
   identifier_str =
@@ -199,6 +201,23 @@ defmodule Fika.Parser do
     |> wrap(call_args)
     |> ignore(string(")"))
 
+  exp_if_else =
+    ignore(string("if"))
+    |> concat(require_space)
+    |> parsec(:exp)
+    |> concat(require_space)
+    |> ignore(string("do"))
+    |> concat(require_space)
+    |> wrap(parsec(:exps))
+    |> concat(require_space)
+    |> ignore(string("else"))
+    |> concat(require_space)
+    |> wrap(parsec(:exps))
+    |> concat(require_space)
+    |> ignore(string("end"))
+    |> label("if-else expression")
+    |> Helper.to_ast(:exp_if_else)
+
   literal_exps =
     choice([
       integer,
@@ -206,7 +225,8 @@ defmodule Fika.Parser do
       string_exp,
       exp_list,
       record,
-      function_ref
+      function_ref,
+      exp_if_else
     ])
 
   non_literal_exps =

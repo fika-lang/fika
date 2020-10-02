@@ -53,6 +53,17 @@ sum(40, 2)
 example.sum(40, 2)
 ```
 
+#### If-Else expressions
+An if-else expression in Fika looks like this:
+```
+if true do
+  a = "we have if-else now!"
+  200
+else
+  404
+end
+```
+
 #### Basic types and operators
 
 Fika is currently a proof of concept so its data types and operators are quite

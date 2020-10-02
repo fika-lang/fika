@@ -99,6 +99,18 @@ defmodule Fika.ErlTranslate do
     {:fun, line, f}
   end
 
+  defp translate_exp({{:if, {line, _, _}}, condition, if_block, else_block}) do
+    {
+      :case,
+      line,
+      translate_exp(condition),
+      [
+        {:clause, line, [{:atom, line, true}], [], translate_exps(if_block)},
+        {:clause, line, [{:atom, line, false}], [], translate_exps(else_block)}
+      ]
+    }
+  end
+
   defp add_record_meta(k_vs, name, line) do
     name =
       if name do
