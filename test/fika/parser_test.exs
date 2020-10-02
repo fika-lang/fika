@@ -8,7 +8,7 @@ defmodule Fika.ParserTest do
     """
 
     {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
-    assert result ==  [{:integer, {1, 0, 3}, 123}]
+    assert result == [{:integer, {1, 0, 3}, 123}]
   end
 
   describe "boolean" do
@@ -16,14 +16,32 @@ defmodule Fika.ParserTest do
       str = "true"
 
       result = Parser.expression!(str)
-      assert result ==  {:boolean, {1, 0, 4}, true}
+      assert result == {:boolean, {1, 0, 4}, true}
     end
 
     test "false" do
       str = "false"
 
       result = Parser.expression!(str)
-      assert result ==  {:boolean, {1, 0, 5}, false}
+      assert result == {:boolean, {1, 0, 5}, false}
+    end
+  end
+
+  describe "literal" do
+    test "parses single-char literal" do
+      # assert that for each letter in the alphabet,
+      # we generate a valid literal
+      0..25
+      |> Enum.each(fn offset ->
+        # Trick to offset from a to z
+        c = [hd('a') + offset]
+        # charlists are interpolated as strings, to offset = 1 yields 'b'
+        # which in turn is interpolated to yield str = ":b"
+        atom = :"#{c}"
+        str = ":#{atom}"
+
+        assert Parser.expression!(str) == {:literal, {1, 0, 2}, atom}
+      end)
     end
   end
 
@@ -35,14 +53,18 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
-      assert result == [{
-        :call, {:+, {1, 0, 9}},
-          [
-            {:integer, {1, 0, 1}, 2},
-            {:call, {:*, {1, 0, 9}}, [{:integer, {1, 0, 5}, 3},
-              {:integer, {1, 0, 9}, 4}], :kernel}
-          ], :kernel
-      }]
+      assert result == [
+               {
+                 :call,
+                 {:+, {1, 0, 9}},
+                 [
+                   {:integer, {1, 0, 1}, 2},
+                   {:call, {:*, {1, 0, 9}}, [{:integer, {1, 0, 5}, 3}, {:integer, {1, 0, 9}, 4}],
+                    :kernel}
+                 ],
+                 :kernel
+               }
+             ]
     end
 
     test "add/sub has less precedence than mult/div" do
@@ -52,17 +74,23 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
-      assert result == [{
-          :call,
-          {:-, {1, 0, 22}},
-          [
-            {:call, {:+, {1, 0, 22}}, [{:integer, {1, 0, 2}, 10},
-              {:call, {:*, {1, 0, 12}}, [{:integer, {1, 0, 7}, 20},
-                {:integer, {1, 0, 12}, 30}], :kernel}], :kernel},
-              {:call, {:/, {1, 0, 22}}, [{:integer, {1, 0, 17}, 40},
-                {:integer, {1, 0, 22}, 50}], :kernel}
-          ], :kernel
-        }]
+      assert result == [
+               {
+                 :call,
+                 {:-, {1, 0, 22}},
+                 [
+                   {:call, {:+, {1, 0, 22}},
+                    [
+                      {:integer, {1, 0, 2}, 10},
+                      {:call, {:*, {1, 0, 12}},
+                       [{:integer, {1, 0, 7}, 20}, {:integer, {1, 0, 12}, 30}], :kernel}
+                    ], :kernel},
+                   {:call, {:/, {1, 0, 22}},
+                    [{:integer, {1, 0, 17}, 40}, {:integer, {1, 0, 22}, 50}], :kernel}
+                 ],
+                 :kernel
+               }
+             ]
     end
 
     test "grouping using parens" do
@@ -73,27 +101,28 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
       assert result == [
-        {
-          :call,
-          {:/, {1, 0, 26}},
-          [
-            {
-              :call,
-              {:*, {1, 0, 26}},
-                [
-                  {:call, {:+, {1, 0, 8}}, [{:integer,
-                    {1, 0, 3}, 10}, {:integer, {1, 0, 8}, 20}], :kernel},
-                  {:call, {:-, {1, 0, 20}}, [{:integer, {1, 0, 15}, 30},
-                    {:integer, {1, 0, 20}, 40}], :kernel}
-                ],
-                :kernel
-            },
-                {:integer, {1, 0, 26}, 50}
-          ], :kernel}
-      ]
+               {
+                 :call,
+                 {:/, {1, 0, 26}},
+                 [
+                   {
+                     :call,
+                     {:*, {1, 0, 26}},
+                     [
+                       {:call, {:+, {1, 0, 8}},
+                        [{:integer, {1, 0, 3}, 10}, {:integer, {1, 0, 8}, 20}], :kernel},
+                       {:call, {:-, {1, 0, 20}},
+                        [{:integer, {1, 0, 15}, 30}, {:integer, {1, 0, 20}, 40}], :kernel}
+                     ],
+                     :kernel
+                   },
+                   {:integer, {1, 0, 26}, 50}
+                 ],
+                 :kernel
+               }
+             ]
     end
   end
-
 
   describe "function calls" do
     test "local function call without args" do
@@ -111,10 +140,12 @@ defmodule Fika.ParserTest do
       """
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+
       args = [
         {:identifier, {1, 0, 9}, :x},
         {:integer, {1, 0, 14}, 123}
       ]
+
       assert result == [{:call, {:my_func, {1, 0, 15}}, args, nil}]
     end
 
@@ -124,10 +155,12 @@ defmodule Fika.ParserTest do
       """
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+
       args = [
         {:identifier, {1, 0, 19}, :x},
         {:integer, {1, 0, 24}, 123}
       ]
+
       assert result == [{:call, {:my_func, {1, 0, 25}}, args, :my_module}]
     end
 
@@ -137,10 +170,12 @@ defmodule Fika.ParserTest do
       """
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+
       args = [
         {:identifier, {1, 0, 5}, :x},
         {:call, {:bar, {1, 0, 13}}, [{:identifier, {1, 0, 12}, :y}], nil}
       ]
+
       assert result == [{:call, {:foo, {1, 0, 14}}, args, nil}]
     end
   end
@@ -156,9 +191,9 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
 
       assert result == [
-        {:function, [position: {3, 16, 19}],
-          {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 10, 15}, 123}]}}
-      ]
+               {:function, [position: {3, 16, 19}],
+                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 10, 15}, 123}]}}
+             ]
     end
 
     test "with return type" do
@@ -171,9 +206,9 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
 
       assert result == [
-        {:function, [position: {3, 22, 25}],
-          {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}}
-      ]
+               {:function, [position: {3, 22, 25}],
+                {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}}
+             ]
     end
 
     test "with type params" do
@@ -186,10 +221,10 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
 
       assert result == [
-        {:function, [position: {3, 43, 46}],
-          {:foo, [{{:identifier, {1, 0, 8}, :a}, {:type, {1, 0, 22}, "List(String)"}}],
-            {:type, {1, 0, 35}, "List(Int)"}, [{:identifier, {2, 39, 42}, :x}]}}
-      ]
+               {:function, [position: {3, 43, 46}],
+                {:foo, [{{:identifier, {1, 0, 8}, :a}, {:type, {1, 0, 22}, "List(String)"}}],
+                 {:type, {1, 0, 35}, "List(Int)"}, [{:identifier, {2, 39, 42}, :x}]}}
+             ]
     end
 
     test "with args" do
@@ -202,20 +237,17 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
 
       assert result == [
-        {:function, [position: {3, 40, 43}],
-          {:foo,
-            [
-              {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, "Int"}},
-              {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, "Int"}}
-            ],
-            {:type, {1, 0, 28}, "Int"},
-            [
-              {:call, {:+, {2, 32, 39}},
-                [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
-            ]
-          }
-        }
-      ]
+               {:function, [position: {3, 40, 43}],
+                {:foo,
+                 [
+                   {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, "Int"}},
+                   {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, "Int"}}
+                 ], {:type, {1, 0, 28}, "Int"},
+                 [
+                   {:call, {:+, {2, 32, 39}},
+                    [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
+                 ]}}
+             ]
     end
   end
 
@@ -228,8 +260,8 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
       assert result == [
-        {{:=, {1, 0, 5}}, {:identifier, {1, 0, 1}, :x}, {:integer, {1, 0, 5}, 1}}
-      ]
+               {{:=, {1, 0, 5}}, {:identifier, {1, 0, 1}, :x}, {:integer, {1, 0, 5}, 1}}
+             ]
     end
 
     test "multiple match" do
@@ -240,16 +272,16 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
       assert result == [
-        {
-          {:=, {1, 0, 9}},
-          {:identifier, {1, 0, 1}, :x},
-          {
-            {:=, {1, 0, 9}},
-            {:identifier, {1, 0, 5}, :y},
-            {:integer, {1, 0, 9}, 1}
-          }
-        }
-      ]
+               {
+                 {:=, {1, 0, 9}},
+                 {:identifier, {1, 0, 1}, :x},
+                 {
+                   {:=, {1, 0, 9}},
+                   {:identifier, {1, 0, 5}, :y},
+                   {:integer, {1, 0, 9}, 1}
+                 }
+               }
+             ]
     end
 
     test "errors when non match exps come on the left of the match" do
@@ -268,18 +300,16 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
       assert result == [
-        {:call,
-          {:+, {1, 0, 11}},
-          [
-            {:integer, {1, 0, 1}, 1},
-            {
-              {:=, {1, 0, 10}},
-              {:identifier, {1, 0, 6}, :x},
-              {:integer, {1, 0, 10}, 2}
-            }
-          ],
-        :kernel}
-      ]
+               {:call, {:+, {1, 0, 11}},
+                [
+                  {:integer, {1, 0, 1}, 1},
+                  {
+                    {:=, {1, 0, 10}},
+                    {:identifier, {1, 0, 6}, :x},
+                    {:integer, {1, 0, 10}, 2}
+                  }
+                ], :kernel}
+             ]
     end
   end
 
@@ -291,7 +321,7 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
-      assert result ==  [{:string, {1, 0, 13}, "Hello world"}]
+      assert result == [{:string, {1, 0, 13}, "Hello world"}]
     end
 
     test "parses a string with escaped double quotes" do
@@ -301,7 +331,7 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
-      assert result ==  [{:string, {1, 0, 17}, "Hello \\\"world\\\""}]
+      assert result == [{:string, {1, 0, 17}, "Hello \\\"world\\\""}]
     end
   end
 
@@ -330,11 +360,15 @@ defmodule Fika.ParserTest do
       """
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
-      assert result == [{:list, {1, 0, 9}, [
-        {:integer, {1, 0, 2}, 1},
-        {:integer, {1, 0, 5}, 2},
-        {:integer, {1, 0, 8}, 3},
-      ]}]
+
+      assert result == [
+               {:list, {1, 0, 9},
+                [
+                  {:integer, {1, 0, 2}, 1},
+                  {:integer, {1, 0, 5}, 2},
+                  {:integer, {1, 0, 8}, 3}
+                ]}
+             ]
     end
 
     test "parses list with match exps" do
@@ -344,11 +378,14 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
-      assert result == [{:list, {1, 0, 13}, [
-        {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
-        {:integer, {1, 0, 9}, 2},
-        {:integer, {1, 0, 12}, 3},
-      ]}]
+      assert result == [
+               {:list, {1, 0, 13},
+                [
+                  {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
+                  {:integer, {1, 0, 9}, 2},
+                  {:integer, {1, 0, 12}, 3}
+                ]}
+             ]
     end
   end
 
@@ -357,6 +394,7 @@ defmodule Fika.ParserTest do
       str = """
       {}
       """
+
       assert {:error, _, "{}\n", %{}, {1, 0}, 0} = Parser.expression(str)
     end
 
@@ -367,10 +405,13 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
-      assert result == [{:record, {1, 0, 26}, nil, [
-        {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, "World"}},
-        {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
-      ]}]
+      assert result == [
+               {:record, {1, 0, 26}, nil,
+                [
+                  {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, "World"}},
+                  {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
+                ]}
+             ]
     end
   end
 
@@ -441,11 +482,13 @@ defmodule Fika.ParserTest do
 
       result = Parser.expression!(str)
 
-      assert result == {:function_ref, {1, 0, 8}, {
-        :foo,
-        :bar,
-        []
-      }}
+      assert result ==
+               {:function_ref, {1, 0, 8},
+                {
+                  :foo,
+                  :bar,
+                  []
+                }}
     end
 
     test "parses a function ref with arg types" do
@@ -455,14 +498,16 @@ defmodule Fika.ParserTest do
 
       result = Parser.expression!(str)
 
-      assert result == {:function_ref, {1, 0, 18}, {
-        :foo,
-        :bar,
-        [
-          "Int",
-          "Int"
-        ]
-      }}
+      assert result ==
+               {:function_ref, {1, 0, 18},
+                {
+                  :foo,
+                  :bar,
+                  [
+                    "Int",
+                    "Int"
+                  ]
+                }}
     end
   end
 
@@ -478,9 +523,9 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
 
       assert result == [
-        {:function, [position: {4, 36, 39}],
-          {:foo, [], {:type, {2, 20, 26}, "Nothing"}, [{:integer, {3, 30, 35}, 123}]}}
-      ]
+               {:function, [position: {4, 36, 39}],
+                {:foo, [], {:type, {2, 20, 26}, "Nothing"}, [{:integer, {3, 30, 35}, 123}]}}
+             ]
     end
 
     test "At end of line" do
@@ -493,9 +538,9 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
 
       assert result == [
-        {:function, [position: {3, 40, 43}],
-          {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 22, 27}, 123}]}}
-      ]
+               {:function, [position: {3, 40, 43}],
+                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 22, 27}, 123}]}}
+             ]
     end
 
     test "Can't appear in between characters" do
@@ -518,10 +563,9 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
 
       assert result == [
-        {:function, [position: {3, 22, 25}],
-          {:foo, [], {:type, {1, 0, 6}, "Nothing"},
-            [{:string, {2, 10, 21}, "foo#bar"}]}}
-      ]
+               {:function, [position: {3, 22, 25}],
+                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:string, {2, 10, 21}, "foo#bar"}]}}
+             ]
     end
   end
 
@@ -534,6 +578,7 @@ defmodule Fika.ParserTest do
         {:identifier, {1, 0, 6}, :x},
         {:identifier, {1, 0, 9}, :y}
       ]
+
       assert result == {:call, {{:identifier, {1, 0, 3}, :foo}, {1, 0, 10}}, args}
     end
 
@@ -545,6 +590,7 @@ defmodule Fika.ParserTest do
         {:identifier, {1, 0, 8}, :x},
         {:identifier, {1, 0, 11}, :y}
       ]
+
       exp = {:call, {:foo, {1, 0, 5}}, [], nil}
       assert result == {:call, {exp, {1, 0, 12}}, args}
     end
