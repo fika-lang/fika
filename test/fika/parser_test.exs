@@ -196,20 +196,31 @@ defmodule Fika.ParserTest do
              ]
     end
 
-    test "with return type" do
-      str = """
-      fn foo : Int do
-        123
+    Enum.each(
+      [
+        {"Int", "Int"},
+        {":ok", {:literal, :ok}}
+      ],
+      fn {declared_type, parsed_type} ->
+        test "with return type #{declared_type}" do
+          declared_type = unquote(declared_type)
+          parsed_type = unquote(parsed_type)
+
+          str = """
+          fn foo : #{declared_type} do
+            123
+          end
+          """
+
+          {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+
+          assert result == [
+                   {:function, [position: {3, 22, 25}],
+                    {:foo, [], {:type, {1, 0, 12}, parsed_type}, [{:integer, {2, 16, 21}, 123}]}}
+                 ]
+        end
       end
-      """
-
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
-
-      assert result == [
-               {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}}
-             ]
-    end
+    )
 
     test "with type params" do
       str = """

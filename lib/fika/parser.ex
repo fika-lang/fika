@@ -328,7 +328,8 @@ defmodule Fika.Parser do
       function_type,
       simple_type
       |> optional(type_parens),
-      record_type
+      record_type,
+      literal_value_exp
     ])
 
   parse_type =
