@@ -198,13 +198,12 @@ defmodule Fika.ParserTest do
 
     Enum.each(
       [
-        {"Int", "Int"},
-        {":ok", {:literal, :ok}}
+        "Int",
+        ":ok"
       ],
-      fn {declared_type, parsed_type} ->
+      fn declared_type ->
         test "with return type #{declared_type}" do
           declared_type = unquote(declared_type)
-          parsed_type = unquote(parsed_type)
 
           str = """
           fn foo : #{declared_type} do
@@ -216,7 +215,7 @@ defmodule Fika.ParserTest do
 
           assert result == [
                    {:function, [position: {3, 22, 25}],
-                    {:foo, [], {:type, {1, 0, 12}, parsed_type}, [{:integer, {2, 16, 21}, 123}]}}
+                    {:foo, [], {:type, {1, 0, 12}, declared_type}, [{:integer, {2, 16, 21}, 123}]}}
                  ]
         end
       end
@@ -472,6 +471,20 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
       assert result == [{:type, {1, 0, 23}, "{foo:Int,bar:String}"}]
+    end
+
+    test "literal type" do
+      str = ":foo"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      assert result == [{:type, {1, 0, 4}, ":foo"}]
+    end
+
+    test "list of literal" do
+      str = "List(:foo)"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      assert result == [{:type, {1, 0, 10}, "List(:foo)"}]
     end
   end
 

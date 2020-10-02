@@ -53,13 +53,17 @@ defmodule Fika.ParserHelper do
   end
 
   def do_to_ast({types, line}, :type) do
-    case types do
-      [type] when is_binary(type) ->
-        {:type, line, type}
+    type_str =
+      Enum.reduce(types, "", fn
+        {:literal, _l, value}, acc ->
+          acc <> ":#{value}"
 
-      [{:literal, _l, value}] ->
-        {:type, line, {:literal, value}}
-    end
+        type, acc ->
+          IO.inspect(type)
+          acc <> type
+      end)
+
+    {:type, line, type_str}
   end
 
   def do_to_ast({[identifier, type], _line}, :arg) do

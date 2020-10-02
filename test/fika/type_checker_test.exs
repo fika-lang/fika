@@ -22,6 +22,14 @@ defmodule Fika.TypeCheckerTest do
     assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
+  test "infer type of literal value expressions" do
+    str = ":a"
+
+    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+    assert {:ok, {:literal, :a}, _} = TypeChecker.infer_exp(Env.init(), ast)
+  end
+
   test "infer undefined variable" do
     str = "foo"
 
