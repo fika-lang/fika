@@ -17,7 +17,7 @@ defmodule Fika.TypeCheckerTest do
   test "infer type of atom expressions" do
     str = ":a"
 
-    {:ok, ast} = Fika.Parser.expression!(str)
+    {:atom, {1, 0, 2}, :a} = ast = Fika.Parser.expression!(str)
 
     assert {:ok, ":a", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
