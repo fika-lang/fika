@@ -43,6 +43,13 @@ defmodule Fika.ParserTest do
         assert Parser.expression!(str) == {:atom, {1, 0, 2}, atom}
       end)
     end
+
+    test "parses multi-char atoms" do
+      atom = :foobar
+      str = ":#{atom}"
+
+      assert Parser.expression!(str) == {:atom, {1, 0, 7}, atom}
+    end
   end
 
 
