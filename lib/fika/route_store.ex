@@ -18,11 +18,12 @@ defmodule Fika.RouteStore do
 
     if function_exported?(:router, :routes, 0) do
       routes = :router.routes()
+
       Enum.into(routes, %{}, fn %{method: method, path: path, handler: function} ->
-          {"#{method}:#{path}", function}
+        {"#{method}:#{path}", function}
       end)
     else
-      Logger.error "Router has no function routes/0"
+      Logger.error("Router has no function routes/0")
       %{}
     end
   end

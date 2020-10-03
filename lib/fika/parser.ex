@@ -11,7 +11,7 @@ defmodule Fika.Parser do
 
   comment =
     string("#")
-    |> repeat(utf8_char([not: ?\n]))
+    |> repeat(utf8_char(not: ?\n))
     |> string("\n")
 
   vertical_space =
@@ -76,7 +76,7 @@ defmodule Fika.Parser do
 
   string_exp =
     ignore(string("\""))
-    |> repeat(choice([string("\\\""), utf8_char([not: ?"])]))
+    |> repeat(choice([string("\\\""), utf8_char(not: ?")]))
     |> ignore(string("\""))
     |> Helper.to_ast(:string)
 
@@ -253,8 +253,7 @@ defmodule Fika.Parser do
       |> parsec(:term)
     )
 
-  exp_mult_op =
-    Helper.to_ast(term, :exp_bin_op)
+  exp_mult_op = Helper.to_ast(term, :exp_bin_op)
 
   exp_bin_op =
     exp_mult_op
@@ -265,8 +264,7 @@ defmodule Fika.Parser do
       |> parsec(:exp_bin_op)
     )
 
-  exp_add_op =
-    Helper.to_ast(exp_bin_op, :exp_bin_op)
+  exp_add_op = Helper.to_ast(exp_bin_op, :exp_bin_op)
 
   exp =
     choice([
@@ -319,7 +317,6 @@ defmodule Fika.Parser do
     )
     |> reduce({Enum, :join, [","]})
 
-
   record_type =
     string("{")
     |> concat(type_key_values)
@@ -340,10 +337,8 @@ defmodule Fika.Parser do
   type =
     choice([
       function_type,
-
       simple_type
       |> optional(type_parens),
-
       record_type
     ])
 
@@ -375,7 +370,6 @@ defmodule Fika.Parser do
       |> wrap(args)
       |> concat(allow_space)
       |> ignore(string(")")),
-
       empty() |> wrap()
     ])
 

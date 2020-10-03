@@ -10,7 +10,7 @@ defmodule Fika.MixProject do
       escript: [main_module: Fika.Cli],
       deps: deps(),
       xref: [exclude: [:router]],
-      elixirc_paths: elixirc_paths(Mix.env),
+      elixirc_paths: elixirc_paths(Mix.env())
     ]
   end
 
