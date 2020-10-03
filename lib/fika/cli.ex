@@ -1,6 +1,8 @@
 defmodule Fika.Cli do
+  use Bakeware.Script
   require Logger
 
+  @impl Bakeware.Script
   def main(args) do
     parse_args(args)
   end
