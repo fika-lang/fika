@@ -1,0 +1,48 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Publish binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install zstd
+        run: sudo apt-get update && sudo apt-get install zstd
+        if: matrix.os == 'ubuntu-latest'
+
+      - uses: actions/checkout@v2
+      - name: Install zstd
+        run: brew install zstd
+        if: matrix.os == 'macos-latest'
+
+      - uses: actions/setup-elixir@v1
+        with:
+          otp-version: '22.2'
+          elixir-version: '1.10.4'
+
+      - name: Build
+        run: export MIX_ENV=prod && mix deps.get && mix release
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: _build/prod/rel/bakeware/fika
+          asset_name: fika
+          tag: latest
+          overwrite: true
+
