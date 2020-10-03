@@ -172,6 +172,7 @@ defmodule Fika.TypeChecker do
           |> Enum.join(",")
 
         {:ok, "{#{exp_types}}", env}
+
       error ->
         error
     end
@@ -290,7 +291,9 @@ defmodule Fika.TypeChecker do
       case infer_exp(env, exp) do
         {:ok, exp_type, env} ->
           {:cont, {:ok, [exp_type | acc], env}}
-        error -> {:halt, error}
+
+        error ->
+          {:halt, error}
       end
     end)
   end

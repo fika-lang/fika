@@ -159,10 +159,10 @@ defmodule Fika.ErlTranslateTest do
       ast = Fika.Parser.expression!(str)
 
       assert {
-        :tuple,
-        1,
-        [{:tuple, 1, [{:integer, 1, 1}]}, {:tuple, 1, [{:integer, 1, 2}]}]
-      } = ErlTranslate.translate_expression(ast)
+               :tuple,
+               1,
+               [{:tuple, 1, [{:integer, 1, 1}]}, {:tuple, 1, [{:integer, 1, 2}]}]
+             } = ErlTranslate.translate_expression(ast)
     end
   end
 end
