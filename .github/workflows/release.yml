@@ -13,6 +13,7 @@ jobs:
     name: Publish binaries
     runs-on: ${{ matrix.os }}
     strategy:
+      max-parallel: 6
       matrix:
         os:
           - ubuntu-latest
