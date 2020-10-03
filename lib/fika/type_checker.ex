@@ -151,7 +151,17 @@ defmodule Fika.TypeChecker do
 
   # Tuple
   def infer_exp(env, {:tuple, _, exps}) do
-    infer_tuple_exps(env, exps)
+    case do_infer_tuple_exps(exps, env) do
+      {:ok, exp_types, env} ->
+        exp_types =
+          exp_types
+          |> Enum.reverse()
+          |> Enum.join(",")
+
+        {:ok, "{#{exp_types}}", env}
+      error ->
+        error
+    end
   end
 
   # Record
@@ -257,6 +267,16 @@ defmodule Fika.TypeChecker do
     end)
   end
 
+  defp do_infer_tuple_exps(exps, env) do
+    Enum.reduce_while(exps, {:ok, [], env}, fn exp, {:ok, acc, env} ->
+      case infer_exp(env, exp) do
+        {:ok, exp_type, env} ->
+          {:cont, {:ok, [exp_type | acc], env}}
+        error -> {:halt, error}
+      end
+    end)
+  end
+
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->
@@ -295,29 +315,6 @@ defmodule Fika.TypeChecker do
           {:cont, acc}
         {:ok, diff_type, _} ->
           error = {:error, "Elements of list have different types. Expected: #{type}, got: #{diff_type}"}
-          {:halt, error}
-        error ->
-          {:halt, error}
-      end
-    end)
-  end
-
-  defp infer_tuple_exps(env, [exp]) do
-    case infer_exp(env, exp) do
-      {:ok, type, env} -> {:ok, "Tuple(#{type})", env}
-      error -> error
-    end
-  end
-
-  defp infer_tuple_exps(env, [exp | rest]) do
-    {:ok, type, env} = infer_exp(env, exp)
-    Enum.reduce_while(rest, {:ok, "Tuple(#{type})", env}, fn exp, {:ok, acc_type, acc_env} ->
-      case infer_exp(acc_env, exp) do
-        {:ok, ^type, env} ->
-          acc = {:ok, acc_type, env}
-          {:cont, acc}
-        {:ok, diff_type, _} ->
-          error = {:error, "Elements of tuple have different types. Expected: #{type}, got: #{diff_type}"}
           {:halt, error}
         error ->
           {:halt, error}
