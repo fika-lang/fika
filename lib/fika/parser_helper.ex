@@ -106,7 +106,6 @@ defmodule Fika.ParserHelper do
   end
 
   def do_to_ast({result, line}, :tuple) do
-    result = List.to_tuple(result)
     {:tuple, line, result}
   end
 

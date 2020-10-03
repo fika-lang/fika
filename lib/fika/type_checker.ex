@@ -302,19 +302,15 @@ defmodule Fika.TypeChecker do
     end)
   end
 
-  defp infer_tuple_exps(env, {exp}) do
+  defp infer_tuple_exps(env, [exp]) do
     case infer_exp(env, exp) do
       {:ok, type, env} -> {:ok, "Tuple(#{type})", env}
       error -> error
     end
   end
 
-  defp infer_tuple_exps(env, mutli_exps_tuple) when is_tuple(mutli_exps_tuple) do
-    first_exp = elem(mutli_exps_tuple, 0)
-    {:ok, type, env} = infer_exp(env, first_exp)
-
-    rest = Tuple.to_list(Tuple.delete_at(mutli_exps_tuple, 0))
-
+  defp infer_tuple_exps(env, [exp | rest]) do
+    {:ok, type, env} = infer_exp(env, exp)
     Enum.reduce_while(rest, {:ok, "Tuple(#{type})", env}, fn exp, {:ok, acc_type, acc_env} ->
       case infer_exp(acc_env, exp) do
         {:ok, ^type, env} ->

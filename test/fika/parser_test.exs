@@ -433,7 +433,7 @@ defmodule Fika.ParserTest do
       """
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
-      assert result == [{:tuple, {1, 0, 3}, {{:integer, {1, 0, 2}, 1}}}]
+      assert result == [{:tuple, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]}]
     end
 
     test "parses tuple with multiple elements" do
@@ -443,11 +443,11 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
       assert result == [
-        {:tuple, {1, 0, 9}, {
+        {:tuple, {1, 0, 9}, [
             {:integer, {1, 0, 2}, 1},
             {:integer, {1, 0, 5}, 2},
             {:integer, {1, 0, 8}, 3},
-          }
+          ]
         }
       ]
     end
@@ -460,11 +460,11 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
 
       assert result == [
-        {:tuple, {1, 0, 13}, {
+        {:tuple, {1, 0, 13}, [
             {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
             {:integer, {1, 0, 9}, 2},
             {:integer, {1, 0, 12}, 3},
-          }
+          ]
         }
       ]
     end
