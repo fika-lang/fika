@@ -11,7 +11,7 @@ defmodule Fika.Parser do
 
   comment =
     string("#")
-    |> repeat(utf8_char(not: ?\n))
+    |> repeat(utf8_char([not: ?\n]))
     |> string("\n")
 
   vertical_space =
@@ -82,7 +82,7 @@ defmodule Fika.Parser do
 
   string_exp =
     ignore(string("\""))
-    |> repeat(choice([string("\\\""), utf8_char(not: ?")]))
+    |> repeat(choice([string("\\\""), utf8_char([not: ?"])]))
     |> ignore(string("\""))
     |> Helper.to_ast(:string)
 
@@ -269,7 +269,8 @@ defmodule Fika.Parser do
       |> parsec(:term)
     )
 
-  exp_mult_op = Helper.to_ast(term, :exp_bin_op)
+  exp_mult_op =
+    Helper.to_ast(term, :exp_bin_op)
 
   exp_bin_op =
     exp_mult_op
@@ -280,7 +281,8 @@ defmodule Fika.Parser do
       |> parsec(:exp_bin_op)
     )
 
-  exp_add_op = Helper.to_ast(exp_bin_op, :exp_bin_op)
+  exp_add_op =
+    Helper.to_ast(exp_bin_op, :exp_bin_op)
 
   exp =
     choice([
@@ -456,20 +458,20 @@ defmodule Fika.Parser do
     result
   end
 
-  defcombinatorp(:exp, exp)
-  defcombinatorp(:exps, exps)
-  defcombinatorp(:exp_bin_op, exp_bin_op)
-  defcombinatorp(:term, term)
-  defcombinatorp(:args, args)
-  defcombinatorp(:call_args, call_args)
-  defcombinatorp(:type, type)
-  defcombinatorp(:type_args, type_args)
-  defcombinatorp(:type_args_list, type_args_list)
+  defcombinatorp :exp, exp
+  defcombinatorp :exps, exps
+  defcombinatorp :exp_bin_op, exp_bin_op
+  defcombinatorp :term, term
+  defcombinatorp :args, args
+  defcombinatorp :call_args, call_args
+  defcombinatorp :type, type
+  defcombinatorp :type_args, type_args
+  defcombinatorp :type_args_list, type_args_list
 
-  defparsec(:parse, module)
+  defparsec :parse, module
 
   # For testing
-  defparsec(:expression, exp |> concat(allow_space) |> eos())
-  defparsec(:function_def, function_def)
-  defparsec(:type_str, parse_type |> concat(allow_space) |> eos())
+  defparsec :expression, exp |> concat(allow_space) |> eos()
+  defparsec :function_def, function_def
+  defparsec :type_str, parse_type |> concat(allow_space) |> eos()
 end
