@@ -127,6 +127,14 @@ defmodule Fika.Parser do
     |> ignore(string("]"))
     |> Helper.to_ast(:exp_list)
 
+  tuple =
+    ignore(string("{"))
+    |> concat(allow_space)
+    |> concat(list_content)
+    |> concat(allow_space)
+    |> ignore(string("}"))
+    |> Helper.to_ast(:tuple)
+
   exp_paren =
     ignore(string("("))
     |> parsec(:exp)
@@ -230,6 +238,7 @@ defmodule Fika.Parser do
       boolean,
       string_exp,
       exp_list,
+      tuple,
       record,
       function_ref,
       atom,
