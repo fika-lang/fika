@@ -38,7 +38,9 @@ defmodule Fika.Parser do
     choice([
       string("fn"),
       string("do"),
-      string("end")
+      string("end"),
+      string("if"),
+      string("else")
     ])
 
   identifier_str =
@@ -63,6 +65,20 @@ defmodule Fika.Parser do
     integer(min: 1)
     |> label("integer")
     |> Helper.to_ast(:integer)
+
+  boolean =
+    choice([
+      string("true"),
+      string("false")
+    ])
+    |> label("boolean")
+    |> Helper.to_ast(:boolean)
+
+  atom =
+    ignore(string(":"))
+    |> concat(identifier)
+    |> label("atom")
+    |> Helper.to_ast(:atom)
 
   string_exp =
     ignore(string("\""))
@@ -185,16 +201,54 @@ defmodule Fika.Parser do
     |> label("record")
     |> Helper.to_ast(:record)
 
-  factor =
+  function_ref_call =
+    ignore(string("."))
+    |> ignore(string("("))
+    |> wrap(call_args)
+    |> ignore(string(")"))
+
+  exp_if_else =
+    ignore(string("if"))
+    |> concat(require_space)
+    |> parsec(:exp)
+    |> concat(require_space)
+    |> ignore(string("do"))
+    |> concat(require_space)
+    |> wrap(parsec(:exps))
+    |> concat(require_space)
+    |> ignore(string("else"))
+    |> concat(require_space)
+    |> wrap(parsec(:exps))
+    |> concat(require_space)
+    |> ignore(string("end"))
+    |> label("if-else expression")
+    |> Helper.to_ast(:exp_if_else)
+
+  literal_exps =
     choice([
       integer,
+      boolean,
       string_exp,
-      exp_paren,
-      function_call,
-      identifier,
       exp_list,
       record,
-      function_ref
+      function_ref,
+      atom,
+      exp_if_else
+    ])
+
+  non_literal_exps =
+    choice([
+      exp_paren,
+      function_call,
+      identifier
+    ])
+    |> optional(function_ref_call)
+    |> Helper.to_ast(:function_ref_call)
+
+  factor =
+    choice([
+      literal_exps,
+      non_literal_exps
     ])
 
   term =
@@ -272,7 +326,6 @@ defmodule Fika.Parser do
     )
     |> reduce({Enum, :join, [","]})
 
-
   record_type =
     string("{")
     |> concat(type_key_values)
@@ -293,11 +346,10 @@ defmodule Fika.Parser do
   type =
     choice([
       function_type,
-
       simple_type
       |> optional(type_parens),
-
-      record_type
+      record_type,
+      atom
     ])
 
   parse_type =
@@ -328,7 +380,6 @@ defmodule Fika.Parser do
       |> wrap(args)
       |> concat(allow_space)
       |> ignore(string(")")),
-
       empty() |> wrap()
     ])
 

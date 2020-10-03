@@ -94,4 +94,51 @@ defmodule Fika.ErlTranslateTest do
         {:function, :foo, 2}}
     end
   end
+
+  describe "boolean" do
+    Enum.each([true, false], fn bool ->
+      test "#{bool} as boolean" do
+        str = "#{unquote(bool)}"
+        ast = Parser.expression!(str)
+        result = ErlTranslate.translate_expression(ast)
+
+        assert result == {:atom, 1, unquote(bool)}
+      end
+
+      test "#{bool} as atom" do
+        str = ":#{unquote(bool)}"
+        ast = Parser.expression!(str)
+        result = ErlTranslate.translate_expression(ast)
+
+        assert result == {:atom, 1, unquote(bool)}
+      end
+    end)
+  end
+
+  test "atom" do
+    str = ":foo"
+    ast = Parser.expression!(str)
+    result = ErlTranslate.translate_expression(ast)
+
+    assert result == {:atom, 1, :foo}
+  end
+
+  test "if-else expression" do
+    str =  """
+    if true do
+      "foo"
+    else
+      "bar"
+    end
+    """
+
+    ast = Fika.Parser.expression!(str)
+    result = ErlTranslate.translate_expression(ast)
+    assert {:case, 5, {:atom, 1, true},
+      [
+        {:clause, 5, [{:atom, 5, true}], [], [{:string, 2, 'foo'}]},
+        {:clause, 5, [{:atom, 5, false}], [], [{:string, 4, 'bar'}]}
+      ]
+    } = result
+  end
 end

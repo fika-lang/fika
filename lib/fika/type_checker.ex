@@ -1,5 +1,6 @@
 defmodule Fika.TypeChecker do
   alias Fika.Env
+  alias Fika.Types.FunctionRef
   require Logger
 
   # Given the AST of a module, this function type checks each of the
@@ -52,6 +53,7 @@ defmodule Fika.TypeChecker do
     env
     |> infer_block(exprs)
     |> add_function_type(name, args)
+    |> to_str()
   end
 
   def infer_block(env, []) do
@@ -76,6 +78,12 @@ defmodule Fika.TypeChecker do
     {:ok, "Int", env}
   end
 
+  # Booleans
+  def infer_exp(env, {:boolean, _line, boolean}) do
+    Logger.debug "Boolean #{boolean} found. Type: Bool"
+    {:ok, "Bool", env}
+  end
+
   # Variables
   def infer_exp(env, {:identifier, _line, name}) do
     type = Env.scope_get(env, name)
@@ -94,6 +102,28 @@ defmodule Fika.TypeChecker do
     module_name = module || Env.current_module(env)
     Logger.debug "Inferring type of function: #{name}"
     infer_args(env, exp, module_name)
+  end
+
+  # Function calls using reference
+  # exp has to be a function ref type
+  def infer_exp(env, {:call, {exp, _line}, args}) do
+    case infer_exp(env, exp) do
+      {:ok, %FunctionRef{arg_types: arg_types, return_type: type}, env} ->
+        case do_infer_args_without_name(env, args) do
+          {:ok, ^arg_types, env} ->
+            {:ok, type, env}
+          {:ok, other_arg_types, _env} ->
+            error = "Expected function reference to be called with" <>
+              " arguments (#{Enum.join(arg_types, ",")}), but it was called " <>
+                "with arguments (#{Enum.join(other_arg_types, ",")})"
+
+            {:error, error}
+        end
+      {:ok, type, _} ->
+        {:error, "Expected a function reference, but got type: #{type}"}
+      error ->
+        error
+    end
   end
 
   # =
@@ -160,10 +190,54 @@ defmodule Fika.TypeChecker do
 
     case result do
       {:ok, type, env} ->
-        args = Enum.join(arg_types, ",")
-        {:ok, "Fn(#{args}->#{type})", env}
+        type = %FunctionRef{arg_types: arg_types, return_type: type}
+        {:ok, type, env}
       error ->
         error
+    end
+  end
+
+  # Atom value
+  def infer_exp(env, {:atom, _line, atom}) do
+    Logger.debug("Atom value found. Type: #{atom}")
+    {:ok, ":#{atom}", env}
+  end
+
+  # if-else expression
+  def infer_exp(env, {{:if, _line}, condition, if_block, else_block}) do
+    Logger.debug "Inferring an if-else expression"
+
+    case infer_if_else_condition(env, condition) do
+      {:ok, "Bool", env} -> infer_if_else_blocks(env, if_block, else_block)
+      error -> error
+    end
+  end
+
+  defp infer_if_else_condition(env, condition) do
+    case infer_exp(env, condition) do
+      {:ok, "Bool", env} ->
+        Logger.debug("if-else condition has return type: Bool")
+        {:ok, "Bool", env}
+
+      {_, inferred_type, _env} ->
+        Logger.debug("if-else condition has wrong return type: #{inferred_type}")
+        {:error, "Wrong type for if condition. Expected: Bool, Got: #{inferred_type}"}
+    end
+  end
+
+  defp infer_if_else_blocks(env, if_block, else_block) do
+    {_, if_type_val, env} = infer_block(env, if_block)
+    {_, else_type_val, _} = type = infer_block(env, else_block)
+
+    unless if_type_val == else_type_val do
+      Logger.debug("if and else block have different types")
+
+      error = "Expected if and else blocks to have same return type. " <>
+        "Got #{if_type_val} and #{else_type_val}"
+
+      {:error, error}
+    else
+      type
     end
   end
 
@@ -236,6 +310,19 @@ defmodule Fika.TypeChecker do
     end)
   end
 
+  defp do_infer_args_without_name(env, args) do
+    Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, type_acc, env} ->
+      case infer_exp(env, arg) do
+        {:ok, type, env} ->
+          Logger.debug "Argument is type: #{type}"
+          {:cont, {:ok, type_acc ++ [type], env}}
+        error ->
+          Logger.debug "Argument cannot be inferred"
+          {:halt, error}
+      end
+    end)
+  end
+
   defp get_type_by_signature(env, signature) do
     type = Env.get_function_type(env, signature)
     if type do
@@ -289,6 +376,15 @@ defmodule Fika.TypeChecker do
       check(function, env)
     else
       {:error, "Undefined function: #{signature} in module #{module}"}
+    end
+  end
+
+  defp to_str(result) do
+    case result do
+      {:ok, type, env} ->
+        {:ok, to_string(type), env}
+      error ->
+        error
     end
   end
 end

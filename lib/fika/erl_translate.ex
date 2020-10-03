@@ -46,10 +46,23 @@ defmodule Fika.ErlTranslate do
     {:call, line, m_f, translate_exps(args)}
   end
 
+  # Call function ref using an identifier
+  defp translate_exp({:call, {identifier, {line, _, _}}, args}) do
+    {:call, line, translate_exp(identifier), translate_exps(args)}
+  end
+
   defp translate_exp({:integer, {line, _, _}, value}) do
     {:integer, line, value}
   end
 
+  defp translate_exp({:boolean, {line, _, _}, value}) do
+    {:atom, line, value}
+  end
+
+  defp translate_exp({:atom, {line, _, _}, value}) do
+    {:atom, line, value}
+  end
+  
   defp translate_exp({{:=, {line, _, _}}, pattern, exp}) do
     {:match, line, translate_exp(pattern), translate_exp(exp)}
   end
@@ -88,6 +101,18 @@ defmodule Fika.ErlTranslate do
         {:function, function, arity}
       end
     {:fun, line, f}
+  end
+
+  defp translate_exp({{:if, {line, _, _}}, condition, if_block, else_block}) do
+    {
+      :case,
+      line,
+      translate_exp(condition),
+      [
+        {:clause, line, [{:atom, line, true}], [], translate_exps(if_block)},
+        {:clause, line, [{:atom, line, false}], [], translate_exps(else_block)}
+      ]
+    }
   end
 
   defp add_record_meta(k_vs, name, line) do

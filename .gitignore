@@ -29,6 +29,3 @@ fika-*.tar
 # parser combinators for new syntax. This avoids compilation of the
 # entire parser which gives me a better feedback loop.
 /test/support/test_parser*
-
-.dist/
-.history/

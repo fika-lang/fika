@@ -11,6 +11,31 @@ defmodule Fika.ParserTest do
     assert result ==  [{:integer, {1, 0, 3}, 123}]
   end
 
+  describe "boolean" do
+    test "true" do
+      str = "true"
+
+      result = Parser.expression!(str)
+      assert result ==  {:boolean, {1, 0, 4}, true}
+    end
+
+    test "false" do
+      str = "false"
+
+      result = Parser.expression!(str)
+      assert result ==  {:boolean, {1, 0, 5}, false}
+    end
+  end
+
+  describe "atom" do
+    test "parses multi-char atoms" do
+      atom = :foobar
+      str = ":#{atom}"
+
+      assert Parser.expression!(str) == {:atom, {1, 0, 7}, atom}
+    end
+  end
+
   describe "arithmetic" do
     test "arithmetic with add and mult" do
       str = """
@@ -145,7 +170,7 @@ defmodule Fika.ParserTest do
       ]
     end
 
-    test "with return type" do
+    test "with return type Int" do
       str = """
       fn foo : Int do
         123
@@ -155,9 +180,24 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
 
       assert result == [
-        {:function, [position: {3, 22, 25}],
-          {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}}
-      ]
+                {:function, [position: {3, 22, 25}],
+                {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}}
+            ]
+    end
+
+    test "with return type :ok" do
+      str = """
+      fn foo : :ok do
+        123
+      end
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+
+      assert result == [
+                {:function, [position: {3, 22, 25}],
+                {:foo, [], {:type, {1, 0, 12}, ":ok"}, [{:integer, {2, 16, 21}, 123}]}}
+            ]
     end
 
     test "with type params" do
@@ -200,6 +240,34 @@ defmodule Fika.ParserTest do
           }
         }
       ]
+    end
+  end
+
+  describe "if-else expression" do
+    test "simple if-else" do
+      str = """
+      if true do
+        a = 1
+        b = 2
+      else
+        c = 3
+      end
+      """
+
+      assert {
+        {:if, {6, 40, 43}}, parsed_condition, parsed_if_block, parsed_else_block,
+      } = Parser.expression!(str)
+
+      assert {:boolean, {1, 0, 7}, true} = parsed_condition
+
+      assert [
+        {{:=, {2, 11, 18}}, {:identifier, {2, 11, 14}, :a}, {:integer, {2, 11, 18}, 1}},
+        {{:=, {3, 19, 26}}, {:identifier, {3, 19, 22}, :b}, {:integer, {3, 19, 26}, 2}}
+      ] = parsed_if_block
+
+      assert [
+        {{:=, {5, 32, 39}}, {:identifier, {5, 32, 35}, :c}, {:integer, {5, 32, 39}, 3}}
+      ] = parsed_else_block
     end
   end
 
@@ -405,6 +473,20 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
       assert result == [{:type, {1, 0, 23}, "{foo:Int,bar:String}"}]
     end
+
+     test "atom type" do
+      str = ":foo"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      assert result == [{:type, {1, 0, 4}, ":foo"}]
+    end
+
+    test "list of atom" do
+      str = "List(:foo)"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      assert result == [{:type, {1, 0, 10}, "List(:foo)"}]
+    end
   end
 
   describe "function reference" do
@@ -506,6 +588,36 @@ defmodule Fika.ParserTest do
           {:foo, [], {:type, {1, 0, 6}, "Nothing"},
             [{:string, {2, 10, 21}, "foo#bar"}]}}
       ]
+    end
+  end
+
+  describe "call using function reference" do
+    test "using identifier" do
+      str = "foo.(x, y)"
+      result = Parser.expression!(str)
+
+      args = [
+        {:identifier, {1, 0, 6}, :x},
+        {:identifier, {1, 0, 9}, :y}
+      ]
+      assert result == {:call, {{:identifier, {1, 0, 3}, :foo}, {1, 0, 10}}, args}
+    end
+
+    test "using function call" do
+      str = "foo().(x, y)"
+      result = Parser.expression!(str)
+
+      args = [
+        {:identifier, {1, 0, 8}, :x},
+        {:identifier, {1, 0, 11}, :y}
+      ]
+      exp = {:call, {:foo, {1, 0, 5}}, [], nil}
+      assert result == {:call, {exp, {1, 0, 12}}, args}
+    end
+
+    test "using literal expression fails" do
+      str = "123.(x, y)"
+      assert {:error, _, _, _, _, _} = Parser.expression(str)
     end
   end
 end

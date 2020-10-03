@@ -18,6 +18,14 @@ defmodule Fika.ParserHelper do
     {:integer, line, value}
   end
 
+  def do_to_ast({[value], line}, :boolean) do
+    {:boolean, line, value == "true"}
+  end
+
+  def do_to_ast({[condition, true_block, false_block], line}, :exp_if_else) do
+    {{:if, line}, condition, true_block, false_block}
+  end
+
   def do_to_ast({[left, bin_op, right | rest], line}, :exp_bin_op) when bin_op in ["+", "-", "*", "/"] do
     new_left = {:call, {String.to_atom(bin_op), line}, [left, right], :kernel}
     do_to_ast({[new_left | rest], line}, :exp_bin_op)
@@ -49,7 +57,14 @@ defmodule Fika.ParserHelper do
   end
 
   def do_to_ast({types, line}, :type) do
-    type = Enum.join(types)
+    type =
+      Enum.reduce(types, "", fn
+        {:atom, _l, value}, acc ->
+          acc <> ":#{value}"
+
+        type, acc ->
+          acc <> type
+      end)
 
     {:type, line, type}
   end
@@ -67,6 +82,15 @@ defmodule Fika.ParserHelper do
     {:identifier, _, module_alias} = module_alias
     {:identifier, _, name} = name
     {:call, {name, line}, args, module_alias}
+  end
+
+  def do_to_ast({val, line}, :function_ref_call) do
+    case val do
+      [exp, args] ->
+        {:call, {exp, line}, args}
+      [val] ->
+        val
+    end
   end
 
   def do_to_ast({[identifier, exp], line}, :exp_match) do
@@ -104,6 +128,10 @@ defmodule Fika.ParserHelper do
     end
   end
 
+  def do_to_ast({[{:identifier, line, value}], line}, :atom) do
+    {:atom, line, value}
+  end
+  
   defp value_from_identifier({:identifier, _line, value}) do
     value
   end

@@ -1,4 +1,10 @@
-<img src="https://github.com/fika-lang/assets/blob/master/logo.png?raw=true" width="150"/> &nbsp; ![](https://img.shields.io/github/forks/fika-lang/fika?style=social) ![](https://img.shields.io/github/stars/fika-lang/fika?style=social) ![](https://img.shields.io/github/watchers/fika-lang/fika?style=social) <br>
+<img src="https://github.com/fika-lang/assets/blob/master/logo.png?raw=true" width="150"/> &nbsp;&nbsp; ![](https://img.shields.io/github/forks/fika-lang/fika?style=social) ![](https://img.shields.io/github/stars/fika-lang/fika?style=social) ![](https://img.shields.io/github/watchers/fika-lang/fika?style=social) <br>
+
+<a href="https://fossunited.org/" target="_blank" rel="noopener noreferrer">
+  <img src="http://fossunited.org/files/fossunited-badge.svg" alt="Supported by FOSSUnited">
+</a>
+
+<br/>
 
 ![](https://img.shields.io/github/repo-size/fika-lang/fika) ![](https://img.shields.io/github/license/fika-lang/fika?color=red)<br>
 ![](https://img.shields.io/github/issues/fika-lang/fika?color=green) ![](https://img.shields.io/github/issues-pr/fika-lang/fika?color=green) ![](https://img.shields.io/github/downloads/fika-lang/fika/total) ![](https://img.shields.io/github/last-commit/fika-lang/fika) ![](https://img.shields.io/github/contributors/fika-lang/fika)
@@ -15,7 +21,7 @@ compromising on programmer ergonomics.
 ### Clone git repository
 
 ```sh
-    $ Git clone "https://github.com/fika-lang/fika"
+    $ git clone "https://github.com/fika-lang/fika"
 ```
 
 You can run and edit the algorithms or contribute to them using [Gitpod.io](https://www.gitpod.io/), a free online development environment, with a single click.
@@ -68,12 +74,25 @@ sum(40, 2)
 example.sum(40, 2)
 ```
 
+#### If-Else expressions
+
+An if-else expression in Fika looks like this:
+
+```
+if true do
+  a = "we have if-else now!"
+  200
+else
+  404
+end
+```
+
 #### Basic types and operators
 
 Fika is currently a proof of concept so its data types and operators are quite
 limited.
 
-Data types - integers, strings, lists and records.
+Data types - atoms, integers, strings, booleans, lists and records.
 Operators - assignment and arithmetic.
 
 ```elixir
@@ -86,6 +105,9 @@ c = a + b
 
 # Type: String
 str = "Hello world"
+
+# Type: Bool
+x = true
 
 # Type: List(Int)
 list_of_ints = [1, 2, 3]
@@ -174,17 +196,29 @@ mix escript.build
 Now open `http://localhost:6060` in the browser to see "Hello world" served
 by Fika.
 
+### Fika Syntax Hacking Guide
+
+Read about fika syntax hacking guide from here [Hacking guide](docs/hacking_syntax.md)
+
 ### Fika together!
 
 If you'd like to be part of the Fika community, please consider joining
 our [Discord server](https://discord.gg/zNs6Gs5). That's the best place to
 ask questions or get guidance on contributing to Fika.
 
-## License
+### Contributing
+
+Before submitting a bug, or any new feature please do the following: **[Check Contribution Guidelines Before Contribution](CONTRIBUTING.md)**.
+
+### Contributors
+
+[CONTRIBUTORS.md](CONTRIBUTORS.md)
+
+### License
 
 Licensed under the [MIT License](LICENSE)
 
-## Contributors
+### Author
 
 | <a href="http://emilsoman.com/"><img src="https://avatars.githubusercontent.com/emilsoman" width="150px" height="150px" /></a> |
 | :----------------------------------------------------------------------------------------------------------------------------: |
@@ -192,15 +226,7 @@ Licensed under the [MIT License](LICENSE)
 
 <hr/>
 
-<p align="center">
+### Thanks
 
-```bash
- _____ _                 _     __   __
-|_   _| |               | |    \ \ / /
-  | | | |__   __ _ _ __ | | __  \ V /___  _   _
-  | | | '_ \ / _` | '_ \| |/ /   \ // _ \| | | |
-  | | | | | | (_| | | | |   <    | | (_) | |_| |
-  \_/ |_| |_|\__,_|_| |_|_|\_\   \_/\___/ \__,_|
-```
-
-</p>
+Fika's development is supported by its many contributors and [the grant from
+FOSSUnited](https://forum.fossunited.org/t/foss-hack-2020-results/424). Thank you!

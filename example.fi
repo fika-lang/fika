@@ -17,3 +17,19 @@ end
 fn sum_ref : Fn(Int, Int -> Int) do
   &sum(Int, Int)
 end
+
+fn call_sum_ref : Int do
+  sum_ref().(1, 2)
+end
+
+fn bool : Bool do
+  true
+end
+
+fn simple_if : String do
+  if true do
+    "this is a passing if!"
+  else
+    "you can't see me \m/"
+  end
+end
