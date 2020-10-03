@@ -105,6 +105,10 @@ defmodule Fika.ParserHelper do
     {:list, line, result}
   end
 
+  def do_to_ast({result, line}, :tuple) do
+    {:tuple, line, result}
+  end
+
   def do_to_ast({[k, v], _line}, :key_value) do
     {k, v}
   end

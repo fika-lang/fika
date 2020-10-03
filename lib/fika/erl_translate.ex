@@ -62,7 +62,7 @@ defmodule Fika.ErlTranslate do
   defp translate_exp({:atom, {line, _, _}, value}) do
     {:atom, line, value}
   end
-  
+
   defp translate_exp({{:=, {line, _, _}}, pattern, exp}) do
     {:match, line, translate_exp(pattern), translate_exp(exp)}
   end
@@ -81,6 +81,10 @@ defmodule Fika.ErlTranslate do
 
   defp translate_exp({:list, {line, _, _}, value}) do
     do_translate_list(value, line)
+  end
+
+  defp translate_exp({:tuple, {line, _, _}, value}) do
+    {:tuple, line, translate_exps(value)}
   end
 
   defp translate_exp({:record, {line, _, _}, name, k_vs}) do

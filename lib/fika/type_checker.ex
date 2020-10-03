@@ -149,6 +149,21 @@ defmodule Fika.TypeChecker do
     infer_list_exps(env, exps)
   end
 
+  # Tuple
+  def infer_exp(env, {:tuple, _, exps}) do
+    case do_infer_tuple_exps(exps, env) do
+      {:ok, exp_types, env} ->
+        exp_types =
+          exp_types
+          |> Enum.reverse()
+          |> Enum.join(",")
+
+        {:ok, "{#{exp_types}}", env}
+      error ->
+        error
+    end
+  end
+
   # Record
   def infer_exp(env, {:record, _, name, key_values}) do
     if name do
@@ -247,6 +262,16 @@ defmodule Fika.TypeChecker do
         {:ok, type, env} ->
           {:identifier, _, key} = k
           {:cont, {:ok, ["#{key}:#{type}" | acc], env}}
+        error -> {:halt, error}
+      end
+    end)
+  end
+
+  defp do_infer_tuple_exps(exps, env) do
+    Enum.reduce_while(exps, {:ok, [], env}, fn exp, {:ok, acc, env} ->
+      case infer_exp(env, exp) do
+        {:ok, exp_type, env} ->
+          {:cont, {:ok, [exp_type | acc], env}}
         error -> {:halt, error}
       end
     end)

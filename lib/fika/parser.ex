@@ -127,6 +127,14 @@ defmodule Fika.Parser do
     |> ignore(string("]"))
     |> Helper.to_ast(:exp_list)
 
+  tuple =
+    ignore(string("{"))
+    |> concat(allow_space)
+    |> concat(list_content)
+    |> concat(allow_space)
+    |> ignore(string("}"))
+    |> Helper.to_ast(:tuple)
+
   exp_paren =
     ignore(string("("))
     |> parsec(:exp)
@@ -230,6 +238,7 @@ defmodule Fika.Parser do
       boolean,
       string_exp,
       exp_list,
+      tuple,
       record,
       function_ref,
       atom,
@@ -306,6 +315,29 @@ defmodule Fika.Parser do
     |> concat(allow_space)
     |> string(")")
 
+  # To parse functions with tuple return type
+  type_tuple_element =
+    allow_space
+    |> parsec(:type)
+    |> label("tuple element")
+
+  type_tuple_elements =
+    type_tuple_element
+    |> repeat(
+      allow_space
+      |> ignore(string(","))
+      |> concat(allow_space)
+      |> concat(type_tuple_element)
+    )
+    |> reduce({Enum, :join, [","]})
+
+  tuple_type =
+    string("{")
+    |> concat(type_tuple_elements)
+    |> string("}")
+    |> reduce({Enum, :join, []})
+    |> label("tuple type")
+
   type_key_value =
     allow_space
     |> concat(identifier_str)
@@ -349,7 +381,9 @@ defmodule Fika.Parser do
       simple_type
       |> optional(type_parens),
       record_type,
-      atom
+      atom,
+      record_type,
+      tuple_type
     ])
 
   parse_type =

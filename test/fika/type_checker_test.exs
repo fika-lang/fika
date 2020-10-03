@@ -78,6 +78,22 @@ defmodule Fika.TypeCheckerTest do
     assert {:error, "Expected type: Float, got: Int"} = TypeChecker.check(function, env)
   end
 
+  test "checks tuple return type for function" do
+    str = """
+    fn foo : {Float} do
+      {2}
+    end
+    """
+
+    {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test")
+
+    env =
+      Env.init()
+      |> Env.init_module_env("test", ast)
+
+    assert {:error, "Expected type: {Float}, got: {Int}"} = TypeChecker.check(function, env)
+  end
+
   test "infer return type of another function in the module" do
     str = """
     fn foo(a: Int) : Int do
@@ -180,6 +196,48 @@ defmodule Fika.TypeCheckerTest do
       {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
 
       assert {:ok, "List(Nothing)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+  end
+
+  describe "tuples" do
+    test "tuple of integers" do
+      str = "{1, 2, 3}"
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {:ok, "{Int,Int,Int}", _env} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "tuple of integers and floats" do
+      str = "{1, 2/3, 3}"
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {:ok,"{Int,Float,Int}", _env} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "tuple of floats inferred from fn calls" do
+      str = "{1/2, 2/3}"
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {:ok, "{Float,Float}", _env} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "tuple of strings" do
+      str = ~s({"foo", "bar"})
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {:ok, "{String,String}", _env} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "tuple of tuple of mixed types" do
+      str = ~s({{1, 2/5}, {"3", true}})
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {:ok, "{{Int,Float},{String,Bool}}", _env} = TypeChecker.infer_exp(Env.init(), ast)
     end
   end
 
