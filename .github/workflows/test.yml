@@ -28,6 +28,6 @@ jobs:
       - name: Compile Code
         run: mix compile --warnings-as-errors
       - name: Ensure Code is Formatted
-        run: mix format --check-Formatted
+        run: mix format --check-formatted
       - name: Run Tests
         run: mix test
