@@ -216,7 +216,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = Fika.Parser.expression!(str)
 
-      assert {:ok,"{Int,Float,Int}", _env} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, "{Int,Float,Int}", _env} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "tuple of floats inferred from fn calls" do
