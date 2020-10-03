@@ -34,6 +34,6 @@ fn simple_if : String do
   end
 end
 
-fn tuple : Tuple(Int) do
-  {1, 2, 3}
+fn tuple : {Int,Bool} do
+  {1, true}
 end
