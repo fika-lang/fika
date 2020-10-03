@@ -1,9 +1,11 @@
 defmodule Fika.TypeCheckerTest do
   use ExUnit.Case
+
   alias Fika.{
     Env,
     TypeChecker
   }
+
   alias Fika.Types.FunctionRef
 
   test "infer type of integer literals" do
@@ -163,7 +165,8 @@ defmodule Fika.TypeCheckerTest do
 
       {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
 
-      assert {:error, "Elements of list have different types. Expected: Int, got: Float"} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:error, "Elements of list have different types. Expected: Int, got: Float"} =
+               TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "list of floats inferred from fn calls" do
@@ -269,8 +272,8 @@ defmodule Fika.TypeCheckerTest do
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("bar.sum(Int,Int)", "Int")
 
-      assert {:ok, %FunctionRef{arg_types: ["Int", "Int"],
-        return_type: "Int"}, _} = TypeChecker.infer_exp(env, ast)
+      assert {:ok, %FunctionRef{arg_types: ["Int", "Int"], return_type: "Int"}, _} =
+               TypeChecker.infer_exp(env, ast)
     end
 
     test "without args" do
@@ -283,7 +286,7 @@ defmodule Fika.TypeCheckerTest do
         |> Env.add_function_type("bar.sum()", "Int")
 
       assert {:ok, %FunctionRef{arg_types: [], return_type: "Int"}, _} =
-        TypeChecker.infer_exp(env, ast)
+               TypeChecker.infer_exp(env, ast)
     end
   end
 
@@ -305,7 +308,7 @@ defmodule Fika.TypeCheckerTest do
 
   describe "if-else expression" do
     test "error when condition expression has non-boolean type" do
-      str =  """
+      str = """
       if "true" do
         "foo"
       else
@@ -317,13 +320,13 @@ defmodule Fika.TypeCheckerTest do
       env = Env.init_module_env(Env.init(), "test", ast)
 
       assert {
-        :error,
-        "Wrong type for if condition. Expected: Bool, Got: String"
-      } = TypeChecker.infer_exp(env, ast)
+               :error,
+               "Wrong type for if condition. Expected: Bool, Got: String"
+             } = TypeChecker.infer_exp(env, ast)
     end
 
     test "completes when if and else blocks have same return type" do
-      str =  """
+      str = """
       if true do
         "done"
       else
@@ -338,7 +341,7 @@ defmodule Fika.TypeCheckerTest do
     end
 
     test "error when if and else blocks have different return types" do
-      str =  """
+      str = """
       if false do
         "done"
       else
@@ -350,13 +353,13 @@ defmodule Fika.TypeCheckerTest do
       env = Env.init_module_env(Env.init(), "test", ast)
 
       assert {
-        :error,
-        "Expected if and else blocks to have same return type. Got String and Int"
-      } = TypeChecker.infer_exp(env, ast)
+               :error,
+               "Expected if and else blocks to have same return type. Got String and Int"
+             } = TypeChecker.infer_exp(env, ast)
     end
 
     test "with multiple expressions in blocks" do
-      str =  """
+      str = """
       if true do
         a = "done"
         a
@@ -406,7 +409,7 @@ defmodule Fika.TypeCheckerTest do
         |> Env.init_module_env("test", ast)
 
       assert {:error, "Expected a function reference, but got type: Int"} =
-        TypeChecker.infer(function, env)
+               TypeChecker.infer(function, env)
     end
 
     test "function ref when given wrong types" do
@@ -424,7 +427,9 @@ defmodule Fika.TypeCheckerTest do
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("test2.bar(String,Int)", "Bool")
 
-      error = "Expected function reference to be called with arguments (String,Int), but it was called with arguments (Int)"
+      error =
+        "Expected function reference to be called with arguments (String,Int), but it was called with arguments (Int)"
+
       assert {:error, ^error} = TypeChecker.infer(function, env)
     end
   end

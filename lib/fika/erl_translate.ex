@@ -2,10 +2,12 @@ defmodule Fika.ErlTranslate do
   def translate({:module, module_name, functions}, file) do
     line = 1
     file = String.to_charlist(file)
+
     module = [
       {:attribute, line, :file, {file, line}},
       {:attribute, line, :module, String.to_atom(module_name)}
     ]
+
     {exports, function_declaration} = to_forms(functions)
 
     module ++ exports ++ function_declaration
@@ -33,7 +35,8 @@ defmodule Fika.ErlTranslate do
     Enum.map(exps, &translate_exp/1)
   end
 
-  defp translate_exp({:call, {bin_op, {line, _, _}}, [arg1, arg2], _module}) when bin_op in [:+, :-, :*, :/] do
+  defp translate_exp({:call, {bin_op, {line, _, _}}, [arg1, arg2], _module})
+       when bin_op in [:+, :-, :*, :/] do
     {:op, line, bin_op, translate_exp(arg1), translate_exp(arg2)}
   end
 
@@ -88,9 +91,11 @@ defmodule Fika.ErlTranslate do
   end
 
   defp translate_exp({:record, {line, _, _}, name, k_vs}) do
-    k_vs = Enum.map(k_vs, fn {{:identifier, {l, _, _}, k}, v} ->
-      {:map_field_assoc, l, {:atom, l, k}, translate_exp(v)}
-    end)
+    k_vs =
+      Enum.map(k_vs, fn {{:identifier, {l, _, _}, k}, v} ->
+        {:map_field_assoc, l, {:atom, l, k}, translate_exp(v)}
+      end)
+
     k_vs = add_record_meta(k_vs, name, line)
 
     {:map, line, k_vs}
@@ -98,12 +103,14 @@ defmodule Fika.ErlTranslate do
 
   defp translate_exp({:function_ref, {line, _, _}, {module, function, arg_types}}) do
     arity = length(arg_types)
+
     f =
       if module do
         {:function, {:atom, line, module}, {:atom, line, function}, {:integer, line, arity}}
       else
         {:function, function, arity}
       end
+
     {:fun, line, f}
   end
 
@@ -122,7 +129,7 @@ defmodule Fika.ErlTranslate do
   defp add_record_meta(k_vs, name, line) do
     name =
       if name do
-         {:atom, 0, String.to_atom(name)}
+        {:atom, 0, String.to_atom(name)}
       else
         {nil, 0}
       end

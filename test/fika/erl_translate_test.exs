@@ -1,5 +1,6 @@
 defmodule Fika.ErlTranslateTest do
   use ExUnit.Case
+
   alias Fika.{
     Parser,
     ErlTranslate
@@ -19,6 +20,7 @@ defmodule Fika.ErlTranslateTest do
 
     ast = Parser.parse_module(str, "test")
     result = ErlTranslate.translate(ast, "/tmp/foo")
+
     forms = [
       {:attribute, 1, :file, {'/tmp/foo', 1}},
       {:attribute, 1, :module, :test},
@@ -34,6 +36,7 @@ defmodule Fika.ErlTranslateTest do
           ]}
        ]}
     ]
+
     assert result == forms
   end
 
@@ -46,21 +49,21 @@ defmodule Fika.ErlTranslateTest do
 
     ast = Parser.parse_module(str, "test_arithmetic")
     result = ErlTranslate.translate(ast, "/tmp/foo")
+
     forms = [
       {:attribute, 1, :file, {'/tmp/foo', 1}},
       {:attribute, 1, :module, :test_arithmetic},
       {:attribute, 3, :export, [a: 0]},
       {:function, 3, :a, 0,
-        [
-          {:clause, 3, [], [],
-            [
-              {:op, 2, :+, {:integer, 2, 1},
-                {:op, 2, :/, {:op, 2, :*, {:integer, 2, 2}, {:integer, 2, 3}},
-                  {:integer, 2, 4}}}
-            ]}
-        ]
-      }
+       [
+         {:clause, 3, [], [],
+          [
+            {:op, 2, :+, {:integer, 2, 1},
+             {:op, 2, :/, {:op, 2, :*, {:integer, 2, 2}, {:integer, 2, 3}}, {:integer, 2, 4}}}
+          ]}
+       ]}
     ]
+
     assert result == forms
   end
 
@@ -69,10 +72,12 @@ defmodule Fika.ErlTranslateTest do
     ast = Parser.expression!(str)
     result = ErlTranslate.translate_expression(ast)
 
-    assert result == {:map, 1, [
-        {:map_field_assoc, 1, {:atom, 0, :__record__}, {nil, 0}},
-        {:map_field_assoc, 1, {:atom, 1, :foo}, {:integer, 1, 1}}
-    ]}
+    assert result ==
+             {:map, 1,
+              [
+                {:map_field_assoc, 1, {:atom, 0, :__record__}, {nil, 0}},
+                {:map_field_assoc, 1, {:atom, 1, :foo}, {:integer, 1, 1}}
+              ]}
   end
 
   describe "function reference" do
@@ -81,8 +86,8 @@ defmodule Fika.ErlTranslateTest do
       ast = Parser.expression!(str)
       result = ErlTranslate.translate_expression(ast)
 
-      assert result == {:fun, 1,
-        {:function, {:atom, 1, :my_module}, {:atom, 1, :foo}, {:integer, 1, 2}}}
+      assert result ==
+               {:fun, 1, {:function, {:atom, 1, :my_module}, {:atom, 1, :foo}, {:integer, 1, 2}}}
     end
 
     test "without module" do
@@ -90,8 +95,7 @@ defmodule Fika.ErlTranslateTest do
       ast = Parser.expression!(str)
       result = ErlTranslate.translate_expression(ast)
 
-      assert result == {:fun, 1,
-        {:function, :foo, 2}}
+      assert result == {:fun, 1, {:function, :foo, 2}}
     end
   end
 
@@ -124,7 +128,7 @@ defmodule Fika.ErlTranslateTest do
   end
 
   test "if-else expression" do
-    str =  """
+    str = """
     if true do
       "foo"
     else
@@ -134,12 +138,12 @@ defmodule Fika.ErlTranslateTest do
 
     ast = Fika.Parser.expression!(str)
     result = ErlTranslate.translate_expression(ast)
+
     assert {:case, 5, {:atom, 1, true},
-      [
-        {:clause, 5, [{:atom, 5, true}], [], [{:string, 2, 'foo'}]},
-        {:clause, 5, [{:atom, 5, false}], [], [{:string, 4, 'bar'}]}
-      ]
-    } = result
+            [
+              {:clause, 5, [{:atom, 5, true}], [], [{:string, 2, 'foo'}]},
+              {:clause, 5, [{:atom, 5, false}], [], [{:string, 4, 'bar'}]}
+            ]} = result
   end
 
   describe "tuple" do

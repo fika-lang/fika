@@ -13,7 +13,8 @@ defmodule Fika.Code do
       {:ok, str} ->
         load_string(str, file)
 
-      {:error, error} -> IO.puts("Cannot read file: #{inspect error}")
+      {:error, error} ->
+        IO.puts("Cannot read file: #{inspect(error)}")
     end
   end
 
@@ -24,7 +25,7 @@ defmodule Fika.Code do
       {:ok, _env} = TypeChecker.check_module(ast, Env.init())
       forms = ErlTranslate.translate(ast, file)
       {:module, module} = result = load_forms(forms, file)
-      Logger.debug "Loaded module #{module}"
+      Logger.debug("Loaded module #{module}")
       result
     else
       {:error, "Invalid filename. Make sure it's something like foo/bar/baz.fi"}

@@ -17,13 +17,14 @@ defmodule Fika.Cli do
     function = opts[:function] || "main.start()"
 
     {:module, module} = Fika.Code.load_file(main_file)
-    Logger.debug "Calling :#{module}.#{function}"
+    Logger.debug("Calling :#{module}.#{function}")
     {result, _binding} = Code.eval_string(":\"#{module}\".#{function}")
-    IO.inspect result
+    IO.inspect(result)
   end
 
   defp parse_args(["start" | rest]) do
     path = List.first(rest)
+
     case Fika.start(path) do
       :ok -> :timer.sleep(:infinity)
       :error -> :error
