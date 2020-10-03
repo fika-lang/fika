@@ -27,6 +27,15 @@ defmodule Fika.ParserTest do
     end
   end
 
+  describe "atom" do
+    test "parses multi-char atoms" do
+      atom = :foobar
+      str = ":#{atom}"
+
+      assert Parser.expression!(str) == {:atom, {1, 0, 7}, atom}
+    end
+  end
+
   describe "arithmetic" do
     test "arithmetic with add and mult" do
       str = """
@@ -178,7 +187,7 @@ defmodule Fika.ParserTest do
              ]
     end
 
-    test "with return type" do
+    test "with return type Int" do
       str = """
       fn foo : Int do
         123
@@ -190,6 +199,21 @@ defmodule Fika.ParserTest do
       assert result == [
                {:function, [position: {3, 22, 25}],
                 {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}}
+             ]
+    end
+
+    test "with return type :ok" do
+      str = """
+      fn foo : :ok do
+        123
+      end
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+
+      assert result == [
+               {:function, [position: {3, 22, 25}],
+                {:foo, [], {:type, {1, 0, 12}, ":ok"}, [{:integer, {2, 16, 21}, 123}]}}
              ]
     end
 
@@ -474,6 +498,20 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
       assert result == [{:type, {1, 0, 23}, "{foo:Int,bar:String}"}]
+    end
+
+    test "atom type" do
+      str = ":foo"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      assert result == [{:type, {1, 0, 4}, ":foo"}]
+    end
+
+    test "list of atom" do
+      str = "List(:foo)"
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      assert result == [{:type, {1, 0, 10}, "List(:foo)"}]
     end
   end
 

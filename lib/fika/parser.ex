@@ -74,6 +74,12 @@ defmodule Fika.Parser do
     |> label("boolean")
     |> Helper.to_ast(:boolean)
 
+  atom =
+    ignore(string(":"))
+    |> concat(identifier)
+    |> label("atom")
+    |> Helper.to_ast(:atom)
+
   string_exp =
     ignore(string("\""))
     |> repeat(choice([string("\\\""), utf8_char(not: ?")]))
@@ -226,6 +232,7 @@ defmodule Fika.Parser do
       exp_list,
       record,
       function_ref,
+      atom,
       exp_if_else
     ])
 
@@ -339,7 +346,8 @@ defmodule Fika.Parser do
       function_type,
       simple_type
       |> optional(type_parens),
-      record_type
+      record_type,
+      atom
     ])
 
   parse_type =

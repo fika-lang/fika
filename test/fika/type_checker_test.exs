@@ -16,6 +16,22 @@ defmodule Fika.TypeCheckerTest do
     assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
+  test "infer type of atom expressions" do
+    str = ":a"
+
+    {:atom, {1, 0, 2}, :a} = ast = Fika.Parser.expression!(str)
+
+    assert {:ok, ":a", _} = TypeChecker.infer_exp(Env.init(), ast)
+  end
+
+  test "infer type for list of atom expressions" do
+    str = "[:a, :a]"
+
+    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+
+    assert {:ok, "List(:a)", _} = TypeChecker.infer_exp(Env.init(), ast)
+  end
+
   test "infer type of arithmetic expressions" do
     str = "1 + 2"
 

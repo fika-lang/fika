@@ -212,6 +212,12 @@ defmodule Fika.TypeChecker do
     end
   end
 
+  # Atom value
+  def infer_exp(env, {:atom, _line, atom}) do
+    Logger.debug("Atom value found. Type: #{atom}")
+    {:ok, ":#{atom}", env}
+  end
+
   # if-else expression
   def infer_exp(env, {{:if, _line}, condition, if_block, else_block}) do
     Logger.debug("Inferring an if-else expression")
