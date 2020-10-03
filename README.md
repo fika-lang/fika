@@ -95,6 +95,9 @@ x = true
 # Type: List(Int)
 list_of_ints = [1, 2, 3]
 
+# Type: Tuple(String)
+tuple_of_strings = {"this", "is", "a", "tuple", "of", "strings!"}
+
 # Type: {foo: Int}
 record = {foo: 123}
 ```
