@@ -149,6 +149,11 @@ defmodule Fika.TypeChecker do
     infer_list_exps(env, exps)
   end
 
+  # Tuple
+  def infer_exp(env, {:tuple, _, exps}) do
+    infer_tuple_exps(env, exps)
+  end
+
   # Record
   def infer_exp(env, {:record, _, name, key_values}) do
     if name do
@@ -290,6 +295,33 @@ defmodule Fika.TypeChecker do
           {:cont, acc}
         {:ok, diff_type, _} ->
           error = {:error, "Elements of list have different types. Expected: #{type}, got: #{diff_type}"}
+          {:halt, error}
+        error ->
+          {:halt, error}
+      end
+    end)
+  end
+
+  defp infer_tuple_exps(env, {exp}) do
+    case infer_exp(env, exp) do
+      {:ok, type, env} -> {:ok, "Tuple(#{type})", env}
+      error -> error
+    end
+  end
+
+  defp infer_tuple_exps(env, mutli_exps_tuple) when is_tuple(mutli_exps_tuple) do
+    first_exp = elem(mutli_exps_tuple, 0)
+    {:ok, type, env} = infer_exp(env, first_exp)
+
+    rest = Tuple.to_list(Tuple.delete_at(mutli_exps_tuple, 0))
+
+    Enum.reduce_while(rest, {:ok, "Tuple(#{type})", env}, fn exp, {:ok, acc_type, acc_env} ->
+      case infer_exp(acc_env, exp) do
+        {:ok, ^type, env} ->
+          acc = {:ok, acc_type, env}
+          {:cont, acc}
+        {:ok, diff_type, _} ->
+          error = {:error, "Elements of tuple have different types. Expected: #{type}, got: #{diff_type}"}
           {:halt, error}
         error ->
           {:halt, error}

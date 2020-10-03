@@ -183,6 +183,62 @@ defmodule Fika.TypeCheckerTest do
     end
   end
 
+  describe "tuples" do
+    test "tuple of integers" do
+      str = "{1, 2, 3}"
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {:ok, "Tuple(Int)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "tuple of integers and floats" do
+      str = "{1, 2/3, 3}"
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {
+        :error,
+        "Elements of tuple have different types. Expected: Int, got: Float"
+      } = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "tuple of floats inferred from fn calls" do
+      str = "{1/2, 2/3}"
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {:ok, "Tuple(Float)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "tuple of strings" do
+      str = ~s({"foo", "bar"})
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {:ok, "Tuple(String)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "tuple of tuple of integers" do
+      str = "{{1, 2}, {3, 4}}"
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {:ok, "Tuple(Tuple(Int))", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "tuple of tuple of mixed types" do
+      str = ~s({{1, 2}, {"3", 4}})
+
+      ast = Fika.Parser.expression!(str)
+
+      assert {
+        :error,
+        "Elements of tuple have different types. Expected: String, got: Int"
+      } = TypeChecker.infer_exp(Env.init(), ast)
+    end
+  end
+
   describe "record" do
     test "unnamed record" do
       str = "{foo: 123, bar: \"Baz\"}"
