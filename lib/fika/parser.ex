@@ -11,7 +11,7 @@ defmodule Fika.Parser do
 
   comment =
     string("#")
-    |> repeat(utf8_char([not: ?\n]))
+    |> repeat(utf8_char(not: ?\n))
     |> string("\n")
 
   vertical_space =
@@ -82,7 +82,7 @@ defmodule Fika.Parser do
 
   string_exp =
     ignore(string("\""))
-    |> repeat(choice([string("\\\""), utf8_char([not: ?"])]))
+    |> repeat(choice([string("\\\""), utf8_char(not: ?")]))
     |> ignore(string("\""))
     |> Helper.to_ast(:string)
 
@@ -126,6 +126,14 @@ defmodule Fika.Parser do
     |> concat(allow_space)
     |> ignore(string("]"))
     |> Helper.to_ast(:exp_list)
+
+  tuple =
+    ignore(string("{"))
+    |> concat(allow_space)
+    |> concat(list_content)
+    |> concat(allow_space)
+    |> ignore(string("}"))
+    |> Helper.to_ast(:tuple)
 
   exp_paren =
     ignore(string("("))
@@ -230,6 +238,7 @@ defmodule Fika.Parser do
       boolean,
       string_exp,
       exp_list,
+      tuple,
       record,
       function_ref,
       atom,
@@ -260,8 +269,7 @@ defmodule Fika.Parser do
       |> parsec(:term)
     )
 
-  exp_mult_op =
-    Helper.to_ast(term, :exp_bin_op)
+  exp_mult_op = Helper.to_ast(term, :exp_bin_op)
 
   exp_bin_op =
     exp_mult_op
@@ -272,8 +280,7 @@ defmodule Fika.Parser do
       |> parsec(:exp_bin_op)
     )
 
-  exp_add_op =
-    Helper.to_ast(exp_bin_op, :exp_bin_op)
+  exp_add_op = Helper.to_ast(exp_bin_op, :exp_bin_op)
 
   exp =
     choice([
@@ -305,6 +312,29 @@ defmodule Fika.Parser do
     |> concat(type_args)
     |> concat(allow_space)
     |> string(")")
+
+  # To parse functions with tuple return type
+  type_tuple_element =
+    allow_space
+    |> parsec(:type)
+    |> label("tuple element")
+
+  type_tuple_elements =
+    type_tuple_element
+    |> repeat(
+      allow_space
+      |> ignore(string(","))
+      |> concat(allow_space)
+      |> concat(type_tuple_element)
+    )
+    |> reduce({Enum, :join, [","]})
+
+  tuple_type =
+    string("{")
+    |> concat(type_tuple_elements)
+    |> string("}")
+    |> reduce({Enum, :join, []})
+    |> label("tuple type")
 
   type_key_value =
     allow_space
@@ -349,7 +379,9 @@ defmodule Fika.Parser do
       simple_type
       |> optional(type_parens),
       record_type,
-      atom
+      atom,
+      record_type,
+      tuple_type
     ])
 
   parse_type =

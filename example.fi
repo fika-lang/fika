@@ -33,3 +33,7 @@ fn simple_if : String do
     "you can't see me \m/"
   end
 end
+
+fn tuple : {Int,Bool} do
+  {1, true}
+end

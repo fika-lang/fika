@@ -14,21 +14,18 @@ defmodule Fika.Env do
         "kernel.+(Int,Float)" => "Float",
         "kernel.+(Float,Int)" => "Float",
         "kernel.+(Float,Float)" => "Float",
-
         "kernel.-(Int,Int)" => "Int",
         "kernel.-(Int,Float)" => "Float",
         "kernel.-(Float,Int)" => "Float",
         "kernel.-(Float,Float)" => "Float",
-
         "kernel.*(Int,Int)" => "Int",
         "kernel.*(Int,Float)" => "Float",
         "kernel.*(Float,Int)" => "Float",
         "kernel.*(Float,Float)" => "Float",
-
         "kernel./(Int,Int)" => "Float",
         "kernel./(Int,Float)" => "Float",
         "kernel./(Float,Int)" => "Float",
-        "kernel./(Float,Float)" => "Float",
+        "kernel./(Float,Float)" => "Float"
       }
     }
   end
@@ -70,7 +67,7 @@ defmodule Fika.Env do
   end
 
   defp add_known_function(env, signature) do
-    update_in(env, [:module_env, :known_functions], & [signature | &1])
+    update_in(env, [:module_env, :known_functions], &[signature | &1])
   end
 
   def ast_functions(env) do
