@@ -1,7 +1,7 @@
 on: [pull_request, push]
 
 jobs:
-  test:
+  deps:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -25,9 +25,20 @@ jobs:
           mix local.rebar --force
           mix local.hex --force
           mix deps.get
-      - name: Compile Code
-        run: mix compile --warnings-as-errors
       - name: Ensure Code is Formatted
         run: mix format --check-formatted
+  test:
+    runs-on: ubuntu-latest
+    needs: deps
+    steps:
+      - name: Compile Code
+        run: MIX_ENV=test mix compile --warnings-as-errors
       - name: Run Tests
         run: mix test
+  release:
+    runs-on: ubuntu-latest
+    needs: deps
+    steps:
+      - name: Generate Release
+        if: ${{github.ref}} == 'feat/add-release-job-for-ci'
+        run: mix release
