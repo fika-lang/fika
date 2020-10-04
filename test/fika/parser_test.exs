@@ -696,4 +696,51 @@ defmodule Fika.ParserTest do
       assert {:error, _, _, _, _, _} = Parser.expression(str)
     end
   end
+
+  describe "logic operators" do
+    test "supports consts" do
+      assert {:boolean, _line, true} = Parser.expression!("true")
+    end
+
+    test "supports negation" do
+      assert {:call, {:!, _}, [{:boolean, _, true}], kernel} = Parser.expression!("!true")
+    end
+
+    test "supports negation with more complex" do
+      {
+        :call,
+        {:!, _},
+        [
+          {:call, {:||, _}, [{:boolean, _, true}, {:boolean, _, false}], :kernel}
+        ],
+        :kernel
+      } = Parser.expression!("!(true || false)")
+    end
+
+    test "simple usage" do
+      str = "false || true"
+      result = Parser.expression!(str)
+
+      assert {:call, {:||, _},
+              [
+                {:boolean, _, false},
+                {:boolean, _, true}
+              ], :kernel} = result
+    end
+
+    test "using parens" do
+      str = "true && (false || true)"
+      result = Parser.expression!(str)
+
+      assert {
+               :call,
+               {:&&, _},
+               [
+                 {:boolean, _, true},
+                 {:call, {:||, _}, [{:boolean, _, false}, {:boolean, _, true}], :kernel}
+               ],
+               :kernel
+             } = result
+    end
+  end
 end

@@ -25,7 +25,10 @@ defmodule Fika.Env do
         "kernel./(Int,Int)" => "Float",
         "kernel./(Int,Float)" => "Float",
         "kernel./(Float,Int)" => "Float",
-        "kernel./(Float,Float)" => "Float"
+        "kernel./(Float,Float)" => "Float",
+        "kernel.||(Bool,Bool)" => "Bool",
+        "kernel.&&(Bool,Bool)" => "Bool",
+        "kernel.!(Bool)" => "Bool"
       }
     }
   end

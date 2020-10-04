@@ -31,8 +31,18 @@ defmodule Fika.ParserHelper do
     do_to_ast({[new_left | rest], line}, :exp_bin_op)
   end
 
+  def do_to_ast({[left, bin_op, right | rest], line}, :exp_bin_op)
+      when bin_op in ["||", "&&"] do
+    new_left = {:call, {String.to_atom(bin_op), line}, [left, right], :kernel}
+    do_to_ast({[new_left | rest], line}, :exp_bin_op)
+  end
+
   def do_to_ast({[result], _line}, :exp_bin_op) do
     result
+  end
+
+  def do_to_ast({["!", exp], line}, :negation) do
+    {:call, {:!, line}, [exp], :kernel}
   end
 
   def do_to_ast({[name], line}, :identifier) do
@@ -133,6 +143,10 @@ defmodule Fika.ParserHelper do
         {:function_ref, line,
          {value_from_identifier(module), value_from_identifier(function), arg_types}}
     end
+  end
+
+  def do_to_ast({[{:identifier, line, value}], line}, :atom) when value in [true, false] do
+    {:boolean, line, value}
   end
 
   def do_to_ast({[{:identifier, line, value}], line}, :atom) do

@@ -254,10 +254,16 @@ defmodule Fika.Parser do
     |> optional(function_ref_call)
     |> Helper.to_ast(:function_ref_call)
 
+  negation =
+    string("!")
+    |> parsec(:term)
+    |> Helper.to_ast(:negation)
+
   factor =
     choice([
       literal_exps,
-      non_literal_exps
+      non_literal_exps,
+      negation
     ])
 
   term =
@@ -275,7 +281,7 @@ defmodule Fika.Parser do
     exp_mult_op
     |> optional(
       allow_space
-      |> choice([string("+"), string("-")])
+      |> choice([string("+"), string("-"), string("||"), string("&&")])
       |> concat(allow_space)
       |> parsec(:exp_bin_op)
     )

@@ -67,6 +67,15 @@ defmodule Fika.ErlTranslateTest do
     assert result == forms
   end
 
+  test "logical operators" do
+    str = "(true || !false) && true"
+
+    ast = Parser.expression!(str)
+
+    assert {:op, 1, :and, {:op, 1, :or, {:atom, 1, true}, {:op, 1, :not, {:atom, 1, false}}},
+            {:atom, 1, true}} = ErlTranslate.translate_expression(ast)
+  end
+
   test "record" do
     str = "{foo: 1}"
     ast = Parser.expression!(str)
