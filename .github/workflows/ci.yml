@@ -1,7 +1,7 @@
 on: [pull_request, push]
 
 jobs:
-  deps:
+  main:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -27,18 +27,19 @@ jobs:
           mix deps.get
       - name: Ensure Code is Formatted
         run: mix format --check-formatted
-  test:
-    runs-on: ubuntu-latest
-    needs: deps
-    steps:
-      - name: Compile Code
+      - name: Compile for Tests
         run: MIX_ENV=test mix compile --warnings-as-errors
       - name: Run Tests
         run: mix test
   release:
     runs-on: ubuntu-latest
-    needs: deps
+    needs: main
     steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-elixir@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
       - name: Generate Release
         if: ${{github.ref}} == 'feat/add-release-job-for-ci'
         run: mix release
