@@ -33,4 +33,4 @@ jobs:
         run: mix test
       - name: Generate Release
         if: github.ref == 'refs/heads/master'
-        run: echo ${github.ref}
+        run: mix release
