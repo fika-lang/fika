@@ -25,7 +25,7 @@ defmodule Fika.Lexer.Lexemes.Record do
     |> Helper.to_ast(:record)
   end
 
-   defp key_value do
+  defp key_value do
     LX.allow_space()
     |> concat(Identifier.identifier())
     |> concat(LX.allow_space())
