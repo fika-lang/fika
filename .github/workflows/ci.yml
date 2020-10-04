@@ -32,5 +32,5 @@ jobs:
       - name: Run Tests
         run: mix test
       - name: Generate Release
-        if: ${{github.ref}} == 'feat/add-release-job-for-ci'
-        run: echo "Generating Release"
+        if: github.ref == 'refs/heads/master'
+        run: echo ${github.ref}
