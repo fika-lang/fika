@@ -33,13 +33,13 @@ jobs:
         run: mix test
       - name: Generate Release
         if: github.ref == 'refs/heads/master'
-        run: mix release
+        run: mix release && cp _build/prod/rel/bakeware/fika fika
       - name: Upload Artifacts
         if: github.ref == 'refs/heads/master'
-        uses: svenstaro/upload-release-action@v2
+        uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: _build/prod/rel/bakeware/fika
-          asset_name: fika
-          tag: latest
-          overwrite: true
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: fika
