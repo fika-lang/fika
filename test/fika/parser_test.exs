@@ -1,13 +1,12 @@
-defmodule Fika.ParserTest do
+defmodule Fika.TestParser do
   use ExUnit.Case
-  alias Fika.Parser
 
   test "integer" do
     str = """
     123
     """
 
-    {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+    {:ok, result, _rest, _context, _line, _byte_offset} = Fika.Helpers.TestParser.expression(str)
     assert result == [{:integer, {1, 0, 3}, 123}]
   end
 
@@ -15,14 +14,14 @@ defmodule Fika.ParserTest do
     test "true" do
       str = "true"
 
-      result = Parser.expression!(str)
+      result = Fika.Helpers.TestParser.expression!(str)
       assert result == {:boolean, {1, 0, 4}, true}
     end
 
     test "false" do
       str = "false"
 
-      result = Parser.expression!(str)
+      result = Fika.Helpers.TestParser.expression!(str)
       assert result == {:boolean, {1, 0, 5}, false}
     end
   end
@@ -32,7 +31,7 @@ defmodule Fika.ParserTest do
       atom = :foobar
       str = ":#{atom}"
 
-      assert Parser.expression!(str) == {:atom, {1, 0, 7}, atom}
+      assert Fika.Helpers.TestParser.expression!(str) == {:atom, {1, 0, 7}, atom}
     end
   end
 
@@ -42,7 +41,8 @@ defmodule Fika.ParserTest do
       2 + 3 * 4
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {
@@ -63,7 +63,8 @@ defmodule Fika.ParserTest do
       10 + 20 * 30 - 40 / 50
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {
@@ -89,7 +90,8 @@ defmodule Fika.ParserTest do
       (10 + 20) * (30 - 40) / 50
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {
@@ -121,7 +123,9 @@ defmodule Fika.ParserTest do
       my_func()
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
+
       assert result == [{:call, {:my_func, {1, 0, 9}}, [], nil}]
     end
 
@@ -130,7 +134,8 @@ defmodule Fika.ParserTest do
       my_func(x, 123)
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       args = [
         {:identifier, {1, 0, 9}, :x},
@@ -145,7 +150,8 @@ defmodule Fika.ParserTest do
       my_module.my_func(x, 123)
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       args = [
         {:identifier, {1, 0, 19}, :x},
@@ -160,7 +166,8 @@ defmodule Fika.ParserTest do
       foo(x, bar(y))
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       args = [
         {:identifier, {1, 0, 5}, :x},
@@ -179,7 +186,8 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.function_def(str)
 
       assert result == [
                {:function, [position: {3, 16, 19}],
@@ -194,7 +202,8 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.function_def(str)
 
       assert result == [
                {:function, [position: {3, 22, 25}],
@@ -209,7 +218,8 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.function_def(str)
 
       assert result == [
                {:function, [position: {3, 22, 25}],
@@ -224,7 +234,8 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.function_def(str)
 
       assert result == [
                {:function, [position: {3, 43, 46}],
@@ -240,7 +251,8 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.function_def(str)
 
       assert result == [
                {:function, [position: {3, 40, 43}],
@@ -273,7 +285,7 @@ defmodule Fika.ParserTest do
                parsed_condition,
                parsed_if_block,
                parsed_else_block
-             } = Parser.expression!(str)
+             } = Fika.Helpers.TestParser.expression!(str)
 
       assert {:boolean, {1, 0, 7}, true} = parsed_condition
 
@@ -294,7 +306,8 @@ defmodule Fika.ParserTest do
       x = 1
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {{:=, {1, 0, 5}}, {:identifier, {1, 0, 1}, :x}, {:integer, {1, 0, 5}, 1}}
@@ -306,7 +319,8 @@ defmodule Fika.ParserTest do
       x = y = 1
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {
@@ -326,7 +340,8 @@ defmodule Fika.ParserTest do
       x + y = 1
       """
 
-      assert {:error, "expected end of string", "= 1\n", _, _, _} = Parser.expression(str)
+      assert {:error, "expected end of string", "= 1\n", _, _, _} =
+               Fika.Helpers.TestParser.expression(str)
     end
 
     test "match exps can exist as a whole exp" do
@@ -334,7 +349,8 @@ defmodule Fika.ParserTest do
       1 + (x = 2)
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {:call, {:+, {1, 0, 11}},
@@ -356,7 +372,8 @@ defmodule Fika.ParserTest do
       "Hello world"
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [{:string, {1, 0, 13}, "Hello world"}]
     end
@@ -366,7 +383,8 @@ defmodule Fika.ParserTest do
       "Hello \\\"world\\\""
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [{:string, {1, 0, 17}, "Hello \\\"world\\\""}]
     end
@@ -378,7 +396,9 @@ defmodule Fika.ParserTest do
       []
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
+
       assert result == [{:list, {1, 0, 2}, []}]
     end
 
@@ -387,7 +407,9 @@ defmodule Fika.ParserTest do
       [1]
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
+
       assert result == [{:list, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]}]
     end
 
@@ -396,7 +418,8 @@ defmodule Fika.ParserTest do
       [1, 2, 3]
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {:list, {1, 0, 9},
@@ -413,7 +436,8 @@ defmodule Fika.ParserTest do
       [a = 1, 2, 3]
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {:list, {1, 0, 13},
@@ -432,7 +456,7 @@ defmodule Fika.ParserTest do
       {}
       """
 
-      assert {:error, _, "{}\n", %{}, {1, 0}, 0} = Parser.expression(str)
+      assert {:error, _, "{}\n", %{}, {1, 0}, 0} = Fika.Helpers.TestParser.expression(str)
     end
 
     test "parses a record" do
@@ -440,7 +464,8 @@ defmodule Fika.ParserTest do
       {hello: "World", foo: 123}
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {:record, {1, 0, 26}, nil,
@@ -458,7 +483,9 @@ defmodule Fika.ParserTest do
       {1}
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
+
       assert result == [{:tuple, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]}]
     end
 
@@ -467,7 +494,8 @@ defmodule Fika.ParserTest do
       {1, 2, 3}
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {:tuple, {1, 0, 9},
@@ -484,7 +512,8 @@ defmodule Fika.ParserTest do
       {a = 1, 2, 3}
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.expression(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.expression(str)
 
       assert result == [
                {:tuple, {1, 0, 13},
@@ -501,7 +530,7 @@ defmodule Fika.ParserTest do
     test "types with no args" do
       str = "Int"
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = Fika.Helpers.TestParser.type_str(str)
 
       assert result == [{:type, {1, 0, 3}, "Int"}]
     end
@@ -509,7 +538,7 @@ defmodule Fika.ParserTest do
     test "parses types with an arg" do
       str = "List(Int)"
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = Fika.Helpers.TestParser.type_str(str)
 
       assert result == [{:type, {1, 0, 9}, "List(Int)"}]
     end
@@ -517,7 +546,7 @@ defmodule Fika.ParserTest do
     test "parses types with nested args" do
       str = "List(List(String))"
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = Fika.Helpers.TestParser.type_str(str)
 
       assert result == [{:type, {1, 0, 18}, "List(List(String))"}]
     end
@@ -525,7 +554,7 @@ defmodule Fika.ParserTest do
     test "parses function type with no args" do
       str = "Fn(-> Int)"
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = Fika.Helpers.TestParser.type_str(str)
 
       assert result == [{:type, {1, 0, 10}, "Fn(->Int)"}]
     end
@@ -533,7 +562,7 @@ defmodule Fika.ParserTest do
     test "parses function type with args" do
       str = "Fn(Int, Int -> Int)"
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = Fika.Helpers.TestParser.type_str(str)
 
       assert result == [{:type, {1, 0, 19}, "Fn(Int,Int->Int)"}]
     end
@@ -541,21 +570,21 @@ defmodule Fika.ParserTest do
     test "record type" do
       str = "{foo: Int, bar: String}"
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = Fika.Helpers.TestParser.type_str(str)
       assert result == [{:type, {1, 0, 23}, "{foo:Int,bar:String}"}]
     end
 
     test "atom type" do
       str = ":foo"
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = Fika.Helpers.TestParser.type_str(str)
       assert result == [{:type, {1, 0, 4}, ":foo"}]
     end
 
     test "list of atom" do
       str = "List(:foo)"
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.type_str(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = Fika.Helpers.TestParser.type_str(str)
       assert result == [{:type, {1, 0, 10}, "List(:foo)"}]
     end
   end
@@ -566,7 +595,7 @@ defmodule Fika.ParserTest do
       &foo
       """
 
-      result = Parser.expression!(str)
+      result = Fika.Helpers.TestParser.expression!(str)
 
       assert result == {:function_ref, {1, 0, 4}, {nil, :foo, []}}
     end
@@ -576,7 +605,7 @@ defmodule Fika.ParserTest do
       &foo.bar
       """
 
-      result = Parser.expression!(str)
+      result = Fika.Helpers.TestParser.expression!(str)
 
       assert result ==
                {:function_ref, {1, 0, 8},
@@ -592,7 +621,7 @@ defmodule Fika.ParserTest do
       &foo.bar(Int, Int)
       """
 
-      result = Parser.expression!(str)
+      result = Fika.Helpers.TestParser.expression!(str)
 
       assert result ==
                {:function_ref, {1, 0, 18},
@@ -616,7 +645,8 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.function_def(str)
 
       assert result == [
                {:function, [position: {4, 36, 39}],
@@ -631,7 +661,8 @@ defmodule Fika.ParserTest do
       end # Comment 3
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.function_def(str)
 
       assert result == [
                {:function, [position: {3, 40, 43}],
@@ -646,7 +677,8 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:error, _error, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      assert {:error, _error, _rest, _context, _line, _byte_offset} =
+               Fika.Helpers.TestParser.function_def(str)
     end
 
     test "Strings can have # in them" do
@@ -656,7 +688,8 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = Parser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} =
+        Fika.Helpers.TestParser.function_def(str)
 
       assert result == [
                {:function, [position: {3, 22, 25}],
@@ -668,7 +701,7 @@ defmodule Fika.ParserTest do
   describe "call using function reference" do
     test "using identifier" do
       str = "foo.(x, y)"
-      result = Parser.expression!(str)
+      result = Fika.Helpers.TestParser.expression!(str)
 
       args = [
         {:identifier, {1, 0, 6}, :x},
@@ -680,7 +713,7 @@ defmodule Fika.ParserTest do
 
     test "using function call" do
       str = "foo().(x, y)"
-      result = Parser.expression!(str)
+      result = Fika.Helpers.TestParser.expression!(str)
 
       args = [
         {:identifier, {1, 0, 8}, :x},
@@ -693,7 +726,7 @@ defmodule Fika.ParserTest do
 
     test "using literal expression fails" do
       str = "123.(x, y)"
-      assert {:error, _, _, _, _, _} = Parser.expression(str)
+      assert {:error, _, _, _, _, _} = Fika.Helpers.TestParser.expression(str)
     end
   end
 end

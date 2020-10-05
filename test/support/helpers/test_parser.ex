@@ -1,4 +1,4 @@
-defmodule Fika.Helpers.ParserTest do
+defmodule Fika.Helpers.TestParser do
   import NimbleParsec
   import Fika.Parser.Delegate
 
