@@ -35,7 +35,7 @@ jobs:
         run: mix test
       - name: Generate Release
         if: github.ref == 'refs/heads/master'
-        run: mix release && cp _build/prod/rel/bakeware/fika fika
+        run: mix release
       - name: Upload Artifacts
         if: github.ref == 'refs/heads/master'
         uses: "marvinpinto/action-automatic-releases@latest"

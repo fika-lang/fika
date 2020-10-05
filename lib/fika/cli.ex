@@ -8,6 +8,10 @@ defmodule Fika.Cli do
     parse_args(args)
   end
 
+  defp parse_args([]) do
+    :timer.sleep(:infinity)
+  end
+
   defp parse_args(["exec" | rest]) do
     options = [
       strict: [function: :string],
@@ -38,7 +42,7 @@ defmodule Fika.Cli do
 
     case Fika.Application.start(:permanent, port: 6060) do
       {:ok, pid} when is_pid(pid) -> :timer.sleep(:infinity)
-      :error -> :error
+      {:error, _} -> :error
     end
   end
 end

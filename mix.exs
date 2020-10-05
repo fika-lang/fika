@@ -20,10 +20,9 @@ defmodule Fika.MixProject do
 
   # Run "mix help compile.app" to learn about applications.
   def application do
-    [
-      extra_applications: [:logger],
-      mod: {Fika.Cli, []}
-    ]
+    opts = [extra_applications: [:logger]]
+
+    Keyword.put(opts, :mod, {Fika.Cli, []})
   end
 
   # Run "mix help deps" to learn about dependencies.
@@ -39,7 +38,7 @@ defmodule Fika.MixProject do
     [
       overwrite: true,
       cookie: "#{@app}_cookie",
-      steps: [:assemble, &Bakeware.assemble/1],
+      steps: [:assemble, &Bakeware.assemble/1, &Fika.Deploy.copy_files/1],
       strip_beams: Mix.env() == :prod
     ]
   end
