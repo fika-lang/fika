@@ -3,6 +3,7 @@ defmodule Fika.Deploy do
     path = "_build/#{Mix.env()}/rel/bakeware/fika"
 
     File.cp!(path, "./fika")
+    IO.puts("Fika executable available at #{File.cwd!()}/fika")
     args
   end
 end
