@@ -25,7 +25,7 @@ defmodule Fika.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:nimble_parsec, "~> 0.6.0"},
+      {:nimble_parsec, "~> 1.1"},
       {:plug_cowboy, "~> 2.0"}
 
       # {:dep_from_hexpm, "~> 0.3.0"},
