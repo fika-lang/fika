@@ -16,15 +16,15 @@ defmodule Fika.Parser do
     {:module, module_name, ast}
   end
 
-  defparsec :args, parsec({Fika.Parser.Function, :args})
-  defparsec :call_args, parsec({Fika.Parser.Function, :call_args})
-  defparsec :exp, parsec({Fika.Parser.Expression, :exp})
-  defparsec :exps, parsec({Fika.Parser.Expression, :exps})
-  defparsec :exp_bin_op, parsec({Fika.Parser.Expression, :exp_bin_op})
-  defparsec :type, parsec({Fika.Parser.Type, :type})
-  defparsec :type_args, parsec({Fika.Parser.Type, :type_args})
-  defparsec :type_args_list, parsec({Fika.Parser.Type, :type_args_list})
-  defparsec :term, parsec({Fika.Parser.Term, :term})
+  defcombinator :args, parsec({Fika.Parser.Function, :args})
+  defcombinator :call_args, parsec({Fika.Parser.Function, :call_args})
+  defcombinator :exp, parsec({Fika.Parser.Expression, :exp})
+  defcombinator :exps, parsec({Fika.Parser.Expression, :exps})
+  defcombinator :exp_bin_op, parsec({Fika.Parser.Expression, :exp_bin_op})
+  defcombinator :type, parsec({Fika.Parser.Type, :type})
+  defcombinator :type_args, parsec({Fika.Parser.Type, :type_args})
+  defcombinator :type_args_list, parsec({Fika.Parser.Type, :type_args_list})
+  defcombinator :term, parsec({Fika.Parser.Term, :term})
 
   defparsec :parse, module
 end

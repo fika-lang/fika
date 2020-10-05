@@ -1,6 +1,5 @@
 defmodule Fika.Helpers.TestParser do
   import NimbleParsec
-  import Fika.Parser.Delegate
 
   alias Fika.Lexer.Lexemes, as: LX
 
@@ -16,15 +15,15 @@ defmodule Fika.Helpers.TestParser do
     result
   end
 
-  defparsec :args, parsec({Fika.Parser.Function, :args})
-  defparsec :call_args, parsec({Fika.Parser.Function, :call_args})
-  defparsec :exp, parsec({Fika.Parser.Expression, :exp})
-  defparsec :exps, parsec({Fika.Parser.Expression, :exps})
-  defparsec :exp_bin_op, parsec({Fika.Parser.Expression, :exp_bin_op})
-  defparsec :type, parsec({Fika.Parser.Type, :type})
-  defparsec :type_args, parsec({Fika.Parser.Type, :type_args})
-  defparsec :type_args_list, parsec({Fika.Parser.Type, :type_args_list})
-  defparsec :term, parsec({Fika.Parser.Term, :term})
+  defcombinatorp :args, parsec({Fika.Parser, :args})
+  defcombinatorp :call_args, parsec({Fika.Parser, :call_args})
+  defcombinatorp :exp, parsec({Fika.Parser, :exp})
+  defcombinatorp :exps, parsec({Fika.Parser, :exps})
+  defcombinatorp :exp_bin_op, parsec({Fika.Parser, :exp_bin_op})
+  defcombinatorp :type, parsec({Fika.Parser, :type})
+  defcombinatorp :type_args, parsec({Fika.Parser, :type_args})
+  defcombinatorp :type_args_list, parsec({Fika.Parser, :type_args_list})
+  defcombinatorp :term, parsec({Fika.Parser, :term})
 
   defparsec :expression, Expression.exp() |> concat(LX.allow_space()) |> eos()
   defparsec :function_def, Function.function_def()
