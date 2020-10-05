@@ -185,12 +185,12 @@ by Fika.
 
 If you'd like to be part of the Fika community, you can find us here:
 
-![Discord server](https://github.com/fika-lang/assets/blob/master/discord_server.png?raw=true)  
+[![Discord server](https://github.com/fika-lang/assets/blob/master/discord_server.png?raw=true)](https://discord.gg/zNs6Gs5)  
 This is the best place to chat with Fika developers, ask questions or get guidance
 on contributing to Fika. We also livestream some talks and pair programming sessions here.
 [Here's the link to join.](https://discord.gg/zNs6Gs5)
 
-![Hackers list](https://github.com/fika-lang/assets/blob/master/hackers_list.png?raw=true)  
+[![Hackers list](https://github.com/fika-lang/assets/blob/master/hackers_list.png?raw=true)](https://tinyletter.com/fika)  
 This is an email digest where we send out the latest updates
 about Fika and our ecosystem. [Here's the link to subscribe.](https://tinyletter.com/fika)
 
