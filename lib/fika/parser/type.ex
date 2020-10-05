@@ -1,4 +1,4 @@
-defmodule Fika.Parser.Delegate.Type do
+defmodule Fika.Parser.Type do
   import NimbleParsec
 
   defcombinator :type, Fika.Lexer.Type.type()
