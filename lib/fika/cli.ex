@@ -1,6 +1,9 @@
 defmodule Fika.Cli do
+  use Bakeware.Script
+
   require Logger
 
+  @impl Bakeware.Script
   def main(args) do
     parse_args(args)
   end
@@ -25,8 +28,16 @@ defmodule Fika.Cli do
   defp parse_args(["start" | rest]) do
     path = List.first(rest)
 
-    case Fika.start(path) do
-      :ok -> :timer.sleep(:infinity)
+    if path do
+      File.cd!(path)
+    end
+
+    if not File.exists?("router.fi") do
+      raise "cannot start webserver: file 'router.fi' not found in directory '#{path}'"
+    end
+
+    case Fika.Application.start(:permanent, port: 6060) do
+      {:ok, pid} when is_pid(pid) -> :timer.sleep(:infinity)
       :error -> :error
     end
   end

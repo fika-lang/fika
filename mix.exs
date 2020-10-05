@@ -22,7 +22,7 @@ defmodule Fika.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Fika.Application, []}
+      mod: {Fika.Cli, []}
     ]
   end
 
@@ -31,12 +31,7 @@ defmodule Fika.MixProject do
     [
       {:nimble_parsec, "~> 1.1.0"},
       {:plug_cowboy, "~> 2.0"},
-      {:bakeware,
-       github: "spawnfest/bakeware",
-       tag: "v0.1.0",
-       sparse: "bakeware",
-       only: [:prod],
-       runtime: false}
+      {:bakeware, github: "spawnfest/bakeware", tag: "v0.1.0", sparse: "bakeware", runtime: false}
     ]
   end
 
