@@ -11,7 +11,7 @@ defmodule Fika.TypeCheckerTest do
   test "infer type of integer literals" do
     str = "123"
 
-    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+    ast = TestParser.expression!(str)
 
     assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
@@ -19,7 +19,7 @@ defmodule Fika.TypeCheckerTest do
   test "infer type of atom expressions" do
     str = ":a"
 
-    {:atom, {1, 0, 2}, :a} = ast = Fika.Parser.expression!(str)
+    {:atom, {1, 0, 2}, :a} = ast = TestParser.expression!(str)
 
     assert {:ok, ":a", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
@@ -27,7 +27,7 @@ defmodule Fika.TypeCheckerTest do
   test "infer type for list of atom expressions" do
     str = "[:a, :a]"
 
-    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+    ast = TestParser.expression!(str)
 
     assert {:ok, "List(:a)", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
@@ -35,7 +35,7 @@ defmodule Fika.TypeCheckerTest do
   test "infer type of arithmetic expressions" do
     str = "1 + 2"
 
-    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+    ast = TestParser.expression!(str)
 
     assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
@@ -43,7 +43,7 @@ defmodule Fika.TypeCheckerTest do
   test "infer undefined variable" do
     str = "foo"
 
-    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+    ast = TestParser.expression!(str)
 
     assert {:error, "Unknown variable: foo"} = TypeChecker.infer_exp(Env.init(), ast)
   end
@@ -146,7 +146,7 @@ defmodule Fika.TypeCheckerTest do
   test "string" do
     str = "\"Hello world\""
 
-    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+    ast = TestParser.expression!(str)
 
     assert {:ok, "String", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
@@ -155,7 +155,7 @@ defmodule Fika.TypeCheckerTest do
     test "list of integers" do
       str = "[1, 2, 3]"
 
-      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "List(Int)", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -163,7 +163,7 @@ defmodule Fika.TypeCheckerTest do
     test "list of integers and floats" do
       str = "[1, 2/3, 3]"
 
-      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+      ast = TestParser.expression!(str)
 
       assert {:error, "Elements of list have different types. Expected: Int, got: Float"} =
                TypeChecker.infer_exp(Env.init(), ast)
@@ -172,7 +172,7 @@ defmodule Fika.TypeCheckerTest do
     test "list of floats inferred from fn calls" do
       str = "[1/2, 2/3]"
 
-      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "List(Float)", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -180,7 +180,7 @@ defmodule Fika.TypeCheckerTest do
     test "List of strings" do
       str = "[\"foo\", \"bar\"]"
 
-      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "List(String)", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -188,7 +188,7 @@ defmodule Fika.TypeCheckerTest do
     test "List of list of integers" do
       str = "[[1, 2], [3, 4]]"
 
-      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "List(List(Int))", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -196,7 +196,7 @@ defmodule Fika.TypeCheckerTest do
     test "empty list" do
       str = "[]"
 
-      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "List(Nothing)", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -206,7 +206,7 @@ defmodule Fika.TypeCheckerTest do
     test "tuple of integers" do
       str = "{1, 2, 3}"
 
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "{Int,Int,Int}", _env} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -214,7 +214,7 @@ defmodule Fika.TypeCheckerTest do
     test "tuple of integers and floats" do
       str = "{1, 2/3, 3}"
 
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "{Int,Float,Int}", _env} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -222,7 +222,7 @@ defmodule Fika.TypeCheckerTest do
     test "tuple of floats inferred from fn calls" do
       str = "{1/2, 2/3}"
 
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "{Float,Float}", _env} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -230,7 +230,7 @@ defmodule Fika.TypeCheckerTest do
     test "tuple of strings" do
       str = ~s({"foo", "bar"})
 
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "{String,String}", _env} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -238,7 +238,7 @@ defmodule Fika.TypeCheckerTest do
     test "tuple of tuple of mixed types" do
       str = ~s({{1, 2/5}, {"3", true}})
 
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "{{Int,Float},{String,Bool}}", _env} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -248,7 +248,7 @@ defmodule Fika.TypeCheckerTest do
     test "unnamed record" do
       str = "{foo: 123, bar: \"Baz\"}"
 
-      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "{foo:Int,bar:String}", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -256,7 +256,7 @@ defmodule Fika.TypeCheckerTest do
     test "error" do
       str = "{foo: x, bar: \"Baz\"}"
 
-      {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+      ast = TestParser.expression!(str)
 
       assert {:error, "Unknown variable: x"} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -265,7 +265,7 @@ defmodule Fika.TypeCheckerTest do
   describe "function reference" do
     test "with args" do
       str = "&bar.sum(Int, Int)"
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       env =
         Env.init()
@@ -278,7 +278,7 @@ defmodule Fika.TypeCheckerTest do
 
     test "without args" do
       str = "&bar.sum"
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       env =
         Env.init()
@@ -293,14 +293,14 @@ defmodule Fika.TypeCheckerTest do
   describe "boolean" do
     test "true" do
       str = "true"
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "false" do
       str = "false"
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
@@ -316,7 +316,7 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
       assert {
@@ -334,7 +334,7 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
       assert {:ok, "String", _env} = TypeChecker.infer_exp(env, ast)
@@ -349,7 +349,7 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
       assert {
@@ -368,7 +368,7 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
       assert {:ok, "String", _env} = TypeChecker.infer_exp(env, ast)
