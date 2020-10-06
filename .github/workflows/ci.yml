@@ -41,7 +41,7 @@ jobs:
       matrix:
         elixir: [1.10.4]
         otp: [23.1.1]
-        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+        os: ["ubuntu-latest", "macOS-latest", "windows-latest"]
     steps:
       - name: Retrieve Mix Dependencies Cache
         uses: actions/cache@v1
@@ -64,11 +64,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Upload Artifacts
-        if: github.ref == 'refs/heads/master'
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest_"
+          automatic_release_tag: "latest"
           prerelease: true
           title: "Development Build for ${{ matrix.os }}"
-          files: fika_ubuntu-latest fika_macos-latest fika_windows-latest
+          files: fika_ubuntu-latest fika_macOS-latest fika_windows-latest
