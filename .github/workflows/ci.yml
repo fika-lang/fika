@@ -61,7 +61,7 @@ jobs:
           mix local.hex --force
           mix deps.get
       - name: Generate Release
-        run: FIKA_RUN_CLI=true mix release
+        run: mix release
       - name: Rename Executable
         run: cp fika fika_${{ matrix.os }}
       - name: Save Executable

@@ -4,7 +4,6 @@ Fika uses [Bakeware](https://github.com/spawnfest/bakeware) to create a
 self-contained pre-compiled executable binary.
 
 Fika is configured to generate said binary `fika` at it's root directory upon `FIKA_RUN_CLI=true mix release`.
-`FIKA_RUN_CLI=true` is needed so the executable is run with the proper CLI.
 
 ## How the release is setup
 
