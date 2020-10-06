@@ -41,14 +41,25 @@ jobs:
       matrix:
         elixir: [1.10.4]
         otp: [23.1.1]
-        os: ["ubuntu-latest", "macOS-latest", "windows-latest"]
+        os: ["ubuntu-latest"]
     steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-elixir@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
       - name: Retrieve Mix Dependencies Cache
         uses: actions/cache@v1
         id: mix-cache # id to use in retrieve action
         with:
           path: deps
           key: ${{ matrix.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+      - name: Install Mix Dependencies
+        if: steps.mix-cache.outputs.cache-hit != 'true'
+        run: |
+          mix local.rebar --force
+          mix local.hex --force
+          mix deps.get
       - name: Generate Release
         run: mix release
       - name: Rename Executable
@@ -56,18 +67,22 @@ jobs:
       - name: Save Executable
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.os }}-artifact
+          name: fika_${{ matrix.os }}
           path: fika_${{ matrix.os }}
   publish:
     needs: release
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
+      - name: Fetch release artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: fika_ubuntu-latest
       - name: Upload Artifacts
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: true
-          title: "Development Build for ${{ matrix.os }}"
-          files: fika_ubuntu-latest fika_macOS-latest fika_windows-latest
+          title: "Development Build"
+          files: fika_ubuntu-latest
