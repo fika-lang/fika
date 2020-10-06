@@ -6,4 +6,9 @@ defmodule Fika.Deploy do
     IO.puts("Fika executable available at #{File.cwd!()}/fika")
     args
   end
+
+  def set_env(args) do
+    System.put_env("FIKA_RUN_CLI", "true")
+    args
+  end
 end

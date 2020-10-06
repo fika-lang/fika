@@ -9,21 +9,17 @@ defmodule Fika.Cli do
   end
 
   defp parse_args([]) do
-    if print_usage?() do
-      IO.puts("""
-      Usage:
-      <fika> start <directory>
-        Starts the router.fi file inside <directory>.
+    IO.puts("""
+    Usage:
+    <fika> start <directory>
+      Starts the router.fi file inside <directory>.
 
-      <fika> exec [filename [--function function_call]]
-        Executes the function call <function_call> inside the module defined in <filename>.
-        Defaults:
-          filename 'main.fi'
-          function: 'start()'
-      """)
-    else
-      :timer.sleep(:infinity)
-    end
+    <fika> exec [filename [--function function_call]]
+      Executes the function call <function_call> inside the module defined in <filename>.
+      Defaults:
+        filename 'main.fi'
+        function: 'start()'
+    """)
   end
 
   defp parse_args(["exec" | rest]) do
@@ -74,6 +70,6 @@ defmodule Fika.Cli do
     end
   end
 
-  defp print_usage?,
-    do: :fika |> Application.fetch_env!(__MODULE__) |> Keyword.fetch!(:print_usage)
+  # defp print_usage?,
+  #   do: :fika |> Application.fetch_env!(__MODULE__) |> Keyword.fetch!(:print_usage)
 end

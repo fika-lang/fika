@@ -22,7 +22,11 @@ defmodule Fika.MixProject do
   def application do
     opts = [extra_applications: [:logger]]
 
-    Keyword.put(opts, :mod, {Fika.Cli, []})
+    if System.get_env("FIKA_RUN_CLI", nil) do
+      Keyword.put(opts, :mod, {Fika.Cli, []})
+    else
+      Keyword.put(opts, :mod, {Fika.Application, [port: 6060]})
+    end
   end
 
   # Run "mix help deps" to learn about dependencies.
