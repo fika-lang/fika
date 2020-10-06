@@ -3,7 +3,7 @@ name: Test
 on: [pull_request, push]
 
 jobs:
-  test:
+  build_and_test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,7 +20,7 @@ jobs:
         id: mix-cache # id to use in retrieve action
         with:
           path: deps
-          key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+          key: ${{ matrix.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
       - name: Install Mix Dependencies
         if: steps.mix-cache.outputs.cache-hit != 'true'
         run: |
@@ -33,15 +33,42 @@ jobs:
         run: MIX_ENV=test mix compile --warnings-as-errors
       - name: Run Tests
         run: mix test
+  release:
+    needs: build_and_test
+    if: github.ref == 'refs/heads/master'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        elixir: [1.10.4]
+        otp: [23.1.1]
+        os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+    steps:
+      - name: Retrieve Mix Dependencies Cache
+        uses: actions/cache@v1
+        id: mix-cache # id to use in retrieve action
+        with:
+          path: deps
+          key: ${{ matrix.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
       - name: Generate Release
-        if: github.ref == 'refs/heads/master'
         run: mix release
+      - name: Rename Executable
+        run: cp fika fika_${{ matrix.os }}
+      - name: Save Executable
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}-artifact
+          path: fika_${{ matrix.os }}
+  publish:
+    needs: release
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
       - name: Upload Artifacts
         if: github.ref == 'refs/heads/master'
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
+          automatic_release_tag: "latest_"
           prerelease: true
-          title: "Development Build"
-          files: fika
+          title: "Development Build for ${{ matrix.os }}"
+          files: fika_ubuntu-latest fika_macos-latest fika_windows-latest
