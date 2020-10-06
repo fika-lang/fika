@@ -5,30 +5,22 @@ defmodule Fika.Application do
 
   use Application
 
-  def start(_type, port: port) do
-    children =
-      if is_integer(port) do
-        c = [
-          {Fika.RouteStore, []},
-          {Plug.Cowboy,
-           scheme: :http, plug: Fika.Router, options: [port: port, ip: {127, 0, 0, 1}]}
-        ]
-
-        IO.puts("Web server is starting on http://localhost:#{port}")
-
-        c
-      else
-        []
-      end
+  def start(_type, _args) do
+    # children =
+    #   if Application.get_env(:fika, :start_cli) do
+    #     [
+    #       %{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}}
+    #       | children
+    #     ]
+    #   else
+    #     children
+    #   end
 
     children =
       if Application.get_env(:fika, :start_cli) do
-        [
-          %{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}}
-          | children
-        ]
+        [%{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}}]
       else
-        children
+        []
       end
 
     # See https://hexdocs.pm/elixir/Supervisor.html

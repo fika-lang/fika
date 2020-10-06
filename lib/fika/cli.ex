@@ -64,6 +64,8 @@ defmodule Fika.Cli do
       raise "cannot start webserver: file 'router.fi' not found in directory '#{path}'"
     end
 
+    {:ok, _} = Fika.Router.start(nil, nil)
+
     IO.puts("Press Ctrl+C to exit")
     :timer.sleep(:infinity)
   end
