@@ -6,16 +6,6 @@ defmodule Fika.Application do
   use Application
 
   def start(_type, _args) do
-    # children =
-    #   if Application.get_env(:fika, :start_cli) do
-    #     [
-    #       %{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}}
-    #       | children
-    #     ]
-    #   else
-    #     children
-    #   end
-
     children =
       if Application.get_env(:fika, :start_cli) do
         [%{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}}]
