@@ -64,12 +64,7 @@ defmodule Fika.Cli do
       raise "cannot start webserver: file 'router.fi' not found in directory '#{path}'"
     end
 
-    case Fika.Application.start(:permanent, port: 6060) do
-      {:ok, pid} when is_pid(pid) -> :timer.sleep(:infinity)
-      {:error, _} -> :error
-    end
+    IO.puts("Press Ctrl+C to exit")
+    :timer.sleep(:infinity)
   end
-
-  # defp print_usage?,
-  #   do: :fika |> Application.fetch_env!(__MODULE__) |> Keyword.fetch!(:print_usage)
 end

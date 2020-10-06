@@ -14,11 +14,21 @@ defmodule Fika.Application do
            scheme: :http, plug: Fika.Router, options: [port: port, ip: {127, 0, 0, 1}]}
         ]
 
-        IO.puts("Web server is running on http://localhost:#{port}\nPress Ctrl+C to exit")
+        IO.puts("Web server is starting on http://localhost:#{port}")
 
         c
       else
         []
+      end
+
+    children =
+      if Application.get_env(:fika, :start_cli) do
+        [
+          %{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}}
+          | children
+        ]
+      else
+        children
       end
 
     # See https://hexdocs.pm/elixir/Supervisor.html
