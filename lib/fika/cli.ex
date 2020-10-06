@@ -11,14 +11,15 @@ defmodule Fika.Cli do
   defp parse_args([]) do
     IO.puts("""
     Usage:
-    <fika> start <directory>
-      Starts the router.fi file inside <directory>.
+      fika start <directory>
+        Starts the router.fi file inside <directory>.
 
-    <fika> exec [filename [--function function_call]]
-      Executes the function call <function_call> inside the module defined in <filename>.
-      Defaults:
-        filename 'main.fi'
-        function: 'start()'
+      fika exec [<filename> [--function <function_call>]]
+        Executes the function call <function_call> inside the module defined in <filename>.
+
+        Options:
+          <filename>: defines the file to be compiled. Defaults to 'main.fi'
+          -f | --function: chooses the function call to be run. Defaults to 'start()'
     """)
   end
 
