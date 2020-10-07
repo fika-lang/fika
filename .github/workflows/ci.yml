@@ -35,7 +35,7 @@ jobs:
         run: mix test
   release:
     needs: build_and_test
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -71,7 +71,7 @@ jobs:
           path: fika_${{ matrix.os }}
   publish:
     needs: release
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Fetch release artifacts
