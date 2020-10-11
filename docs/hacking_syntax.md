@@ -15,7 +15,7 @@ It's the parser's job to read strings containing Fika code and parse them into
 an Abstract Syntax Tree or return an error if the code is invalid.
 Fika uses [NimbleParsec](https://github.com/dashbitco/nimble_parsec), a
 parser library written in Elixir to do this. The code for this can be
-found [here](https://github.com/fika-lang/fika/blob/master/lib/fika/parser.ex)
+found [here](https://github.com/fika-lang/fika/blob/main/lib/fika/parser.ex)
 
 If you write a parser that hangs, you most probably have the "left recursion"
 problem. [Read this](https://web.cs.wpi.edu/~kal/PLT/PLT4.1.2.html)
@@ -27,7 +27,7 @@ to understand how to fix this problem. An example of this is how we're parsing
 The TypeChecker's job is to make sure the function definitions have return
 types in their signature that actually match the types inferred from their body.
 
-The code can be found [here](https://github.com/fika-lang/fika/blob/master/lib/fika/type_checker.ex)
+The code can be found [here](https://github.com/fika-lang/fika/blob/main/lib/fika/type_checker.ex)
 
 Expressions are inferred using a function called `infer_exp(env, exp)`.
 The first argument `env` is the state that's maintained by the type checker.
@@ -61,7 +61,7 @@ code
 |> :elixir.quoted_to_erl(:elixir.env_for_eval([]))
 ```
 
-The code for ErlTranslate can be [found here](https://github.com/fika-lang/fika/blob/master/lib/fika/erl_translate.ex).
+The code for ErlTranslate can be [found here](https://github.com/fika-lang/fika/blob/main/lib/fika/erl_translate.ex).
 
 ErlTranslate uses a function `translate_exp(node)` to translate an expression
 into Erlang abstract format.
@@ -69,7 +69,7 @@ into Erlang abstract format.
 #### Documentation and Examples
 
 After you've made all the changes and updated the unit tests, the next job is
-to update the README and the examples in [the example file](https://github.com/fika-lang/fika/blob/master/example.fi).
+to update the README and the examples in [the example file](https://github.com/fika-lang/fika/blob/main/example.fi).
 
 The people who work on Fika are friendly and eager to help. The best place to
 find them is in the Discord server linked in the README.

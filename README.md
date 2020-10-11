@@ -10,7 +10,7 @@ It is statically typed, functional and runs on the BEAM (Erlang VM).
 
 Project status: Actively developed. Not ready for production use or HackerNews.
 
-[//]: # "If you'd like to keep tabs on our progress, please [subscribe to our updates here](https://tinyletter.com/fika)."
+If you'd like to keep tabs on our progress, please [subscribe to our updates here](https://tinyletter.com/fika).
 
 ### Syntax
 
@@ -190,9 +190,9 @@ This is the best place to chat with Fika developers, ask questions or get guidan
 on contributing to Fika. We also livestream some talks and pair programming sessions here.
 [Here's the link to join.](https://discord.gg/zNs6Gs5)
 
-[//]: # "[![Hackers list](https://github.com/fika-lang/assets/blob/master/hackers_list.png?raw=true)](https://tinyletter.com/fika)  "
-[//]: # "This is an email digest where we send out the latest updates"
-[//]: # "about Fika and our ecosystem. [Here's the link to subscribe.](https://tinyletter.com/fika)"
+[![Hackers list](https://github.com/fika-lang/assets/blob/master/hackers_list.png?raw=true)](https://tinyletter.com/fika)  
+This is an email digest where we send out the latest updates
+about Fika and our ecosystem. [Here's the link to subscribe.](https://tinyletter.com/fika)
 
 If you'd like to contact the creator of Fika, you can find Emil Soman on
 [twitter](https://twitter.com/emilsoman) or drop a mail to `fikalanguage@gmail.com`.
