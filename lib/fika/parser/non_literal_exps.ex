@@ -83,7 +83,7 @@ defmodule Fika.Parser.NonLiteralExps do
       exp_paren,
       function_call,
       identifier,
-      exp_if_else,
+      exp_if_else
     ])
     |> optional(function_ref_call)
     |> Helper.to_ast(:function_ref_call)
