@@ -76,6 +76,12 @@ defmodule Fika.ErlTranslateTest do
             {:atom, 1, true}} = ErlTranslate.translate_expression(ast)
   end
 
+  test "logical operators precedence" do
+    str = "false || true && !true"
+    ast = Parser.expression!(str)
+    assert {:op, _, :or, {:atom, _, false}, {:op, _, :and, {:atom, _, true}, {:op, _, :not, {:atom, _, true}}}} = ErlTranslate.translate_expression(ast)
+  end
+
   test "record" do
     str = "{foo: 1}"
     ast = Parser.expression!(str)

@@ -232,6 +232,11 @@ defmodule Fika.Parser do
     |> label("if-else expression")
     |> Helper.to_ast(:exp_if_else)
 
+  negation =
+    string("!")
+    |> parsec(:term)
+    |> Helper.to_ast(:negation)
+
   literal_exps =
     choice([
       integer,
@@ -249,28 +254,23 @@ defmodule Fika.Parser do
     choice([
       exp_paren,
       function_call,
-      identifier
+      identifier,
+      negation
     ])
     |> optional(function_ref_call)
     |> Helper.to_ast(:function_ref_call)
 
-  negation =
-    string("!")
-    |> parsec(:term)
-    |> Helper.to_ast(:negation)
-
   factor =
     choice([
       literal_exps,
-      non_literal_exps,
-      negation
+      non_literal_exps
     ])
 
   term =
     factor
     |> optional(
       allow_space
-      |> choice([string("*"), string("/")])
+      |> choice([string("*"), string("/"), string("&&")])
       |> concat(allow_space)
       |> parsec(:term)
     )
@@ -281,7 +281,7 @@ defmodule Fika.Parser do
     exp_mult_op
     |> optional(
       allow_space
-      |> choice([string("+"), string("-"), string("||"), string("&&")])
+      |> choice([string("+"), string("-"), string("||")])
       |> concat(allow_space)
       |> parsec(:exp_bin_op)
     )

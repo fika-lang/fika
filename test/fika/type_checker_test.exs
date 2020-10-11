@@ -51,9 +51,14 @@ defmodule Fika.TypeCheckerTest do
     {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
     assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
 
-    ## negation
-
+    # negation
     str = "!true"
+    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
+    assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+  end
+
+  test "infer type of logical expressions when using atoms" do
+    str = "true && :false"
     {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
     assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
