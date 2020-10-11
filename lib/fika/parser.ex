@@ -2,16 +2,18 @@ defmodule Fika.Parser do
   import NimbleParsec
 
   alias Fika.Parser.{
+    Common,
     FunctionDef,
-    Common
+    UseModule
   }
 
   allow_space = parsec({Common, :allow_space})
-  function_def = parsec({FunctionDef, :function_def})
+  function_defs = parsec({FunctionDef, :function_defs})
+  use_modules = parsec({UseModule, :use_modules})
 
   module =
-    function_def
-    |> times(min: 1)
+    optional(use_modules)
+    |> concat(function_defs)
     |> concat(allow_space)
     |> eos()
 

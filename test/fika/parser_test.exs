@@ -172,7 +172,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_defs(str)
 
       assert result == [
                {:function, [position: {3, 16, 19}],
@@ -187,7 +187,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_defs(str)
 
       assert result == [
                {:function, [position: {3, 22, 25}],
@@ -202,7 +202,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_defs(str)
 
       assert result == [
                {:function, [position: {3, 22, 25}],
@@ -217,7 +217,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_defs(str)
 
       assert result == [
                {:function, [position: {3, 43, 46}],
@@ -233,7 +233,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_defs(str)
 
       assert result == [
                {:function, [position: {3, 40, 43}],
@@ -601,7 +601,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_defs(str)
 
       assert result == [
                {:function, [position: {4, 36, 39}],
@@ -616,7 +616,7 @@ defmodule Fika.ParserTest do
       end # Comment 3
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_defs(str)
 
       assert result == [
                {:function, [position: {3, 40, 43}],
@@ -631,7 +631,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:error, _error, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      assert {:error, _error, _rest, _context, _line, _byte_offset} = TestParser.function_defs(str)
     end
 
     test "Strings can have # in them" do
@@ -641,7 +641,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_defs(str)
 
       assert result == [
                {:function, [position: {3, 22, 25}],
@@ -679,6 +679,26 @@ defmodule Fika.ParserTest do
     test "using literal expression fails" do
       str = "123.(x, y)"
       assert {:error, _, _, _, _, _} = TestParser.expression(str)
+    end
+  end
+
+  describe "use module" do
+    test "multiple lines of use" do
+      str = """
+      use foo/bar/baz
+      use foo_1/bar_1
+      use foo2
+      """
+
+      {:ok, [result], _, _, _, _} = TestParser.use_modules(str)
+
+      assert result ==
+               {:use_modules,
+                [
+                  {{1, 0, 15}, {"foo/bar/", "baz"}},
+                  {{2, 16, 31}, {"foo_1/", "bar_1"}},
+                  {{3, 32, 40}, {"", "foo2"}}
+                ]}
     end
   end
 end

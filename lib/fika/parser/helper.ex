@@ -139,6 +139,14 @@ defmodule Fika.Parser.Helper do
     {:atom, line, value}
   end
 
+  def do_to_ast({[path, module_name], line}, :use_module) do
+    {line, {path, module_name}}
+  end
+
+  def do_to_ast({value, _}, :use_modules) do
+    {:use_modules, value}
+  end
+
   defp value_from_identifier({:identifier, _line, value}) do
     value
   end
