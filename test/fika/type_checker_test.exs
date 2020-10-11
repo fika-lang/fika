@@ -40,27 +40,29 @@ defmodule Fika.TypeCheckerTest do
     assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
-  test "infer type of logical expressions" do
-    # and
-    str = "true && false"
-    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
-    assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+  describe "logical operators" do
+    test "infer type of logical expressions" do
+      # and
+      str = "true && false"
+      ast = TestParser.expression!(str)
+      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
 
-    # or
-    str = "true || false"
-    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
-    assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+      # or
+      str = "true || false"
+      ast = TestParser.expression!(str)
+      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
 
-    # negation
-    str = "!true"
-    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
-    assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
-  end
+      # negation
+      str = "!true"
+      ast = TestParser.expression!(str)
+      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
 
-  test "infer type of logical expressions when using atoms" do
-    str = "true && :false"
-    {:ok, [ast], _, _, _, _} = Fika.Parser.expression(str)
-    assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+    test "infer type of logical expressions when using atoms" do
+      str = "true && :false"
+      ast = TestParser.expression!(str)
+      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
   end
 
   test "infer undefined variable" do

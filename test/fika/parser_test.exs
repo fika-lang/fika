@@ -682,9 +682,9 @@ defmodule Fika.ParserTest do
     end
   end
 
-  describe "logic operators" do
+  describe "logical operators" do
     test "supports negation" do
-      assert {:call, {:!, _}, [{:boolean, _, true}], kernel} = Parser.expression!("!true")
+      assert {:call, {:!, _}, [{:boolean, _, true}], kernel} = TestParser.expression!("!true")
     end
 
     test "supports negation with more complex expressions" do
@@ -695,12 +695,12 @@ defmodule Fika.ParserTest do
           {:call, {:||, _}, [{:boolean, _, true}, {:boolean, _, false}], :kernel}
         ],
         :kernel
-      } = Parser.expression!("!(true || false)")
+      } = TestParser.expression!("!(true || false)")
     end
 
     test "simple usage" do
       str = "false || true"
-      result = Parser.expression!(str)
+      result = TestParser.expression!(str)
 
       assert {:call, {:||, _},
               [
@@ -711,7 +711,7 @@ defmodule Fika.ParserTest do
 
     test "more complex expressions" do
       str = "true && (false || :true)"
-      result = Parser.expression!(str)
+      result = TestParser.expression!(str)
 
       assert {
                :call,

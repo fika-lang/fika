@@ -72,18 +72,18 @@ defmodule Fika.Parser.NonLiteralExps do
     |> wrap(call_args)
     |> ignore(string(")"))
 
-  negation =
+  not_op =
     string("!")
-    |> parsec(:term)
-    |> Helper.to_ast(:negation)
+    |> concat(exp)
+    |> Helper.to_ast(:not)
 
   non_literal_exps =
     choice([
+      not_op,
       exp_paren,
       function_call,
       identifier,
       exp_if_else,
-      negation
     ])
     |> optional(function_ref_call)
     |> Helper.to_ast(:function_ref_call)
