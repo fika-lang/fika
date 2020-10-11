@@ -84,7 +84,7 @@ defmodule Fika.ErlTranslateTest do
 
   test "record" do
     str = "{foo: 1}"
-    ast = Parser.expression!(str)
+    ast = TestParser.expression!(str)
     result = ErlTranslate.translate_expression(ast)
 
     assert result ==
@@ -98,7 +98,7 @@ defmodule Fika.ErlTranslateTest do
   describe "function reference" do
     test "with module" do
       str = "&my_module.foo(Int, Int)"
-      ast = Parser.expression!(str)
+      ast = TestParser.expression!(str)
       result = ErlTranslate.translate_expression(ast)
 
       assert result ==
@@ -107,7 +107,7 @@ defmodule Fika.ErlTranslateTest do
 
     test "without module" do
       str = "&foo(Int, Int)"
-      ast = Parser.expression!(str)
+      ast = TestParser.expression!(str)
       result = ErlTranslate.translate_expression(ast)
 
       assert result == {:fun, 1, {:function, :foo, 2}}
@@ -118,7 +118,7 @@ defmodule Fika.ErlTranslateTest do
     Enum.each([true, false], fn bool ->
       test "#{bool} as boolean" do
         str = "#{unquote(bool)}"
-        ast = Parser.expression!(str)
+        ast = TestParser.expression!(str)
         result = ErlTranslate.translate_expression(ast)
 
         assert result == {:atom, 1, unquote(bool)}
@@ -126,7 +126,7 @@ defmodule Fika.ErlTranslateTest do
 
       test "#{bool} as atom" do
         str = ":#{unquote(bool)}"
-        ast = Parser.expression!(str)
+        ast = TestParser.expression!(str)
         result = ErlTranslate.translate_expression(ast)
 
         assert result == {:atom, 1, unquote(bool)}
@@ -136,7 +136,7 @@ defmodule Fika.ErlTranslateTest do
 
   test "atom" do
     str = ":foo"
-    ast = Parser.expression!(str)
+    ast = TestParser.expression!(str)
     result = ErlTranslate.translate_expression(ast)
 
     assert result == {:atom, 1, :foo}
@@ -151,7 +151,7 @@ defmodule Fika.ErlTranslateTest do
     end
     """
 
-    ast = Fika.Parser.expression!(str)
+    ast = TestParser.expression!(str)
     result = ErlTranslate.translate_expression(ast)
 
     assert {:case, 5, {:atom, 1, true},
@@ -164,14 +164,14 @@ defmodule Fika.ErlTranslateTest do
   describe "tuple" do
     test "single element tuple" do
       str = "{1}"
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       assert {:tuple, 1, [{:integer, 1, 1}]} = ErlTranslate.translate_expression(ast)
     end
 
     test "tuple of tuples" do
       str = "{{1}, {2}}"
-      ast = Fika.Parser.expression!(str)
+      ast = TestParser.expression!(str)
 
       assert {
                :tuple,

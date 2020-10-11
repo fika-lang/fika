@@ -1,17 +1,16 @@
 <img src="https://github.com/fika-lang/assets/blob/master/logo.png?raw=true" width="150"/>
 
-<a href="https://fossunited.org/" target="_blank" rel="noopener noreferrer">
-  <img src="http://fossunited.org/files/fossunited-badge.svg" alt="Supported by FOSSUnited">
-</a>
+[![FOSSUnited](http://fossunited.org/files/fossunited-badge.svg)](https://fossunited.org/) &nbsp;&nbsp;
+[![Discord](https://img.shields.io/discord/756840900952588321?color=7389D8&label=Discord&logo=discord&logoColor=white&style=plastic)](https://discord.gg/zNs6Gs5)
 
 -----
 
 Fika is a modern programming language for the web.
 It is statically typed, functional and runs on the BEAM (Erlang VM).
-Fika is designed for building and maintaining scalable web apps without
-compromising on programmer ergonomics.
 
 Project status: Actively developed. Not ready for production use or HackerNews.
+
+[//]: # "If you'd like to keep tabs on our progress, please [subscribe to our updates here](https://tinyletter.com/fika)."
 
 ### Syntax
 
@@ -184,9 +183,20 @@ by Fika.
 
 ### Fika together!
 
-If you'd like to be part of the Fika community, please consider joining
-our [Discord server](https://discord.gg/zNs6Gs5). That's the best place to
-ask questions or get guidance on contributing to Fika.
+If you'd like to be part of the Fika community, you can find us here:
+
+[![Discord server](https://github.com/fika-lang/assets/blob/master/discord_server.png?raw=true)](https://discord.gg/zNs6Gs5)  
+This is the best place to chat with Fika developers, ask questions or get guidance
+on contributing to Fika. We also livestream some talks and pair programming sessions here.
+[Here's the link to join.](https://discord.gg/zNs6Gs5)
+
+[//]: # "[![Hackers list](https://github.com/fika-lang/assets/blob/master/hackers_list.png?raw=true)](https://tinyletter.com/fika)  "
+[//]: # "This is an email digest where we send out the latest updates"
+[//]: # "about Fika and our ecosystem. [Here's the link to subscribe.](https://tinyletter.com/fika)"
+
+If you'd like to contact the creator of Fika, you can find Emil Soman on
+[twitter](https://twitter.com/emilsoman) or drop a mail to `fikalanguage@gmail.com`.
+
 
 ### Thanks
 
