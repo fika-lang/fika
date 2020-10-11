@@ -4,7 +4,7 @@ defmodule Fika.Parser.Expressions do
   alias Fika.Parser.{Common, Helper, LiteralExps, NonLiteralExps}
 
   allow_space = parsec({Common, :allow_space})
-  require_space = parsec({Common, :require_space})
+  horizontal_space = parsec({Common, :horizontal_space})
   identifier = parsec({Common, :identifier})
   literal_exps = parsec({LiteralExps, :literal_exps})
   non_literal_exps = parsec({NonLiteralExps, :non_literal_exps})
@@ -53,10 +53,15 @@ defmodule Fika.Parser.Expressions do
     ])
     |> label("expression")
 
+  exp_delimiter =
+    ignore(repeat(horizontal_space))
+    |> ignore(times(choice([string("\n"), string(";")]), min: 1))
+    |> ignore(repeat(horizontal_space))
+
   exps =
     parsec(:exp)
     |> optional(
-      require_space
+      exp_delimiter
       |> parsec(:exps)
     )
 
