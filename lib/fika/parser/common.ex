@@ -65,5 +65,6 @@ defmodule Fika.Parser.Common do
   defcombinator :require_space, require_space
   defcombinator :identifier_str, identifier_str
   defcombinator :identifier, identifier
+  defcombinator :horizontal_space, horizontal_space
   defcombinator :atom, atom
 end

@@ -724,4 +724,43 @@ defmodule Fika.ParserTest do
              } = result
     end
   end
+
+  describe "expression delimiter" do
+    test "cannot have two assignments in the same line" do
+      str = "x = 1 y = 2"
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "cannot have two variables in the same line" do
+      str = "foo bar"
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "can have expressions in multiple lines" do
+      str = """
+      x = 1
+      y = 2
+      """
+
+      assert {:ok, [_, _], _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "can have expressions separated by ;" do
+      str = """
+      x = 1; y=2
+      """
+
+      assert {:ok, [_, _], _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "can have a single expression split across multiple lines" do
+      str = """
+      x =
+        123 +
+          345
+      """
+
+      assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
+    end
+  end
 end
