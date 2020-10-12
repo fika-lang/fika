@@ -39,11 +39,11 @@ fn tuple : {Int,Bool} do
 end
 
 fn or(a: Bool, b: Bool) : Bool do
-  a || b
+  a | b
 end
 
 fn and(a: Bool, b: Bool) : Bool do
-  a && b
+  a & b
 end
 
 fn not(a: Bool) : Bool do

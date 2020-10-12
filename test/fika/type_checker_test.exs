@@ -43,12 +43,12 @@ defmodule Fika.TypeCheckerTest do
   describe "logical operators" do
     test "infer type of logical expressions" do
       # and
-      str = "true && false"
+      str = "true & false"
       ast = TestParser.expression!(str)
       assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
 
       # or
-      str = "true || false"
+      str = "true | false"
       ast = TestParser.expression!(str)
       assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
 
@@ -59,7 +59,7 @@ defmodule Fika.TypeCheckerTest do
     end
 
     test "infer type of logical expressions when using atoms" do
-      str = "true && :false"
+      str = "true & :false"
       ast = TestParser.expression!(str)
       assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
     end

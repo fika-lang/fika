@@ -68,7 +68,7 @@ defmodule Fika.ErlTranslateTest do
   end
 
   test "logical operators" do
-    str = "(true || !false) && true"
+    str = "(true | !false) & true"
 
     ast = TestParser.expression!(str)
 
@@ -77,7 +77,7 @@ defmodule Fika.ErlTranslateTest do
   end
 
   test "logical operators precedence" do
-    str = "false || true && !true"
+    str = "false | true & !true"
     ast = TestParser.expression!(str)
 
     assert {:op, _, :or, {:atom, _, false},

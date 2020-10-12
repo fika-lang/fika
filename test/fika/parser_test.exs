@@ -692,17 +692,17 @@ defmodule Fika.ParserTest do
         :call,
         {:!, _},
         [
-          {:call, {:||, _}, [{:boolean, _, true}, {:boolean, _, false}], :kernel}
+          {:call, {:|, _}, [{:boolean, _, true}, {:boolean, _, false}], :kernel}
         ],
         :kernel
-      } = TestParser.expression!("!(true || false)")
+      } = TestParser.expression!("!(true | false)")
     end
 
     test "simple usage" do
-      str = "false || true"
+      str = "false | true"
       result = TestParser.expression!(str)
 
-      assert {:call, {:||, _},
+      assert {:call, {:|, _},
               [
                 {:boolean, _, false},
                 {:boolean, _, true}
@@ -710,15 +710,15 @@ defmodule Fika.ParserTest do
     end
 
     test "more complex expressions" do
-      str = "true && (false || :true)"
+      str = "true & (false | :true)"
       result = TestParser.expression!(str)
 
       assert {
                :call,
-               {:&&, _},
+               {:&, _},
                [
                  {:boolean, _, true},
-                 {:call, {:||, _}, [{:boolean, _, false}, {:boolean, _, true}], :kernel}
+                 {:call, {:|, _}, [{:boolean, _, false}, {:boolean, _, true}], :kernel}
                ],
                :kernel
              } = result
@@ -761,6 +761,53 @@ defmodule Fika.ParserTest do
       """
 
       assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
+
+      str = """
+      x = foo &
+        bar
+      """
+
+      assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "function ref on new line" do
+      str = """
+      x = foo
+        &bar
+      """
+
+      assert {:ok, [_, {:function_ref, _, _}], _, _, _, _} = TestParser.exps(str)
+    end
+
+    # TODO: This actually looks cleaner, so we may eventually allow this
+    # by adding more fine grained rules to our parser.
+    test "| on newline is an error" do
+      str = """
+      x = foo
+        | bar
+        | baz
+      """
+
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "| on same line is ok" do
+      str = """
+      x = foo |
+        bar |
+        baz
+      """
+
+      assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "= on newline is an error" do
+      str = """
+      x
+      = 123
+      """
+
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
     end
   end
 end

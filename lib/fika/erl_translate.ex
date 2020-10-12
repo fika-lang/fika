@@ -40,11 +40,11 @@ defmodule Fika.ErlTranslate do
     {:op, line, bin_op, translate_exp(arg1), translate_exp(arg2)}
   end
 
-  defp translate_exp({:call, {:||, {line, _, _}}, [arg1, arg2], _module}) do
+  defp translate_exp({:call, {:|, {line, _, _}}, [arg1, arg2], _module}) do
     {:op, line, :or, translate_exp(arg1), translate_exp(arg2)}
   end
 
-  defp translate_exp({:call, {:&&, {line, _, _}}, [arg1, arg2], _module}) do
+  defp translate_exp({:call, {:&, {line, _, _}}, [arg1, arg2], _module}) do
     {:op, line, :and, translate_exp(arg1), translate_exp(arg2)}
   end
 
