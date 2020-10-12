@@ -75,7 +75,7 @@ Fika is currently a proof of concept so its data types and operators are quite
 limited.
 
 Data types - atoms, integers, strings, booleans, lists and records.
-Operators - assignment and arithmetic.
+Operators - assignment(=), logical(&, |) and arithmetic(+, -, *, /).
 
 ```elixir
 # This is a comment
@@ -100,6 +100,9 @@ tuple = {"tuple", true}
 # Type: {foo: Int}
 record = {foo: 123}
 ```
+
+[example.fi](https://github.com/fika-lang/fika/blob/main/example.fi) has
+working examples that demonstrate the syntax.
 
 ### Running Fika programs
 
