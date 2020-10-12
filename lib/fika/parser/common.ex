@@ -38,6 +38,11 @@ defmodule Fika.Parser.Common do
     |> times(min: 1)
     |> ignore()
 
+  allow_horizontal_space =
+    horizontal_space
+    |> repeat()
+    |> ignore()
+
   allow_space =
     space
     |> repeat()
@@ -65,6 +70,6 @@ defmodule Fika.Parser.Common do
   defcombinator :require_space, require_space
   defcombinator :identifier_str, identifier_str
   defcombinator :identifier, identifier
-  defcombinator :horizontal_space, horizontal_space
+  defcombinator :allow_horizontal_space, allow_horizontal_space
   defcombinator :atom, atom
 end

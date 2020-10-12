@@ -37,3 +37,15 @@ end
 fn tuple : {Int,Bool} do
   {1, true}
 end
+
+fn or(a: Bool, b: Bool) : Bool do
+  a | b
+end
+
+fn and(a: Bool, b: Bool) : Bool do
+  a & b
+end
+
+fn not(a: Bool) : Bool do
+  !a
+end
