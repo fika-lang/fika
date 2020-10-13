@@ -345,14 +345,14 @@ defmodule Fika.TypeCheckerTest do
     end
 
     test "type check for map with mixed type" do
-      str = ~s({"foo" => [1, 2], "bar" => 345})
+      str = ~s({1 => [1, 2], "foo" => 345})
 
       ast = TestParser.expression!(str)
 
       assert {
                :error,
                "Elements of map have different types. " <>
-                 "Expected: Map(String, List(Int)), got: Map(String, Int)"
+                 "Expected: Map(Int, List(Int)), got: Map(String, Int)"
              } = TypeChecker.infer_exp(Env.init(), ast)
     end
   end

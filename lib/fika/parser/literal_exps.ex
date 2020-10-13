@@ -86,7 +86,7 @@ defmodule Fika.Parser.LiteralExps do
 
   map_key_value =
     allow_space
-    |> concat(string_exp)
+    |> concat(exp)
     |> concat(allow_space)
     |> ignore(string("=>"))
     |> concat(allow_space)
