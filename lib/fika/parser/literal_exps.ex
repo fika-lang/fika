@@ -102,7 +102,7 @@ defmodule Fika.Parser.LiteralExps do
 
   map =
     ignore(string("{"))
-    |> concat(key_value)
+    |> concat(map_key_value)
     |> repeat(map_content)
     |> optional(ignore(string(",")))
     |> ignore(string("}"))
@@ -139,6 +139,7 @@ defmodule Fika.Parser.LiteralExps do
       exp_list,
       tuple,
       record,
+      map,
       function_ref,
       atom
     ])
