@@ -193,7 +193,7 @@ defmodule Fika.ErlTranslateTest do
     end
 
     test "list of lists" do
-      str = "[[1],[1,2]]"
+      str = "[[1], [1, 2]]"
       ast = TestParser.expression!(str)
 
       assert {:cons, 1, {:cons, 1, {:integer, 1, 1}, {nil, 1}},
