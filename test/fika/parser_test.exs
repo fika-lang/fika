@@ -553,6 +553,19 @@ defmodule Fika.ParserTest do
     end
   end
 
+  describe "map" do
+    test "parses map with key values" do
+      str = """
+      {"a" => 1}
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {:map, {1, 0, 10}, [{{:string, {1, 0, 4}, "a"}, {:integer, {1, 0, 9}, 1}}]}
+    end
+  end
+
   describe "tuple" do
     test "parses tuple with one element" do
       str = """

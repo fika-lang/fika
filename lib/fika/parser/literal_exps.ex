@@ -92,7 +92,7 @@ defmodule Fika.Parser.LiteralExps do
     |> concat(allow_space)
     |> concat(exp)
     |> label("map key value pair")
-    |> Helper.to_ast(:map_key_value)
+    |> Helper.to_ast(:key_value)
 
   map_content =
     allow_space
