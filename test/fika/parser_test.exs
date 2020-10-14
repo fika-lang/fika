@@ -682,6 +682,135 @@ defmodule Fika.ParserTest do
     end
   end
 
+  describe "logical operators" do
+    test "supports negation" do
+      assert {:call, {:!, _}, [{:boolean, _, true}], kernel} = TestParser.expression!("!true")
+    end
+
+    test "supports negation with more complex expressions" do
+      {
+        :call,
+        {:!, _},
+        [
+          {:call, {:|, _}, [{:boolean, _, true}, {:boolean, _, false}], :kernel}
+        ],
+        :kernel
+      } = TestParser.expression!("!(true | false)")
+    end
+
+    test "simple usage" do
+      str = "false | true"
+      result = TestParser.expression!(str)
+
+      assert {:call, {:|, _},
+              [
+                {:boolean, _, false},
+                {:boolean, _, true}
+              ], :kernel} = result
+    end
+
+    test "more complex expressions" do
+      str = "true & (false | :true)"
+      result = TestParser.expression!(str)
+
+      assert {
+               :call,
+               {:&, _},
+               [
+                 {:boolean, _, true},
+                 {:call, {:|, _}, [{:boolean, _, false}, {:boolean, _, true}], :kernel}
+               ],
+               :kernel
+             } = result
+    end
+  end
+
+  describe "expression delimiter" do
+    test "cannot have two assignments in the same line" do
+      str = "x = 1 y = 2"
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "cannot have two variables in the same line" do
+      str = "foo bar"
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "can have expressions in multiple lines" do
+      str = """
+      x = 1
+      y = 2
+      """
+
+      assert {:ok, [_, _], _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "can have expressions separated by ;" do
+      str = """
+      x = 1; y=2
+      """
+
+      assert {:ok, [_, _], _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "can have a single expression split across multiple lines" do
+      str = """
+      x =
+        123 +
+          345
+      """
+
+      assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
+
+      str = """
+      x = foo &
+        bar
+      """
+
+      assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "function ref on new line" do
+      str = """
+      x = foo
+        &bar
+      """
+
+      assert {:ok, [_, {:function_ref, _, _}], _, _, _, _} = TestParser.exps(str)
+    end
+
+    # TODO: This actually looks cleaner, so we may eventually allow this
+    # by adding more fine grained rules to our parser.
+    test "| on newline is an error" do
+      str = """
+      x = foo
+        | bar
+        | baz
+      """
+
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "| on same line is ok" do
+      str = """
+      x = foo |
+        bar |
+        baz
+      """
+
+      assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "= on newline is an error" do
+      str = """
+      x
+      = 123
+      """
+
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
+    end
+  end
+
   describe "use module" do
     test "multiple lines of use" do
       str = """

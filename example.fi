@@ -1,31 +1,38 @@
+# A function definition
+# that takes two args - an integer "a", another integer "b"
+# and returns an integer.
 fn sum(a: Int, b: Int) : Int do
   a + b
 end
 
+# Here's a function that doesn't take any argument.
 fn hello : String do
   "World"
 end
 
+# This function returns a list of integers.
 fn foo : List(Int) do
   [1, 2, 3]
 end
 
-fn rec : {foo: List(Int)} do
-  {foo: [1, 2, 3]}
-end
-
+# This function returns a function reference.
 fn sum_ref : Fn(Int, Int -> Int) do
   &sum(Int, Int)
 end
 
+# Function references can be used to invoke the functions
+# they refer.
 fn call_sum_ref : Int do
   sum_ref().(1, 2)
 end
 
+# true and false are keywords that are of type Bool
 fn bool : Bool do
   true
 end
 
+# Here's an example of the if-else expression.
+# Notice that an if should always be followed by an else.
 fn simple_if : String do
   if true do
     "this is a passing if!"
@@ -34,6 +41,31 @@ fn simple_if : String do
   end
 end
 
+# A tuple is a small group of values of different types.
+# A tuple does not grow dynamically and is useful to hold
+# values of different types together.
 fn tuple : {Int,Bool} do
   {1, true}
+end
+
+# Records are useful for holding data with known keys,
+# for example, records from a table in a relational DB.
+fn rec : {foo: List(Int)} do
+  {foo: [1, 2, 3]}
+end
+
+
+# Logical operator - or
+fn or(a: Bool, b: Bool) : Bool do
+  a | b
+end
+
+# Logical operator - and
+fn and(a: Bool, b: Bool) : Bool do
+  a & b
+end
+
+# Logical unary "not" operator
+fn not(a: Bool) : Bool do
+  !a
 end

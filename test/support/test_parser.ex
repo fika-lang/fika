@@ -10,6 +10,7 @@ defmodule TestParser do
   }
 
   exp = parsec({Expressions, :exp})
+  exps = parsec({Expressions, :exps})
   function_defs = parsec({FunctionDef, :function_defs})
   use_modules = parsec({UseModule, :use_modules})
   allow_space = parsec({Common, :allow_space})
@@ -21,6 +22,7 @@ defmodule TestParser do
   end
 
   defparsec :expression, exp |> concat(allow_space) |> eos()
+  defparsec :exps, exps |> concat(allow_space) |> eos()
   defparsec :function_defs, function_defs |> concat(allow_space) |> eos()
   defparsec :type_str, parse_type |> concat(allow_space) |> eos()
   defparsec :use_modules, use_modules |> concat(allow_space) |> eos()
