@@ -74,7 +74,7 @@ defmodule Fika.Env do
   end
 
   def ast_functions(env) do
-    {:module, _module_name, functions} = get_in(env, [:module_env, :ast])
-    functions
+    {:module, _module_name, module} = get_in(env, [:module_env, :ast])
+    Map.get(module, :function_defs, [])
   end
 end

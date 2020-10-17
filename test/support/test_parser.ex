@@ -23,7 +23,11 @@ defmodule TestParser do
 
   defparsec :expression, exp |> concat(allow_space) |> eos()
   defparsec :exps, exps |> concat(allow_space) |> eos()
-  defparsec :function_defs, function_defs |> concat(allow_space) |> eos()
+  defparsec :function_defs, function_defs |> concat(allow_space) |> eos() |> map({:fetch_function_def, []})
   defparsec :type_str, parse_type |> concat(allow_space) |> eos()
   defparsec :use_modules, use_modules |> concat(allow_space) |> eos()
+
+  defp fetch_function_def({:function_defs, [function_def]}) do
+    function_def
+  end
 end

@@ -19,7 +19,7 @@ defmodule Fika.Parser do
 
   def parse_module(str, module_name) do
     {:ok, ast, _, _, _, _} = parse(str)
-    {:module, module_name, ast}
+    {:module, module_name, Map.new(ast)}
   end
 
   defparsec :parse, module

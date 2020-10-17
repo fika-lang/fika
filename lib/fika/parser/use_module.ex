@@ -27,12 +27,15 @@ defmodule Fika.Parser.UseModule do
     path
     |> concat(module_name)
 
-  use_modules =
-    allow_space
-    |> ignore(string("use"))
+  use_module =
+    ignore(string("use"))
     |> concat(require_space)
     |> concat(module_path)
     |> Helper.to_ast(:use_module)
+
+  use_modules =
+    allow_space
+    |> concat(use_module)
     |> times(min: 1)
     |> Helper.to_ast(:use_modules)
 

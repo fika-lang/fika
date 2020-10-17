@@ -80,11 +80,13 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test")
+    ast = Fika.Parser.parse_module(str, "test")
 
     env =
       Env.init()
       |> Env.init_module_env("test", ast)
+
+    [function] = Env.ast_functions(env)
 
     assert {:ok, "Int", _} = TypeChecker.infer(function, env)
   end
@@ -96,11 +98,13 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test")
+    ast = Fika.Parser.parse_module(str, "test")
 
     env =
       Env.init()
       |> Env.init_module_env("test", ast)
+
+    [function] = Env.ast_functions(env)
 
     assert {:error, "Expected type: Float, got: Int"} = TypeChecker.check(function, env)
   end
@@ -112,11 +116,13 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test")
+    ast = Fika.Parser.parse_module(str, "test")
 
     env =
       Env.init()
       |> Env.init_module_env("test", ast)
+
+    [function] = Env.ast_functions(env)
 
     assert {:error, "Expected type: {Float}, got: {Int}"} = TypeChecker.check(function, env)
   end
@@ -132,11 +138,13 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:module, _, [foo, _bar]} = ast = Fika.Parser.parse_module(str, "test")
+    ast = Fika.Parser.parse_module(str, "test")
 
     env =
       Env.init()
       |> Env.init_module_env("test", ast)
+
+    [foo, _bar] = Env.ast_functions(env)
 
     assert {:ok, "Int", env} = TypeChecker.infer(foo, env)
 
@@ -153,7 +161,7 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+    ast = Fika.Parser.parse_module(str, "test1")
 
     env =
       Env.init()
@@ -163,6 +171,8 @@ defmodule Fika.TypeCheckerTest do
       |> Env.add_function_type("test2.add(Float,Int)", "Float")
       |> Env.add_function_type("test2.add(Int,Float)", "Float")
       |> Env.add_function_type("test2.add(Int,Int)", "Int")
+
+    [function] = Env.ast_functions(env)
 
     assert {:ok, "Float", _} = TypeChecker.infer(function, env)
     assert {:ok, "Float", _} = TypeChecker.check(function, env)
@@ -409,12 +419,14 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+      ast = Fika.Parser.parse_module(str, "test1")
 
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("test2.bar(String,Int)", "Bool")
+
+      [function] = Env.ast_functions(env)
 
       assert {:ok, "Bool", _} = TypeChecker.infer(function, env)
     end
@@ -427,11 +439,13 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+      ast = Fika.Parser.parse_module(str, "test1")
 
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
+
+      [function] = Env.ast_functions(env)
 
       assert {:error, "Expected a function reference, but got type: Int"} =
                TypeChecker.infer(function, env)
@@ -445,12 +459,14 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+      ast = Fika.Parser.parse_module(str, "test1")
 
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("test2.bar(String,Int)", "Bool")
+
+      [function] = Env.ast_functions(env)
 
       error =
         "Expected function reference to be called with arguments (String,Int), but it was called with arguments (Int)"

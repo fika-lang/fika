@@ -5,8 +5,9 @@ defmodule Fika.TypeChecker do
 
   # Given the AST of a module, this function type checks each of the
   # function definitions.
-  def check_module({:module, module_name, functions} = ast, env) do
+  def check_module({:module, module_name, module} = ast, env) do
     env = Env.init_module_env(env, module_name, ast)
+    functions = Map.get(module, :function_defs, [])
 
     Enum.reduce_while(functions, {:ok, env}, fn function, {:ok, env} ->
       {:function, _line, {name, _args, _type, _exprs}} = function

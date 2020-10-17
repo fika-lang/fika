@@ -48,6 +48,10 @@ defmodule Fika.Parser.Helper do
     {:function, [position: line], {name, args, type, exps}}
   end
 
+  def do_to_ast({value, _}, :function_defs) do
+    {:function_defs, value}
+  end
+
   def do_to_ast({[], line}, :return_type) do
     {:type, line, "Nothing"}
   end
