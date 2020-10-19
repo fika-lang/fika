@@ -32,15 +32,17 @@ defmodule Fika.TypeChecker do
   # Given the AST of a function definition, this function checks if the return
   # type is indeed the type that's inferred from the body of the function.
   def check({:function, _line, {_, _, return_type, _}} = function, env) do
-    {:type, _line, type} = return_type
-    expected_type = type
+    {:type, _line, types} = return_type
+    expected_types = types
 
-    case infer(function, env) do
-      {:ok, ^expected_type, _env} = result ->
-        result
-
-      {:ok, other_type, _} ->
-        {:error, "Expected type: #{expected_type}, got: #{other_type}"}
+    # We need to pass inferred_type to the {:check, _, _} tuple so it is accessible in the else clause
+    with {:ok, inferred_type, _} = result <- infer(function, env),
+         {:check, true, _inferred_type} <-
+           {:check, Enum.any?(expected_types, &(&1 == inferred_type)), inferred_type} do
+      result
+    else
+      {:check, false, inferred_type} ->
+        {:error, "Expected type: #{Enum.join(expected_types, " | ")}, got: #{inferred_type}"}
 
       error ->
         error
@@ -54,10 +56,13 @@ defmodule Fika.TypeChecker do
 
     env = add_args_to_scope(env, args)
 
-    env
-    |> infer_block(exprs)
-    |> add_function_type(name, args)
-    |> to_str()
+    inferred_type =
+      env
+      |> infer_block(exprs)
+      |> add_function_type(name, args)
+      |> to_str()
+
+    inferred_type
   end
 
   def infer_block(env, []) do
