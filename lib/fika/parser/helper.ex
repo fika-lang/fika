@@ -62,15 +62,15 @@ defmodule Fika.Parser.Helper do
 
   def do_to_ast({types, line}, :type) do
     type =
-      Enum.reduce(types, "", fn
-        {:atom, _l, value}, acc ->
-          acc <> ":#{value}"
+      Enum.map(types, fn
+        {:atom, _l, value} ->
+          value
 
-        type, acc ->
-          acc <> type
+        type ->
+          type
       end)
 
-    {:type, line, type}
+    {:type, line, types}
   end
 
   def do_to_ast({[identifier, type], _line}, :arg) do
