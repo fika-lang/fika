@@ -25,6 +25,7 @@ defmodule Fika.Parser.Types do
     |> concat(allow_space)
     |> parsec(:type)
     |> string(")")
+    |> reduce({Helper, :join, []})
 
   simple_type =
     ascii_string([?A..?Z], 1)
@@ -100,6 +101,15 @@ defmodule Fika.Parser.Types do
       record_type,
       tuple_type
     ])
+
+  type =
+    base_type
+    |> repeat(
+      allow_space
+      |> string("|")
+      |> concat(allow_space)
+      |> concat(base_type)
+    )
 
   parse_type =
     type

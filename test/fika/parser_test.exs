@@ -176,7 +176,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 16, 19}],
-                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 10, 15}, 123}]}}
+                {:foo, [], {:type, {1, 0, 6}, ["Nothing"]}, [{:integer, {2, 10, 15}, 123}]}}
              ]
     end
 
@@ -191,7 +191,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}}
+                {:foo, [], {:type, {1, 0, 12}, ["Int"]}, [{:integer, {2, 16, 21}, 123}]}}
              ]
     end
 
@@ -206,7 +206,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 12}, ":ok"}, [{:integer, {2, 16, 21}, 123}]}}
+                {:foo, [], {:type, {1, 0, 12}, [:ok]}, [{:integer, {2, 16, 21}, 123}]}}
              ]
     end
 
@@ -221,8 +221,8 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 43, 46}],
-                {:foo, [{{:identifier, {1, 0, 8}, :a}, {:type, {1, 0, 22}, "List(String)"}}],
-                 {:type, {1, 0, 35}, "List(Int)"}, [{:identifier, {2, 39, 42}, :x}]}}
+                {:foo, [{{:identifier, {1, 0, 8}, :a}, {:type, {1, 0, 22}, ["List(String)"]}}],
+                 {:type, {1, 0, 35}, ["List(Int)"]}, [{:identifier, {2, 39, 42}, :x}]}}
              ]
     end
 
@@ -239,9 +239,9 @@ defmodule Fika.ParserTest do
                {:function, [position: {3, 40, 43}],
                 {:foo,
                  [
-                   {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, "Int"}},
-                   {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, "Int"}}
-                 ], {:type, {1, 0, 28}, "Int"},
+                   {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, ["Int"]}},
+                   {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, ["Int"]}}
+                 ], {:type, {1, 0, 28}, ["Int"]},
                  [
                    {:call, {:+, {2, 32, 39}},
                     [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
@@ -488,7 +488,7 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 3}, "Int"}]
+      assert result == [{:type, {1, 0, 3}, ["Int"]}]
     end
 
     test "parses types with an arg" do
@@ -496,7 +496,7 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 9}, "List(Int)"}]
+      assert result == [{:type, {1, 0, 9}, ["List(Int)"]}]
     end
 
     test "parses types with nested args" do
@@ -504,7 +504,7 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 18}, "List(List(String))"}]
+      assert result == [{:type, {1, 0, 18}, ["List(List(String))"]}]
     end
 
     test "parses function type with no args" do
@@ -512,7 +512,7 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 10}, "Fn(->Int)"}]
+      assert result == [{:type, {1, 0, 10}, ["Fn(->Int)"]}]
     end
 
     test "parses function type with args" do
@@ -520,28 +520,28 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 19}, "Fn(Int,Int->Int)"}]
+      assert result == [{:type, {1, 0, 19}, ["Fn(Int,Int->Int)"]}]
     end
 
     test "record type" do
       str = "{foo: Int, bar: String}"
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
-      assert result == [{:type, {1, 0, 23}, "{foo:Int,bar:String}"}]
+      assert result == [{:type, {1, 0, 23}, ["{foo:Int,bar:String}"]}]
     end
 
     test "atom type" do
       str = ":foo"
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
-      assert result == [{:type, {1, 0, 4}, ":foo"}]
+      assert result == [{:type, {1, 0, 4}, [:foo]}]
     end
 
     test "list of atom" do
       str = "List(:foo)"
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
-      assert result == [{:type, {1, 0, 10}, "List(:foo)"}]
+      assert result == [{:type, {1, 0, 10}, ["List(:foo)"]}]
     end
   end
 
@@ -605,7 +605,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {4, 36, 39}],
-                {:foo, [], {:type, {2, 20, 26}, "Nothing"}, [{:integer, {3, 30, 35}, 123}]}}
+                {:foo, [], {:type, {2, 20, 26}, ["Nothing"]}, [{:integer, {3, 30, 35}, 123}]}}
              ]
     end
 
@@ -620,7 +620,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 40, 43}],
-                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 22, 27}, 123}]}}
+                {:foo, [], {:type, {1, 0, 6}, ["Nothing"]}, [{:integer, {2, 22, 27}, 123}]}}
              ]
     end
 
@@ -645,7 +645,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:string, {2, 10, 21}, "foo#bar"}]}}
+                {:foo, [], {:type, {1, 0, 6}, ["Nothing"]}, [{:string, {2, 10, 21}, "foo#bar"}]}}
              ]
     end
   end
