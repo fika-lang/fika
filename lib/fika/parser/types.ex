@@ -39,6 +39,7 @@ defmodule Fika.Parser.Types do
     |> concat(type_args)
     |> concat(allow_space)
     |> string(")")
+    |> reduce({Helper, :join, []})
 
   type_key_value =
     allow_space
@@ -89,11 +90,12 @@ defmodule Fika.Parser.Types do
     |> reduce({Enum, :join, []})
     |> label("tuple type")
 
-  type =
+  base_type =
     choice([
       function_type,
       simple_type
-      |> optional(type_parens),
+      |> optional(type_parens)
+      |> reduce({Helper, :join, []}),
       atom,
       record_type,
       tuple_type

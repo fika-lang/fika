@@ -147,6 +147,13 @@ defmodule Fika.Parser.Helper do
     {:atom, line, value}
   end
 
+  def join(enumerable, separator \\ "") do
+    Enum.reduce(enumerable, "", fn
+      {:atom, _, value}, acc -> acc <> separator <> ":#{value}"
+      value, acc -> acc <> separator <> value
+    end)
+  end
+
   defp value_from_identifier({:identifier, _line, value}) do
     value
   end
