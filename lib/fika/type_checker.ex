@@ -36,6 +36,7 @@ defmodule Fika.TypeChecker do
     expected_types = types
 
     # We need to pass inferred_type to the {:check, _, _} tuple so it is accessible in the else clause
+    # Enum.any? is used because if any of the accepted types is returned, it should be accepted regardless
     with {:ok, inferred_type, _} = result <- infer(function, env),
          {:check, true, _inferred_type} <-
            {:check, Enum.any?(expected_types, &(&1 == inferred_type)), inferred_type} do
