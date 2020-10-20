@@ -361,7 +361,8 @@ defmodule Fika.TypeChecker do
   defp wrap_list([type]), do: "List(#{type})"
 
   defp do_infer_args(env, exp) do
-    Enum.reduce_while(exp.args, {:ok, [], env}, fn arg, {:ok, type_acc, env} ->
+    exp.args
+    |> Enum.reduce_while({:ok, [], env}, fn arg, {:ok, type_acc, env} ->
       case infer_exp(env, arg) do
         {:ok, type, env} ->
           Logger.debug("Argument of #{exp.name} is type: #{type}")
@@ -372,20 +373,37 @@ defmodule Fika.TypeChecker do
           {:halt, error}
       end
     end)
+    |> case do
+      {:ok, types, env} ->
+        corrected_types = types |> List.flatten() |> Enum.reverse()
+        {:ok, corrected_types, env}
+
+      error ->
+        error
+    end
   end
 
   defp do_infer_args_without_name(env, args) do
-    Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, type_acc, env} ->
+    args
+    |> Enum.reduce_while({:ok, [], env}, fn arg, {:ok, type_acc, env} ->
       case infer_exp(env, arg) do
         {:ok, type, env} ->
           Logger.debug("Argument is type: #{type}")
-          {:cont, {:ok, type_acc ++ [type], env}}
+          {:cont, {:ok, [type | type_acc], env}}
 
         error ->
           Logger.debug("Argument cannot be inferred")
           {:halt, error}
       end
     end)
+    |> case do
+      {:ok, acc_types, env} ->
+        corrected_types = acc_types |> List.flatten() |> Enum.reverse()
+        {:ok, corrected_types, env}
+
+      error ->
+        error
+    end
   end
 
   defp get_type_by_signature(env, signature) do
