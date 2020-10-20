@@ -21,7 +21,7 @@ defmodule Fika.TypeCheckerTest do
 
     {:atom, {1, 0, 2}, :a} = ast = TestParser.expression!(str)
 
-    assert {:ok, ":a", _} = TypeChecker.infer_exp(Env.init(), ast)
+    assert {:ok, :a, _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
   test "infer type for list of atom expressions" do
@@ -29,7 +29,7 @@ defmodule Fika.TypeCheckerTest do
 
     ast = TestParser.expression!(str)
 
-    assert {:ok, "List(:a)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    assert {:ok, ["List(:a)"], _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
   test "infer type of arithmetic expressions" do
@@ -86,7 +86,27 @@ defmodule Fika.TypeCheckerTest do
       Env.init()
       |> Env.init_module_env("test", ast)
 
-    assert {:ok, "Int", _} = TypeChecker.infer(function, env)
+    assert {:ok, ["Int"], _} = TypeChecker.infer(function, env)
+  end
+
+  test "infer function's return type when function has many branches" do
+    str = """
+    fn foo(a: Int) do
+      if true do
+        :one
+      else
+        "two"
+      end
+    end
+    """
+
+    {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test")
+
+    env =
+      Env.init()
+      |> Env.init_module_env("test", ast)
+
+    assert {:ok, [:one, "String"], _} = TypeChecker.infer(function, env)
   end
 
   test "check returns error when return type is not the inferred type" do
@@ -182,7 +202,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, "List(Int)", _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, ["List(Int)"], _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "list of integers and floats" do
@@ -199,7 +219,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, "List(Float)", _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, ["List(Float)"], _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "List of strings" do
@@ -207,7 +227,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, "List(String)", _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, ["List(String)"], _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "List of list of integers" do
@@ -215,7 +235,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, "List(List(Int))", _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, ["List(List(Int))"], _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "empty list" do
@@ -223,7 +243,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, "List(Nothing)", _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, ["List(Nothing)"], _} = TypeChecker.infer_exp(Env.init(), ast)
     end
   end
 
@@ -362,7 +382,7 @@ defmodule Fika.TypeCheckerTest do
       ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
-      assert {:ok, "String", _env} = TypeChecker.infer_exp(env, ast)
+      assert {:ok, ["String"], _env} = TypeChecker.infer_exp(env, ast)
     end
 
     test "error when if and else blocks have different return types" do
@@ -377,10 +397,7 @@ defmodule Fika.TypeCheckerTest do
       ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
-      assert {
-               :error,
-               "Expected if and else blocks to have same return type. Got String and Int"
-             } = TypeChecker.infer_exp(env, ast)
+      assert {:ok, ["String", "Int"], _env} = TypeChecker.infer_exp(env, ast)
     end
 
     test "with multiple expressions in blocks" do

@@ -61,7 +61,6 @@ defmodule Fika.TypeChecker do
       env
       |> infer_block(exprs)
       |> add_function_type(name, args)
-      |> to_str()
 
     inferred_type
   end
@@ -237,7 +236,7 @@ defmodule Fika.TypeChecker do
   # Atom value
   def infer_exp(env, {:atom, _line, atom}) do
     Logger.debug("Atom value found. Type: #{atom}")
-    {:ok, ":#{atom}", env}
+    {:ok, atom, env}
   end
 
   # if-else expression
@@ -263,19 +262,19 @@ defmodule Fika.TypeChecker do
   end
 
   defp infer_if_else_blocks(env, if_block, else_block) do
-    {_, if_type_val, env} = infer_block(env, if_block)
-    {_, else_type_val, _} = type = infer_block(env, else_block)
+    if_inferred = infer_block(env, if_block)
+    else_inferred = infer_block(env, else_block)
 
-    unless if_type_val == else_type_val do
-      Logger.debug("if and else block have different types")
+    with {:ok, if_type, env} <- if_inferred,
+         {:ok, else_type, ^env} <- else_inferred do
+      if_else_type =
+        if if_type == else_type do
+          [if_type]
+        else
+          [if_type, else_type]
+        end
 
-      error =
-        "Expected if and else blocks to have same return type. " <>
-          "Got #{if_type_val} and #{else_type_val}"
-
-      {:error, error}
-    else
-      type
+      {:ok, if_else_type, env}
     end
   end
 
@@ -326,12 +325,12 @@ defmodule Fika.TypeChecker do
   end
 
   defp infer_list_exps(env, []) do
-    {:ok, "List(Nothing)", env}
+    {:ok, ["List(Nothing)"], env}
   end
 
   defp infer_list_exps(env, [exp]) do
     case infer_exp(env, exp) do
-      {:ok, type, env} -> {:ok, "List(#{type})", env}
+      {:ok, type, env} -> {:ok, wrap_list(type), env}
       error -> error
     end
   end
@@ -339,7 +338,7 @@ defmodule Fika.TypeChecker do
   defp infer_list_exps(env, [exp | rest]) do
     {:ok, type, env} = infer_exp(env, exp)
 
-    Enum.reduce_while(rest, {:ok, "List(#{type})", env}, fn exp, {:ok, acc_type, acc_env} ->
+    Enum.reduce_while(rest, {:ok, [wrap_list(type)], env}, fn exp, {:ok, acc_type, acc_env} ->
       case infer_exp(acc_env, exp) do
         {:ok, ^type, env} ->
           acc = {:ok, acc_type, env}
@@ -357,6 +356,9 @@ defmodule Fika.TypeChecker do
       end
     end)
   end
+
+  defp wrap_list(type) when is_atom(type), do: "List(:#{type})"
+  defp wrap_list(type), do: "List(#{type})"
 
   defp do_infer_args(env, exp) do
     Enum.reduce_while(exp.args, {:ok, [], env}, fn arg, {:ok, type_acc, env} ->
@@ -445,16 +447,6 @@ defmodule Fika.TypeChecker do
       check(function, env)
     else
       {:error, "Undefined function: #{signature} in module #{module}"}
-    end
-  end
-
-  defp to_str(result) do
-    case result do
-      {:ok, type, env} ->
-        {:ok, to_string(type), env}
-
-      error ->
-        error
     end
   end
 end
