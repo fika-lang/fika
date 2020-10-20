@@ -5,7 +5,7 @@ defmodule Fika.Parser.LiteralExps do
 
   allow_space = parsec({Common, :allow_space})
   identifier = parsec({Common, :identifier})
-  atom = parsec({Common, :atom})
+  identifier_str = parsec({Common, :identifier_str})
   type = parsec({Types, :type})
   exp = parsec({Expressions, :exp})
 
@@ -103,6 +103,12 @@ defmodule Fika.Parser.LiteralExps do
     |> concat(identifier)
     |> wrap(optional(function_ref_type_parens))
     |> Helper.to_ast(:function_ref)
+
+  atom =
+    ignore(string(":"))
+    |> concat(identifier_str)
+    |> label("atom")
+    |> Helper.to_ast(:atom)
 
   literal_exps =
     choice([

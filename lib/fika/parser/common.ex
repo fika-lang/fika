@@ -60,16 +60,9 @@ defmodule Fika.Parser.Common do
     |> label("identifier")
     |> Helper.to_ast(:identifier)
 
-  atom =
-    ignore(string(":"))
-    |> concat(identifier)
-    |> label("atom")
-    |> Helper.to_ast(:atom)
-
   defcombinator :allow_space, allow_space
   defcombinator :require_space, require_space
   defcombinator :identifier_str, identifier_str
   defcombinator :identifier, identifier
   defcombinator :allow_horizontal_space, allow_horizontal_space
-  defcombinator :atom, atom
 end

@@ -5,7 +5,6 @@ defmodule Fika.Parser.Types do
 
   allow_space = parsec({Common, :allow_space})
   identifier_str = parsec({Common, :identifier_str})
-  atom = parsec({Common, :atom})
 
   type_args =
     optional(
@@ -31,7 +30,6 @@ defmodule Fika.Parser.Types do
     ascii_string([?A..?Z], 1)
     |> ascii_string([?a..?z, ?A..?Z], min: 0)
     |> reduce({Enum, :join, [""]})
-    |> Helper.to_ast(:simple_type)
 
   type_parens =
     string("(")
@@ -90,6 +88,11 @@ defmodule Fika.Parser.Types do
     |> string("}")
     |> reduce({Enum, :join, []})
     |> label("tuple type")
+
+  atom =
+    ignore(string(":"))
+    |> concat(identifier_str)
+    |> reduce({Helper, :to_atom, []})
 
   base_type =
     choice([
