@@ -106,7 +106,7 @@ defmodule Fika.Parser.Types do
     base_type
     |> repeat(
       allow_space
-      |> string("|")
+      |> ignore(string("|"))
       |> concat(allow_space)
       |> concat(base_type)
     )

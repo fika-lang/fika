@@ -315,9 +315,9 @@ defmodule Fika.TypeCheckerTest do
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
-        |> Env.add_function_type("bar.sum(Int,Int)", "Int")
+        |> Env.add_function_type("bar.sum(Int,Int)", ["Int"])
 
-      assert {:ok, [%FunctionRef{arg_types: ["Int", "Int"], return_type: "Int"}], _} =
+      assert {:ok, [%FunctionRef{arg_types: [["Int"], ["Int"]], return_type: ["Int"]}], _} =
                TypeChecker.infer_exp(env, ast)
     end
 
@@ -432,6 +432,24 @@ defmodule Fika.TypeCheckerTest do
         Env.init()
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("test2.bar(String,Int)", "Bool")
+
+      assert {:ok, ["Bool"], _} = TypeChecker.infer(function, env)
+    end
+
+    test "valid reference with union_type" do
+      str = """
+      fn foo do
+        x = &test2.bar(String | Int, Float | Int)
+        x.("hello", 1)
+      end
+      """
+
+      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+
+      env =
+        Env.init()
+        |> Env.init_module_env("test", ast)
+        |> Env.add_function_type("test2.bar(String | Int,Float | Int)", "Bool")
 
       assert {:ok, ["Bool"], _} = TypeChecker.infer(function, env)
     end

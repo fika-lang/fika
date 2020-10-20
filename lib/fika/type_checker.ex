@@ -122,24 +122,42 @@ defmodule Fika.TypeChecker do
   def infer_exp(env, {:call, {exp, _line}, args}) do
     case infer_exp(env, exp) do
       {:ok, [%FunctionRef{arg_types: arg_types, return_type: type}], env} ->
-        case do_infer_args_without_name(env, args) do
-          {:ok, ^arg_types, env} ->
-            {:ok, List.wrap(type), env}
-
-          {:ok, other_arg_types, _env} ->
+        with {:ok, inferred_arg_types, env} <- do_infer_args_without_name(env, args),
+             {:ok, _inferred_arg_types} <- validate_types(arg_types, inferred_arg_types) do
+          {:ok, List.wrap(type), env}
+        else
+          {_, inferred_arg_types} ->
             error =
               "Expected function reference to be called with" <>
-                " arguments (#{Enum.join(arg_types, ",")}), but it was called " <>
-                "with arguments (#{Enum.join(other_arg_types, ",")})"
+                " arguments (#{format_arg_types(arg_types)}), but it was called " <>
+                "with arguments (#{format_arg_types(inferred_arg_types)})"
 
             {:error, error}
         end
 
       {:ok, type, _} ->
-        {:error, "Expected a function reference, but got type: #{Enum.join(type, " | ")}"}
+        {:error, "Expected a function reference, but got type: #{format_arg_types(type)}"}
 
       error ->
         error
+    end
+  end
+
+  defp validate_types(arg_types, inferred_arg_types)
+       when not is_list(arg_types) or not is_list(inferred_arg_types) or
+              length(arg_types) != length(inferred_arg_types),
+       do: {:error, inferred_arg_types}
+
+  defp validate_types(arg_types, inferred_arg_types) do
+    arg_types
+    |> Enum.zip(inferred_arg_types)
+    |> Enum.all?(fn {arg, inferred} ->
+      inferred in arg
+    end)
+    |> if do
+      {:ok, inferred_arg_types}
+    else
+      {:error, inferred_arg_types}
     end
   end
 
@@ -449,7 +467,15 @@ defmodule Fika.TypeChecker do
   end
 
   defp get_signature(module, name, arg_types) do
-    "#{module}.#{name}(#{Enum.join(arg_types, ",")})"
+    "#{module}.#{name}(#{format_arg_types(arg_types)})"
+  end
+
+  defp format_arg_types(types) do
+    types
+    |> Enum.map(fn union ->
+      union |> List.wrap() |> List.flatten() |> Enum.join(" | ")
+    end)
+    |> Enum.join(",")
   end
 
   defp check_by_signature(env, signature) do
