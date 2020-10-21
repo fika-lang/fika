@@ -183,4 +183,22 @@ defmodule Fika.ErlTranslateTest do
              } = ErlTranslate.translate_expression(ast)
     end
   end
+
+  describe "list" do
+    test "single element list" do
+      str = "[1]"
+      ast = TestParser.expression!(str)
+
+      assert {:cons, 1, {:integer, 1, 1}, {nil, 1}} = ErlTranslate.translate_expression(ast)
+    end
+
+    test "list of lists" do
+      str = "[[1], [1, 2]]"
+      ast = TestParser.expression!(str)
+
+      assert {:cons, 1, {:cons, 1, {:integer, 1, 1}, {nil, 1}},
+              {:cons, 1, {:cons, 1, {:integer, 1, 1}, {:cons, 1, {:integer, 1, 2}, {nil, 1}}},
+               {nil, 1}}} = ErlTranslate.translate_expression(ast)
+    end
+  end
 end
