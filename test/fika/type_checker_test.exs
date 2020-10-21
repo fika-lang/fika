@@ -407,17 +407,26 @@ defmodule Fika.TypeCheckerTest do
 
     test "also completes when if and else blocks have different return types" do
       str = """
-      if false do
-        "done"
+      if true do
+        :one
       else
-        500
+        if true do
+          "two"
+        else
+          if true do
+            3
+          else
+            "one"
+          end
+          2
+        end
       end
       """
 
       ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
-      assert {:ok, ["String", "Int"], _env} = TypeChecker.infer_exp(env, ast)
+      assert {:ok, [:one, "String", "Int"], _env} = TypeChecker.infer_exp(env, ast)
     end
 
     test "with multiple expressions in blocks" do
