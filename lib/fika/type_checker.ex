@@ -291,7 +291,10 @@ defmodule Fika.TypeChecker do
         if if_type == else_type do
           if_type
         else
-          List.flatten([List.wrap(if_type) | List.wrap(else_type)])
+          [List.wrap(if_type) | List.wrap(else_type)]
+          |> List.flatten()
+          |> MapSet.new()
+          |> Enum.to_list()
         end
 
       {:ok, if_else_type, env}

@@ -418,7 +418,6 @@ defmodule Fika.TypeCheckerTest do
           else
             "one"
           end
-          2
         end
       end
       """
@@ -426,7 +425,7 @@ defmodule Fika.TypeCheckerTest do
       ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
-      assert {:ok, [:one, "String", "Int"], _env} = TypeChecker.infer_exp(env, ast)
+      assert {:ok, [:one, "Int", "String"], _env} = TypeChecker.infer_exp(env, ast)
     end
 
     test "with multiple expressions in blocks" do
