@@ -85,7 +85,7 @@ defmodule Fika.Parser.LiteralExps do
       |> ignore(string(","))
       |> concat(allow_space)
       |> concat(type)
-      |> reduce({Enum, :into, [[]]})
+      |> reduce({Helper, :render_arg_type, []})
       |> parsec(:type_args_list)
     )
 
@@ -93,7 +93,7 @@ defmodule Fika.Parser.LiteralExps do
     ignore(string("("))
     |> concat(allow_space)
     |> concat(type)
-    |> reduce({Enum, :into, [[]]})
+    |> reduce({Helper, :render_arg_type, []})
     |> concat(type_args_list)
     |> ignore(string(")"))
 

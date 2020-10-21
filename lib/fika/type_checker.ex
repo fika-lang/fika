@@ -143,24 +143,6 @@ defmodule Fika.TypeChecker do
     end
   end
 
-  defp validate_types(arg_types, inferred_arg_types)
-       when not is_list(arg_types) or not is_list(inferred_arg_types) or
-              length(arg_types) != length(inferred_arg_types),
-       do: {:error, inferred_arg_types}
-
-  defp validate_types(arg_types, inferred_arg_types) do
-    arg_types
-    |> Enum.zip(inferred_arg_types)
-    |> Enum.all?(fn {arg, inferred} ->
-      inferred in List.wrap(arg)
-    end)
-    |> if do
-      {:ok, inferred_arg_types}
-    else
-      {:error, inferred_arg_types}
-    end
-  end
-
   # =
   def infer_exp(env, {{:=, _}, {:identifier, _line, left}, right}) do
     case infer_exp(env, right) do
@@ -264,6 +246,24 @@ defmodule Fika.TypeChecker do
     case infer_if_else_condition(env, condition) do
       {:ok, "Bool", env} -> infer_if_else_blocks(env, if_block, else_block)
       error -> error
+    end
+  end
+
+    defp validate_types(arg_types, inferred_arg_types)
+       when not is_list(arg_types) or not is_list(inferred_arg_types) or
+              length(arg_types) != length(inferred_arg_types),
+       do: {:error, inferred_arg_types}
+
+  defp validate_types(arg_types, inferred_arg_types) do
+    arg_types
+    |> Enum.zip(inferred_arg_types)
+    |> Enum.all?(fn {arg, inferred} ->
+      inferred in List.wrap(arg)
+    end)
+    |> if do
+      {:ok, inferred_arg_types}
+    else
+      {:error, inferred_arg_types}
     end
   end
 

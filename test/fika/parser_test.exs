@@ -585,8 +585,8 @@ defmodule Fika.ParserTest do
                   :foo,
                   :bar,
                   [
-                    ["Int"],
-                    ["Int"]
+                    "Int",
+                    "Int"
                   ]
                 }}
     end

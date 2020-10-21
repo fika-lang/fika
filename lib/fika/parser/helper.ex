@@ -142,6 +142,14 @@ defmodule Fika.Parser.Helper do
     end)
   end
 
+  def render_arg_type([type]) do
+    type
+  end
+
+  def render_arg_type(types) do
+    types
+  end
+
   def to_atom([atom]) do
     String.to_atom(atom)
   end
