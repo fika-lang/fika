@@ -39,7 +39,8 @@ defmodule Fika.TypeChecker do
     # Enum.any? is used because if any of the accepted types is returned, it should be accepted regardless
     with {:ok, inferred_type, _} = result <- infer(function, env),
          {:check, true, _inferred_type} <-
-           {:check, MapSet.new(expected_types) == MapSet.new(List.wrap(inferred_type)), inferred_type} do
+           {:check, MapSet.new(expected_types) == MapSet.new(List.wrap(inferred_type)),
+            inferred_type} do
       result
     else
       {:check, false, inferred_type} ->
@@ -249,7 +250,7 @@ defmodule Fika.TypeChecker do
     end
   end
 
-    defp validate_types(arg_types, inferred_arg_types)
+  defp validate_types(arg_types, inferred_arg_types)
        when not is_list(arg_types) or not is_list(inferred_arg_types) or
               length(arg_types) != length(inferred_arg_types),
        do: {:error, inferred_arg_types}

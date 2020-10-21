@@ -57,7 +57,6 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({types, line}, :type) do
-
     {:type, line, types}
   end
 
