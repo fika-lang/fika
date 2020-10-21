@@ -176,7 +176,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 16, 19}],
-                {:foo, [], {:type, {1, 0, 6}, ["Nothing"]}, [{:integer, {2, 10, 15}, 123}]}}
+                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 10, 15}, 123}]}}
              ]
     end
 
@@ -605,7 +605,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {4, 36, 39}],
-                {:foo, [], {:type, {2, 20, 26}, ["Nothing"]}, [{:integer, {3, 30, 35}, 123}]}}
+                {:foo, [], {:type, {2, 20, 26}, "Nothing"}, [{:integer, {3, 30, 35}, 123}]}}
              ]
     end
 
@@ -620,7 +620,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 40, 43}],
-                {:foo, [], {:type, {1, 0, 6}, ["Nothing"]}, [{:integer, {2, 22, 27}, 123}]}}
+                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 22, 27}, 123}]}}
              ]
     end
 
@@ -645,7 +645,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 6}, ["Nothing"]}, [{:string, {2, 10, 21}, "foo#bar"}]}}
+                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:string, {2, 10, 21}, "foo#bar"}]}}
              ]
     end
   end
