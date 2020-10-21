@@ -24,8 +24,15 @@ defmodule Fika.Parser.Expressions do
       non_literal_exps
     ])
 
+  exp_unary_op =
+    choice([string("+"), string("-")])
+    |> lookahead_not(choice([string("+"), string("-")]))
+    |> concat(allow_horizontal_space)
+    |> concat(factor)
+    |> Helper.to_ast(:unary_op)
+
   term =
-    factor
+    choice([exp_unary_op, factor])
     |> optional(
       allow_horizontal_space
       |> choice([string("*"), string("/"), string("&")])
@@ -49,7 +56,8 @@ defmodule Fika.Parser.Expressions do
   exp =
     choice([
       exp_match,
-      exp_add_op
+      exp_add_op,
+      exp_unary_op
     ])
     |> label("expression")
 

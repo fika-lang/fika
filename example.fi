@@ -69,3 +69,8 @@ end
 fn not(a: Bool) : Bool do
   !a
 end
+
+# Unary minus operator
+fn negate(a: Int) : Int do
+  -a
+end
