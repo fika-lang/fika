@@ -37,7 +37,7 @@ defmodule Fika.TypeCheckerTest do
 
     ast = TestParser.expression!(str)
 
-    assert {:ok, ["Int"], _} = TypeChecker.infer_exp(Env.init(), ast)
+    assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
   describe "logical operators" do
@@ -45,23 +45,23 @@ defmodule Fika.TypeCheckerTest do
       # and
       str = "true & false"
       ast = TestParser.expression!(str)
-      assert {:ok, ["Bool"], _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
 
       # or
       str = "true | false"
       ast = TestParser.expression!(str)
-      assert {:ok, ["Bool"], _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
 
       # negation
       str = "!true"
       ast = TestParser.expression!(str)
-      assert {:ok, ["Bool"], _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "infer type of logical expressions when using atoms" do
       str = "true & :false"
       ast = TestParser.expression!(str)
-      assert {:ok, ["Bool"], _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
   end
 
@@ -158,10 +158,10 @@ defmodule Fika.TypeCheckerTest do
       Env.init()
       |> Env.init_module_env("test", ast)
 
-    assert {:ok, ["Int"], env} = TypeChecker.infer(foo, env)
+    assert {:ok, "Int", env} = TypeChecker.infer(foo, env)
 
-    assert Env.get_function_type(env, "test.foo(Int)") == ["Int"]
-    assert Env.get_function_type(env, "test.bar(Int)") == ["Int"]
+    assert Env.get_function_type(env, "test.foo(Int)") == "Int"
+    assert Env.get_function_type(env, "test.bar(Int)") == "Int"
   end
 
   test "infer function with variable assignments which get used in function calls" do
