@@ -40,11 +40,12 @@ defmodule Fika.TypeChecker do
     with {:ok, inferred_type, _} = result <- infer(function, env),
          {:check, true, _inferred_type} <-
            {:check, MapSet.new(expected_types) == MapSet.new(List.wrap(inferred_type)),
-            inferred_type} do
+            List.wrap(inferred_type)} do
       result
     else
       {:check, false, inferred_type} ->
-        {:error, "Expected type: #{Enum.join(expected_types, " | ")}, got: #{inferred_type}"}
+        {:error,
+         "Expected type: #{type_to_string(expected_types)}, got: #{type_to_string(inferred_type)}"}
 
       error ->
         error
@@ -475,9 +476,20 @@ defmodule Fika.TypeChecker do
     types
     |> List.wrap()
     |> Enum.map(fn union ->
-      union |> List.wrap() |> List.flatten() |> Enum.join(" | ")
+      type_to_string(union)
     end)
     |> Enum.join(",")
+  end
+
+  defp type_to_string(type) do
+    type
+    |> List.wrap()
+    |> List.flatten()
+    |> Enum.map(fn
+      x when is_atom(x) -> ":#{x}"
+      x -> x
+    end)
+    |> Enum.join(" | ")
   end
 
   defp check_by_signature(env, signature) do

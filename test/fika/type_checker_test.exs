@@ -125,6 +125,26 @@ defmodule Fika.TypeCheckerTest do
     assert {:error, "Expected type: Float, got: Int"} = TypeChecker.check(function, env)
   end
 
+  test "check returns proper error when return type is an union and is not the inferred type" do
+    str = """
+    fn foo(a: Int) : Float do
+      if true do
+        :a
+      else
+        :b
+      end
+    end
+    """
+
+    {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test")
+
+    env =
+      Env.init()
+      |> Env.init_module_env("test", ast)
+
+    assert {:error, "Expected type: Float, got: :a | :b"} = TypeChecker.check(function, env)
+  end
+
   test "checks tuple return type for function" do
     str = """
     fn foo : {Float} do
