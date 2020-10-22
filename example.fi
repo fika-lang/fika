@@ -72,6 +72,5 @@ end
 
 # Unary minus operator
 fn unary_minus(a: Int) : Int do
-  10
-  - a
+  -a
 end
