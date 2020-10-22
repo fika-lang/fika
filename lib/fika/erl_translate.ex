@@ -40,9 +40,9 @@ defmodule Fika.ErlTranslate do
     {:op, line, bin_op, translate_exp(arg1), translate_exp(arg2)}
   end
 
-  defp translate_exp({:call, {un_op, {line, _, _}}, [arg1], _module})
-       when un_op in [:+, :-] do
-    {:op, line, un_op, translate_exp(arg1)}
+  defp translate_exp({:call, {unary_op, {line, _, _}}, [arg], _module})
+       when unary_op in [:+, :-] do
+    {:op, line, unary_op, translate_exp(arg)}
   end
 
   defp translate_exp({:call, {:|, {line, _, _}}, [arg1, arg2], _module}) do
@@ -53,8 +53,8 @@ defmodule Fika.ErlTranslate do
     {:op, line, :and, translate_exp(arg1), translate_exp(arg2)}
   end
 
-  defp translate_exp({:call, {:!, {line, _, _}}, [arg1], _module}) do
-    {:op, line, :not, translate_exp(arg1)}
+  defp translate_exp({:call, {:!, {line, _, _}}, [arg], _module}) do
+    {:op, line, :not, translate_exp(arg)}
   end
 
   defp translate_exp({:call, {name, {line, _, _}}, args, nil}) do

@@ -71,6 +71,7 @@ fn not(a: Bool) : Bool do
 end
 
 # Unary minus operator
-fn negate(a: Int) : Int do
-  -a
+fn unary_minus(a: Int) : Int do
+  10
+  - a
 end
