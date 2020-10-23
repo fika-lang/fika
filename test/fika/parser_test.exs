@@ -379,16 +379,17 @@ defmodule Fika.ParserTest do
       result = TestParser.expression!(str)
 
       assert result == {
-        :string,
-        {1, 0, 30},
-        [
-          {:identifier, {1, 0, 8}, :hello},
-          " ",
-          {:string, {1, 0, 19}, ["World"]},
-          {:integer, {1, 0, 23}, 0},
-          {:call, {:+, {1, 0, 28}}, [{:integer, {1, 0, 26}, 1}, {:integer, {1, 0, 28}, 1}], :kernel}
-        ]
-      }
+               :string,
+               {1, 0, 30},
+               [
+                 {:identifier, {1, 0, 8}, :hello},
+                 " ",
+                 {:string, {1, 0, 19}, ["World"]},
+                 {:integer, {1, 0, 23}, 0},
+                 {:call, {:+, {1, 0, 28}}, [{:integer, {1, 0, 26}, 1}, {:integer, {1, 0, 28}, 1}],
+                  :kernel}
+               ]
+             }
     end
   end
 

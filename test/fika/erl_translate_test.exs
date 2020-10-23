@@ -164,6 +164,38 @@ defmodule Fika.ErlTranslateTest do
             ]} = result
   end
 
+  describe "string interpolation" do
+    test "replaces with string" do
+      str = ~S"""
+      "#{"Hello"} #{"World"}"
+      """
+
+      ast = TestParser.expression!(str)
+      result = ErlTranslate.translate_expression(ast)
+
+      assert {
+               :string,
+               1,
+               [
+                 {:string, 1, 'Hello'},
+                 {:string, 1, ' '},
+                 {:string, 1, 'World'}
+               ]
+             } = result
+    end
+
+    test "handles expressions" do
+      str = ~S"""
+      "#{2 + 2}"
+      """
+
+      ast = TestParser.expression!(str)
+      result = ErlTranslate.translate_expression(ast)
+
+      assert {:string, 1, [{:op, 1, :+, {:integer, 1, 2}, {:integer, 1, 2}}]} = result
+    end
+  end
+
   describe "tuple" do
     test "single element tuple" do
       str = "{1}"

@@ -90,8 +90,18 @@ defmodule Fika.ErlTranslate do
     {:var, line, name}
   end
 
-  defp translate_exp({:string, {line, _, _}, value}) do
+  defp translate_exp({:string, {line, _, _}, [value]}) when is_binary(value) do
     {:string, line, String.to_charlist(value)}
+  end
+
+  defp translate_exp({:string, {line, _, _}, str_elements}) do
+    translated_exps =
+      Enum.map(str_elements, fn
+        value when is_binary(value) -> {:string, line, String.to_charlist(value)}
+        exp -> translate_exp(exp)
+      end)
+
+    {:string, line, translated_exps}
   end
 
   defp translate_exp({:list, {line, _, _}, value}) do
