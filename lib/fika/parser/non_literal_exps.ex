@@ -6,7 +6,6 @@ defmodule Fika.Parser.NonLiteralExps do
   allow_space = parsec({Common, :allow_space})
   require_space = parsec({Common, :require_space})
   identifier = parsec({Common, :identifier})
-  factor = parsec({Expressions, :factor})
   exp = parsec({Expressions, :exp})
   exps = parsec({Expressions, :exps})
 
@@ -73,22 +72,8 @@ defmodule Fika.Parser.NonLiteralExps do
     |> wrap(call_args)
     |> ignore(string(")"))
 
-  not_op =
-    string("!")
-    |> concat(exp)
-    |> Helper.to_ast(:not)
-
-  unary_op =
-    choice([string("+"), string("-")])
-    |> lookahead_not(choice([string("+"), string("-")]))
-    |> concat(allow_space)
-    |> concat(factor)
-    |> Helper.to_ast(:unary_op)
-
   non_literal_exps =
     choice([
-      not_op,
-      unary_op,
       exp_paren,
       function_call,
       identifier,

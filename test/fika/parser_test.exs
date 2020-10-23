@@ -64,37 +64,28 @@ defmodule Fika.ParserTest do
              } == TestParser.expression!("-5")
     end
 
-    test "unary +" do
-      assert {
-               :call,
-               {:+, {1, 0, 2}},
-               [{:integer, {1, 0, 2}, 5}],
-               :kernel
-             } = TestParser.expression!("+5")
-    end
-
-    test "unary + and - have higher precedence than other arithmetic operators" do
+    test "unary - has higher precedence than other arithmetic operators" do
       str = """
-      11 + -5 - +10 * -1 / -2
+      11 + -5 - 10 * -1 / -2
       """
 
       assert {
                :call,
-               {:-, {1, 0, 23}},
+               {:-, {1, 0, 22}},
                [
-                 {:call, {:+, {1, 0, 23}},
+                 {:call, {:+, {1, 0, 22}},
                   [
                     {:integer, {1, 0, 2}, 11},
                     {:call, {:-, {1, 0, 7}}, [{:integer, {1, 0, 7}, 5}], :kernel}
                   ], :kernel},
-                 {:call, {:/, {1, 0, 23}},
+                 {:call, {:/, {1, 0, 22}},
                   [
-                    {:call, {:*, {1, 0, 23}},
+                    {:call, {:*, {1, 0, 22}},
                      [
-                       {:call, {:+, {1, 0, 13}}, [{:integer, {1, 0, 13}, 10}], :kernel},
-                       {:call, {:-, {1, 0, 18}}, [{:integer, {1, 0, 18}, 1}], :kernel}
+                       {:integer, {1, 0, 12}, 10},
+                       {:call, {:-, {1, 0, 17}}, [{:integer, {1, 0, 17}, 1}], :kernel}
                      ], :kernel},
-                    {:call, {:-, {1, 0, 23}}, [{:integer, {1, 0, 23}, 2}], :kernel}
+                    {:call, {:-, {1, 0, 22}}, [{:integer, {1, 0, 22}, 2}], :kernel}
                   ], :kernel}
                ],
                :kernel
