@@ -8,6 +8,7 @@ defmodule Fika.Parser.LiteralExps do
   atom = parsec({Common, :atom})
   type = parsec({Types, :type})
   exp = parsec({Expressions, :exp})
+  exps = parsec({Expressions, :exps})
 
   integer =
     integer(min: 1)
@@ -22,9 +23,14 @@ defmodule Fika.Parser.LiteralExps do
     |> label("boolean")
     |> Helper.to_ast(:boolean)
 
+  interpolation =
+    ignore(string("\#{"))
+    |> concat(exps)
+    |> ignore(string("}"))
+
   string_exp =
     ignore(string("\""))
-    |> repeat(choice([string("\\\""), utf8_char(not: ?")]))
+    |> repeat(choice([interpolation, string("\\\""), utf8_char(not: ?")]))
     |> ignore(string("\""))
     |> Helper.to_ast(:string)
 
