@@ -714,7 +714,7 @@ defmodule Fika.ParserTest do
 
   describe "logical operators" do
     test "supports negation" do
-      assert {:call, {:!, _}, [{:boolean, _, true}], kernel} = TestParser.expression!("!true")
+      assert {:call, {:!, _}, [{:boolean, _, true}], _kernel} = TestParser.expression!("!true")
     end
 
     test "supports negation with more complex expressions" do
