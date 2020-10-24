@@ -174,25 +174,38 @@ defmodule Fika.ErlTranslateTest do
       result = ErlTranslate.translate_expression(ast)
 
       assert {
-               :string,
+               :bin,
                1,
                [
-                 {:string, 1, 'Hello'},
-                 {:string, 1, ' '},
-                 {:string, 1, 'World'}
+                 {:bin_element, 1, {:string, 1, 'Hello'}, :default, :default},
+                 {:bin_element, 1, {:string, 1, ' '}, :default, :default},
+                 {:bin_element, 1, {:string, 1, 'World'}, :default, :default}
                ]
              } = result
     end
 
     test "handles expressions" do
       str = ~S"""
-      "#{2 + 2}"
+      "#{hello = "Hello"; "#{hello} World"}"
       """
 
       ast = TestParser.expression!(str)
       result = ErlTranslate.translate_expression(ast)
 
-      assert {:string, 1, [{:op, 1, :+, {:integer, 1, 2}, {:integer, 1, 2}}]} = result
+      assert {
+               :bin,
+               1,
+               [
+                 {:bin_element, 1, {:match, 1, {:var, 1, :hello}, {:string, 1, 'Hello'}},
+                  :default, :default},
+                 {:bin_element, 1,
+                  {:bin, 1,
+                   [
+                     {:bin_element, 1, {:var, 1, :hello}, :default, :default},
+                     {:bin_element, 1, {:string, 1, ' World'}, :default, :default}
+                   ]}, :default, :default}
+               ]
+             } = result
     end
   end
 
