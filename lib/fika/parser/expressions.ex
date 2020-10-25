@@ -24,8 +24,17 @@ defmodule Fika.Parser.Expressions do
       non_literal_exps
     ])
 
+  unary_exp =
+    choice([
+      choice([string("!"), string("-")])
+      |> concat(allow_space)
+      |> concat(factor)
+      |> Helper.to_ast(:unary_op),
+      factor
+    ])
+
   term =
-    factor
+    unary_exp
     |> optional(
       allow_horizontal_space
       |> choice([string("*"), string("/"), string("&")])
@@ -67,6 +76,7 @@ defmodule Fika.Parser.Expressions do
 
   defcombinatorp :exp_bin_op, exp_bin_op
   defcombinatorp :term, term
+  defcombinator :factor, factor
   defcombinator :exp, exp
   defcombinator :exps, exps
 end
