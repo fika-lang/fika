@@ -29,8 +29,7 @@ defmodule Fika.Env do
         "kernel.|(Bool,Bool)" => "Bool",
         "kernel.&(Bool,Bool)" => "Bool",
         "kernel.!(Bool)" => "Bool",
-        "kernel.-(Int)" => "Int",
-        "kernel.+(Int)" => "Int"
+        "kernel.-(Int)" => "Int"
       }
     }
   end
