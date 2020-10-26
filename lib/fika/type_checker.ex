@@ -332,7 +332,7 @@ defmodule Fika.TypeChecker do
   defp infer_map_key_value(env, {key, value}) do
     {:ok, key_type, env} = infer_exp(env, key)
     {:ok, val_type, env} = infer_exp(env, value)
-    {:ok, "Map(#{key_type}, #{val_type})", env}
+    {:ok, "Map(#{key_type},#{val_type})", env}
   end
 
   defp do_infer_tuple_exps(exps, env) do

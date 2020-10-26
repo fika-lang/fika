@@ -68,17 +68,15 @@ defmodule Fika.Parser.Types do
     |> label("record type")
 
   # To parse functions with map return type
-  type_map_key_value =
-    allow_space
-    |> parsec(:type)
+  map_type =
+    string("Map")
+    |> string("(")
+    |> concat(parsec(:type) |> concat(type_args))
+    |> concat(allow_space)
     |> string(",")
     |> concat(allow_space)
-    |> parsec(:type)
+    |> concat(parsec(:type) |> concat(type_args))
     |> concat(allow_space)
-
-  map_type =
-    string("Map(")
-    |> concat(type_map_key_value)
     |> string(")")
     |> label("map type")
 

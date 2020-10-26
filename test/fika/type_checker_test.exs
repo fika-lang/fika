@@ -341,7 +341,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, "Map(String, Int)", _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, "Map(String,Int)", _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "type check for map with mixed type" do
@@ -352,7 +352,7 @@ defmodule Fika.TypeCheckerTest do
       assert {
                :error,
                "Elements of map have different types. " <>
-                 "Expected: Map(Int, List(Int)), got: Map(String, Int)"
+                 "Expected: Map(Int,List(Int)), got: Map(String,Int)"
              } = TypeChecker.infer_exp(Env.init(), ast)
     end
   end
