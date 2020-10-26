@@ -75,8 +75,9 @@ defmodule TestEvaluator do
         end
       end)
 
-    with {:ok, env} <- env_from_bindings do
-      TypeChecker.infer_exp(env, ast)
+    case env_from_bindings do
+      {:ok, env} -> TypeChecker.infer_exp(env, ast)
+      error -> error
     end
   end
 end
