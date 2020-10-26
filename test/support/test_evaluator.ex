@@ -13,8 +13,8 @@ defmodule TestEvaluator do
   #   2) test "match operator" do
   #        {5, [a: 5]} = eval("a = 5")
   #      end
-  def eval(str_exp, bindings) when is_binary(str_exp) do
-    case TestParser.expression(str_exp) do
+  def eval(str, bindings) when is_binary(str) do
+    case TestParser.expression(str) do
       {:ok, [parsed], _, _, _, _} ->
         parsed
         |> ErlTranslate.translate_expression()
@@ -41,8 +41,8 @@ defmodule TestEvaluator do
   #
   #     {"Hello World", _} = eval(exp_ast)
   #   end
-  def eval(ast_exp, bindings) when is_tuple(ast_exp) do
-    {:value, evaluated, new_bindings} = :erl_eval.expr(ast_exp, bindings)
+  def eval(ast, bindings) when is_tuple(ast) do
+    {:value, evaluated, new_bindings} = :erl_eval.expr(ast, bindings)
     {evaluated, new_bindings}
   end
 end
