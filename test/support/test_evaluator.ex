@@ -9,44 +9,74 @@ defmodule TestEvaluator do
   #
   # Usage examples:
   #   1) test "add has less precedence than mult" do
-  #        {7, _} = eval("1 + a * 3", [{:a, "Int", 2}])
+  #        {:ok, {7, _}} = eval("1 + a * 3", [{:a, "Int", 2}])
   #      end
   #
   #   2) test "match operator" do
-  #        {5, [a: 5]} = eval("a = 5")
+  #        {:ok, {5, [a: 5]}} = eval("a = 5")
+  #      end
+  #
+  #   3) test "new line before binary op makes for two expressions" do
+  #        {:error, "expected end of string", "+3", _, _, _} = eval("2\n+3")
   #      end
   def eval(str, bindings \\ []) do
-    {:value, evaluated, new_bindings} =
-      TestParser.expression!(str)
-      |> check_types(bindings)
-      |> ErlTranslate.translate_expression()
-      |> :erl_eval.expr(to_erl_bindings(bindings))
-
-    {evaluated, new_bindings}
+    with {:ok, [ast], _, _, _, _} <- TestParser.expression(str),
+         {:ok, _type, _env} <- check_types(ast, bindings),
+         forms <- ErlTranslate.translate_expression(ast) do
+      eval_forms(forms, untyped_bindings(bindings))
+    end
   end
 
-  defp to_erl_bindings(bindings) do
+  # Evaluates the Erlang abs form of an expression.
+  #
+  # Usage example:
+  #   test "erlang forms" do
+  #     exp_ast = {
+  #       :bin,
+  #       1,
+  #       [
+  #         {:bin_element, 1, {:string, 1, 'Hello'}, :default, :default},
+  #         {:bin_element, 1, {:string, 1, ' '}, :default, :default},
+  #         {:bin_element, 1, {:string, 1, 'World'}, :default, :default}
+  #       ]
+  #     }
+  #
+  #     {:ok, {"Hello World", _}} = eval(exp_ast)
+  #   end
+  def eval_forms(forms, bindings \\ []) do
+    try do
+      {:value, result, new_bindings} = :erl_eval.expr(forms, bindings)
+      {:ok, {result, new_bindings}}
+    rescue
+      _ -> {:error, "Bad Erlang forms"}
+    end
+  end
+
+  defp untyped_bindings(bindings) do
     Enum.map(bindings, fn {name, _type, value} -> {name, value} end)
   end
 
   defp check_types(ast, bindings) do
     env = Env.init_module_env(Env.init(), :tmp, ast)
 
-    {:ok, env} =
-      Enum.reduce(bindings, {:ok, env}, fn {name, type, value}, {:ok, env} ->
+    env_from_bindings =
+      Enum.reduce_while(bindings, {:ok, env}, fn {name, expected_type, value}, {:ok, env} ->
         parsed_binding = TestParser.expression!("#{value}")
 
         case TypeChecker.infer_exp(env, parsed_binding) do
-          {:ok, ^type, _env} ->
-            {:ok, Env.scope_add(env, name, type)}
+          {:ok, ^expected_type, _env} ->
+            {:cont, {:ok, Env.scope_add(env, name, expected_type)}}
 
-          err ->
-            err
+          {:ok, other_type, _env} ->
+            {:halt, {:error, "Declared binding type: #{expected_type}, got: #{other_type}"}}
+
+          error ->
+            {:halt, error}
         end
       end)
 
-    {:ok, _type, _env} = TypeChecker.infer_exp(env, ast)
-
-    ast
+    with {:ok, env} <- env_from_bindings do
+      TypeChecker.infer_exp(env, ast)
+    end
   end
 end
