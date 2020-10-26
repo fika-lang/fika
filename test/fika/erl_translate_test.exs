@@ -99,6 +99,15 @@ defmodule Fika.ErlTranslateTest do
               ]}
   end
 
+  test "map" do
+    str = ~s({"foo" => 1})
+    ast = TestParser.expression!(str)
+    result = ErlTranslate.translate_expression(ast)
+
+    assert result ==
+             {:map, 1, [{:map_field_assoc, 1, {:string, 1, 'foo'}, {:integer, 1, 1}}]}
+  end
+
   describe "function reference" do
     test "with module" do
       str = "&my_module.foo(Int, Int)"
