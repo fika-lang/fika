@@ -11,17 +11,14 @@ defmodule TestEvaluator do
   #      end
   #
   #   2) test "match operator" do
-  #        {5, [a: 5]} = eval("a = 5", [])
+  #        {5, [a: 5]} = eval("a = 5")
   #      end
   def eval(str_exp, bindings) when is_binary(str_exp) do
     case TestParser.expression(str_exp) do
       {:ok, [parsed], _, _, _, _} ->
-        {:value, evaluated, new_bindings} =
-          parsed
-          |> ErlTranslate.translate_expression()
-          |> :erl_eval.expr(bindings)
-
-        {evaluated, new_bindings}
+        parsed
+        |> ErlTranslate.translate_expression()
+        |> eval(bindings)
 
       err ->
         err
