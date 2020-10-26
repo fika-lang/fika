@@ -5,8 +5,6 @@ defmodule TestEvaluator do
     ErlTranslate
   }
 
-  def eval(code, bindings \\ [])
-
   # Evaluates a string representing an expression.
   #
   # Usage examples:
@@ -17,38 +15,18 @@ defmodule TestEvaluator do
   #   2) test "match operator" do
   #        {5, [a: 5]} = eval("a = 5")
   #      end
-  def eval(str, bindings) when is_binary(str) do
-    case TestParser.expression(str) do
-      {:ok, [parsed], _, _, _, _} ->
-        parsed
-        |> check_types(bindings)
-        |> ErlTranslate.translate_expression()
-        |> eval(Enum.map(bindings, fn {name, _type, value} -> {name, value} end))
+  def eval(str, bindings \\ []) when is_binary(str) do
+    {:value, evaluated, new_bindings} =
+      TestParser.expression!(str)
+      |> check_types(bindings)
+      |> ErlTranslate.translate_expression()
+      |> :erl_eval.expr(to_erl_bindings(bindings))
 
-      err ->
-        err
-    end
+    {evaluated, new_bindings}
   end
 
-  # Evaluates a piece of AST representing an expression.
-  #
-  # Usage example:
-  #   test "erlang ast" do
-  #     exp_ast = {
-  #       :bin,
-  #       1,
-  #       [
-  #         {:bin_element, 1, {:string, 1, 'Hello'}, :default, :default},
-  #         {:bin_element, 1, {:string, 1, ' '}, :default, :default},
-  #         {:bin_element, 1, {:string, 1, 'World'}, :default, :default}
-  #       ]
-  #     }
-  #
-  #     {"Hello World", _} = eval(exp_ast)
-  #   end
-  def eval(ast, bindings) when is_tuple(ast) do
-    {:value, evaluated, new_bindings} = :erl_eval.expr(ast, bindings)
-    {evaluated, new_bindings}
+  defp to_erl_bindings(bindings) do
+    Enum.map(bindings, fn {name, _type, value} -> {name, value} end)
   end
 
   defp check_types(ast, bindings) do
