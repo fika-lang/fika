@@ -1,5 +1,9 @@
 defmodule TestEvaluator do
-  alias Fika.ErlTranslate
+  alias Fika.{
+    Env,
+    TypeChecker,
+    ErlTranslate
+  }
 
   def eval(code, bindings \\ [])
 
@@ -7,7 +11,7 @@ defmodule TestEvaluator do
   #
   # Usage examples:
   #   1) test "add has less precedence than mult" do
-  #        {7, _} = eval("1 + a * 3", [{:a, 2}])
+  #        {7, _} = eval("1 + a * 3", [{:a, "Int", 2}])
   #      end
   #
   #   2) test "match operator" do
@@ -17,8 +21,9 @@ defmodule TestEvaluator do
     case TestParser.expression(str) do
       {:ok, [parsed], _, _, _, _} ->
         parsed
+        |> check_types(bindings)
         |> ErlTranslate.translate_expression()
-        |> eval(bindings)
+        |> eval(Enum.map(bindings, fn {name, _type, value} -> {name, value} end))
 
       err ->
         err
@@ -44,5 +49,26 @@ defmodule TestEvaluator do
   def eval(ast, bindings) when is_tuple(ast) do
     {:value, evaluated, new_bindings} = :erl_eval.expr(ast, bindings)
     {evaluated, new_bindings}
+  end
+
+  defp check_types(ast, bindings) do
+    env = Env.init_module_env(Env.init(), :tmp, ast)
+
+    {:ok, env} =
+      Enum.reduce(bindings, {:ok, env}, fn {name, type, value}, {:ok, env} ->
+        parsed_binding = TestParser.expression!("#{value}")
+
+        case TypeChecker.infer_exp(env, parsed_binding) do
+          {:ok, ^type, _env} ->
+            {:ok, Env.scope_add(env, name, type)}
+
+          err ->
+            err
+        end
+      end)
+
+    {:ok, _type, _env} = TypeChecker.infer_exp(env, ast)
+
+    ast
   end
 end
