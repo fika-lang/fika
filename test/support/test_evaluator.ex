@@ -15,7 +15,7 @@ defmodule TestEvaluator do
   #   2) test "match operator" do
   #        {5, [a: 5]} = eval("a = 5")
   #      end
-  def eval(str, bindings \\ []) when is_binary(str) do
+  def eval(str, bindings \\ []) do
     {:value, evaluated, new_bindings} =
       TestParser.expression!(str)
       |> check_types(bindings)
