@@ -184,28 +184,17 @@ defmodule Fika.ErlTranslateTest do
              } = result
     end
 
-    test "handles expressions" do
+    test "parses known variable in string interpolation" do
       str = ~S"""
-      "#{hello = "Hello"; "#{hello} World"}"
+      hello = "Hello"
+      "#{hello}"
       """
 
-      ast = TestParser.expression!(str)
-      result = ErlTranslate.translate_expression(ast)
+      {:ok, [_, interpolation], _, _, _, _} = TestParser.exps(str)
 
-      assert {
-               :bin,
-               1,
-               [
-                 {:bin_element, 1, {:match, 1, {:var, 1, :hello}, {:string, 1, 'Hello'}},
-                  :default, :default},
-                 {:bin_element, 1,
-                  {:bin, 1,
-                   [
-                     {:bin_element, 1, {:var, 1, :hello}, :default, :default},
-                     {:bin_element, 1, {:string, 1, ' World'}, :default, :default}
-                   ]}, :default, :default}
-               ]
-             } = result
+      result = ErlTranslate.translate_expression(interpolation)
+
+      assert {:bin, 2, [{:bin_element, 2, {:var, 2, :hello}, :default, :default}]} = result
     end
   end
 

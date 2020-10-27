@@ -373,21 +373,18 @@ defmodule Fika.ParserTest do
 
     test "parses multiple interpolations" do
       str = ~S"""
-      "#{hello} #{"World"}#{0; 1+1}"
+      "#{hello} #{"World"}"
       """
 
       result = TestParser.expression!(str)
 
       assert result == {
                :string,
-               {1, 0, 30},
+               {1, 0, 21},
                [
                  {:identifier, {1, 0, 8}, :hello},
                  " ",
-                 {:string, {1, 0, 19}, ["World"]},
-                 {:integer, {1, 0, 23}, 0},
-                 {:call, {:+, {1, 0, 28}}, [{:integer, {1, 0, 26}, 1}, {:integer, {1, 0, 28}, 1}],
-                  :kernel}
+                 {:string, {1, 0, 19}, ["World"]}
                ]
              }
     end
