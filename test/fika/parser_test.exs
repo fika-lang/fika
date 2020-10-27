@@ -1,5 +1,101 @@
 defmodule Fika.ParserTest do
   use ExUnit.Case
+  import TestEvaluator
+  import TestParser
+
+  describe "operators" do
+    # Table of all Fika operators, from higher to lower precedence.
+    # Note that we respect Elixir operators precedence.
+    #
+    # Operator    Associativity   Description                               TODO
+    # ----------------------------------------------------------------------------------------
+    # .           Left            Dot operator                              Parser refactoring
+    # ! -         Unary           Boolean not and arithmetic unary minus
+    # * /         Left            Arithmetic binary mult and div
+    # + -         Left            Arithmetic binary plus and minus
+    # < > <= >=   Left            Comparison                                Implement
+    # == !=       Left            Comparison                                Implement
+    # &           Left            Boolean AND
+    # |           Left            Boolean OR
+    # =           Right           Match operator                            Parser refactoring
+    # &           Unary           Capture operator                          Parser refactoring
+
+    test "arithmetic binary * and / have less precedence than unary -" do
+      {:ok, {-2, "Int", _}} = eval("1 * -2")
+      {:ok, {2.0, "Float", _}} = eval("-10 / -5")
+    end
+
+    test "arithmetic binary + and - have less precedence than * and /" do
+      {:ok, {12.5, "Float", _}} = eval("1 / 2 + 3 * 4")
+      {:ok, {3.0, "Float", _}} = eval("1 * 5 - 4 / 2")
+    end
+
+    test "boolean & has less precedence than !" do
+      {:ok, {false, "Bool", _}} = eval("!true & :false")
+    end
+
+    test "boolean | has less precedence than &" do
+      {:ok, {true, "Bool", _}} = eval("true | true & false")
+      {:ok, {true, "Bool", _}} = eval("false & :true | true")
+    end
+
+    test "expressions in parenthesis have higher precedence than anything else" do
+      {:ok, {1, "Int", _}} = eval("-(-1)")
+      {:ok, {6, "Int", _}} = eval("(3 - 1) * (1 + 2)")
+      {:ok, {true, "Bool", _}} = eval("true & (false | true)")
+    end
+
+    # Unary operators' operand doesn't necessarily have to reside on the same line of the operator
+    test "both vertical and horizontal space allowed between unary operators and their operand" do
+      {:ok, {false, "Bool", _}} = eval("!#{space()}true")
+      {:ok, {-1, "Int", _}} = eval("-#{space()}1")
+    end
+
+    # Horizontal space allowed between first operand and binary operator
+    # Both vertical and horizontal space allowed between binary operator and second operand
+    test "allowed spaces between binary operators and their operands" do
+      {:ok, {12, "Int", _}} = eval("3#{h_space()}*#{space()}4")
+      {:ok, {2.0, "Float", _}} = eval("4#{h_space()}/#{space()}2")
+      {:ok, {7, "Int", _}} = eval("3#{h_space()}+#{space()}4")
+      {:ok, {1, "Int", _}} = eval("3#{h_space()}-#{space()}2")
+      {:ok, {true, "Bool", _}} = eval("true#{h_space()}&#{space()}true")
+      {:ok, {true, "Bool", _}} = eval("false#{h_space()}|#{space()}true")
+    end
+
+    # Vertical space forbidden between first operand and binary operator
+    test "forbidden vertical space between first operand and binary operator" do
+      msg = "expected end of string"
+
+      {:error, ^msg, _, _, _, _} = eval("3#{space()}*#{space()}4")
+      {:error, ^msg, _, _, _, _} = eval("3#{space()}/#{space()}2")
+      {:error, ^msg, _, _, _, _} = eval("3#{space()}+#{space()}4")
+      {:error, ^msg, _, _, _, _} = eval("3#{space()}-#{space()}2")
+      {:error, ^msg, _, _, _, _} = eval("true#{space()}&#{space()}true")
+      {:error, ^msg, _, _, _, _} = eval("false#{space()}|#{space()}true")
+    end
+
+    # Minus is the only operator which is both unary and binary,
+    # therefore we make sure is parsed as unary when it appears on new line
+    # (actually, also & is both unary and binary, but needs parser refactoring first)
+    test "minus operator is parsed as unary (not binary) when on new line" do
+      str = """
+      fn foo do
+        x
+        - y
+      end
+      """
+
+      assert {
+               :function,
+               [position: {4, 20, 23}],
+               {:foo, [], {:type, {1, 0, 6}, "Nothing"},
+                [
+                  {:identifier, {2, 10, 13}, :x},
+                  {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
+                ]}
+             } == TestParser.function_def!(str)
+    end
+  end
 
   test "integer" do
     str = """
@@ -35,164 +131,164 @@ defmodule Fika.ParserTest do
     end
   end
 
-  describe "arithmetic" do
-    test "arithmetic with add and mult" do
-      str = """
-      2 + 3 * 4
-      """
+  # describe "arithmetic" do
+  # test "arithmetic with add and mult" do
+  #   str = """
+  #   2 + 3 * 4
+  #   """
 
-      result = TestParser.expression!(str)
+  #   result = TestParser.expression!(str)
 
-      assert result == {
-               :call,
-               {:+, {1, 0, 9}},
-               [
-                 {:integer, {1, 0, 1}, 2},
-                 {:call, {:*, {1, 0, 9}}, [{:integer, {1, 0, 5}, 3}, {:integer, {1, 0, 9}, 4}],
-                  :kernel}
-               ],
-               :kernel
-             }
-    end
+  #   assert result == {
+  #            :call,
+  #            {:+, {1, 0, 9}},
+  #            [
+  #              {:integer, {1, 0, 1}, 2},
+  #              {:call, {:*, {1, 0, 9}}, [{:integer, {1, 0, 5}, 3}, {:integer, {1, 0, 9}, 4}],
+  #               :kernel}
+  #            ],
+  #            :kernel
+  #          }
+  # end
 
-    test "unary -" do
-      assert {
-               :call,
-               {:-, {1, 0, 2}},
-               [{:integer, {1, 0, 2}, 5}],
-               :kernel
-             } == TestParser.expression!("-5")
-    end
+  # test "unary -" do
+  #   assert {
+  #            :call,
+  #            {:-, {1, 0, 2}},
+  #            [{:integer, {1, 0, 2}, 5}],
+  #            :kernel
+  #          } == TestParser.expression!("-5")
+  # end
 
-    test "unary - has higher precedence than other arithmetic operators" do
-      str = """
-      11 + -5 - 10 * -1 / -2
-      """
+  # test "unary - has higher precedence than other arithmetic operators" do
+  #   str = """
+  #   11 + -5 - 10 * -1 / -2
+  #   """
 
-      assert {
-               :call,
-               {:-, {1, 0, 22}},
-               [
-                 {:call, {:+, {1, 0, 22}},
-                  [
-                    {:integer, {1, 0, 2}, 11},
-                    {:call, {:-, {1, 0, 7}}, [{:integer, {1, 0, 7}, 5}], :kernel}
-                  ], :kernel},
-                 {:call, {:/, {1, 0, 22}},
-                  [
-                    {:call, {:*, {1, 0, 22}},
-                     [
-                       {:integer, {1, 0, 12}, 10},
-                       {:call, {:-, {1, 0, 17}}, [{:integer, {1, 0, 17}, 1}], :kernel}
-                     ], :kernel},
-                    {:call, {:-, {1, 0, 22}}, [{:integer, {1, 0, 22}, 2}], :kernel}
-                  ], :kernel}
-               ],
-               :kernel
-             } == TestParser.expression!(str)
-    end
+  #   assert {
+  #            :call,
+  #            {:-, {1, 0, 22}},
+  #            [
+  #              {:call, {:+, {1, 0, 22}},
+  #               [
+  #                 {:integer, {1, 0, 2}, 11},
+  #                 {:call, {:-, {1, 0, 7}}, [{:integer, {1, 0, 7}, 5}], :kernel}
+  #               ], :kernel},
+  #              {:call, {:/, {1, 0, 22}},
+  #               [
+  #                 {:call, {:*, {1, 0, 22}},
+  #                  [
+  #                    {:integer, {1, 0, 12}, 10},
+  #                    {:call, {:-, {1, 0, 17}}, [{:integer, {1, 0, 17}, 1}], :kernel}
+  #                  ], :kernel},
+  #                 {:call, {:-, {1, 0, 22}}, [{:integer, {1, 0, 22}, 2}], :kernel}
+  #               ], :kernel}
+  #            ],
+  #            :kernel
+  #          } == TestParser.expression!(str)
+  # end
 
-    test "+ and - are parsed as unary operators when on new line" do
-      str = """
-      fn foo do
-        x
-        - y
-      end
-      """
+  # test "+ and - are parsed as unary operators when on new line" do
+  #   str = """
+  #   fn foo do
+  #     x
+  #     - y
+  #   end
+  #   """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+  #   {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
 
-      assert result == [
-               {
-                 :function,
-                 [position: {4, 20, 23}],
-                 {:foo, [], {:type, {1, 0, 6}, "Nothing"},
-                  [
-                    {:identifier, {2, 10, 13}, :x},
-                    {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
-                  ]}
-               }
-             ]
-    end
+  #   assert result == [
+  #            {
+  #              :function,
+  #              [position: {4, 20, 23}],
+  #              {:foo, [], {:type, {1, 0, 6}, "Nothing"},
+  #               [
+  #                 {:identifier, {2, 10, 13}, :x},
+  #                 {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
+  #               ]}
+  #            }
+  #          ]
+  # end
 
-    test "+ and - are parsed as binary operators when on the same line of the first operand" do
-      str = """
-      fn foo do
-        x -
-        y
-      end
-      """
+  # test "+ and - are parsed as binary operators when on the same line of the first operand" do
+  #   str = """
+  #   fn foo do
+  #     x -
+  #     y
+  #   end
+  #   """
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+  #   {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
 
-      assert result == [
-               {
-                 :function,
-                 [position: {4, 20, 23}],
-                 {:foo, [], {:type, {1, 0, 6}, "Nothing"},
-                  [
-                    {:call, {:-, {3, 16, 19}},
-                     [
-                       {:identifier, {2, 10, 13}, :x},
-                       {:identifier, {3, 16, 19}, :y}
-                     ], :kernel}
-                  ]}
-               }
-             ]
-    end
+  #   assert result == [
+  #            {
+  #              :function,
+  #              [position: {4, 20, 23}],
+  #              {:foo, [], {:type, {1, 0, 6}, "Nothing"},
+  #               [
+  #                 {:call, {:-, {3, 16, 19}},
+  #                  [
+  #                    {:identifier, {2, 10, 13}, :x},
+  #                    {:identifier, {3, 16, 19}, :y}
+  #                  ], :kernel}
+  #               ]}
+  #            }
+  #          ]
+  # end
 
-    test "add/sub has less precedence than mult/div" do
-      str = """
-      10 + 20 * 30 - 40 / 50
-      """
+  # test "add/sub has less precedence than mult/div" do
+  #   str = """
+  #   10 + 20 * 30 - 40 / 50
+  #   """
 
-      result = TestParser.expression!(str)
+  #   result = TestParser.expression!(str)
 
-      assert result == {
-               :call,
-               {:-, {1, 0, 22}},
-               [
-                 {:call, {:+, {1, 0, 22}},
-                  [
-                    {:integer, {1, 0, 2}, 10},
-                    {:call, {:*, {1, 0, 12}},
-                     [{:integer, {1, 0, 7}, 20}, {:integer, {1, 0, 12}, 30}], :kernel}
-                  ], :kernel},
-                 {:call, {:/, {1, 0, 22}},
-                  [{:integer, {1, 0, 17}, 40}, {:integer, {1, 0, 22}, 50}], :kernel}
-               ],
-               :kernel
-             }
-    end
+  #   assert result == {
+  #            :call,
+  #            {:-, {1, 0, 22}},
+  #            [
+  #              {:call, {:+, {1, 0, 22}},
+  #               [
+  #                 {:integer, {1, 0, 2}, 10},
+  #                 {:call, {:*, {1, 0, 12}},
+  #                  [{:integer, {1, 0, 7}, 20}, {:integer, {1, 0, 12}, 30}], :kernel}
+  #               ], :kernel},
+  #              {:call, {:/, {1, 0, 22}},
+  #               [{:integer, {1, 0, 17}, 40}, {:integer, {1, 0, 22}, 50}], :kernel}
+  #            ],
+  #            :kernel
+  #          }
+  # end
 
-    test "grouping using parens" do
-      str = """
-      (10 + 20) * (30 - 40) / 50
-      """
+  #   test "grouping using parens" do
+  #     str = """
+  #     (10 + 20) * (30 - 40) / 50
+  #     """
 
-      result = TestParser.expression!(str)
+  #     result = TestParser.expression!(str)
 
-      assert result == {
-               :call,
-               {:/, {1, 0, 26}},
-               [
-                 {
-                   :call,
-                   {:*, {1, 0, 26}},
-                   [
-                     {:call, {:+, {1, 0, 8}},
-                      [{:integer, {1, 0, 3}, 10}, {:integer, {1, 0, 8}, 20}], :kernel},
-                     {:call, {:-, {1, 0, 20}},
-                      [{:integer, {1, 0, 15}, 30}, {:integer, {1, 0, 20}, 40}], :kernel}
-                   ],
-                   :kernel
-                 },
-                 {:integer, {1, 0, 26}, 50}
-               ],
-               :kernel
-             }
-    end
-  end
+  #     assert result == {
+  #              :call,
+  #              {:/, {1, 0, 26}},
+  #              [
+  #                {
+  #                  :call,
+  #                  {:*, {1, 0, 26}},
+  #                  [
+  #                    {:call, {:+, {1, 0, 8}},
+  #                     [{:integer, {1, 0, 3}, 10}, {:integer, {1, 0, 8}, 20}], :kernel},
+  #                    {:call, {:-, {1, 0, 20}},
+  #                     [{:integer, {1, 0, 15}, 30}, {:integer, {1, 0, 20}, 40}], :kernel}
+  #                  ],
+  #                  :kernel
+  #                },
+  #                {:integer, {1, 0, 26}, 50}
+  #              ],
+  #              :kernel
+  #            }
+  #   end
+  # end
 
   describe "function calls" do
     test "local function call without args" do

@@ -40,51 +40,51 @@ defmodule Fika.ErlTranslateTest do
     assert result == forms
   end
 
-  test "arithmetic operators" do
-    str = """
-    fn a do
-      1+2*-3/4
-    end
-    """
+  # test "arithmetic operators" do
+  #   str = """
+  #   fn a do
+  #     1+2*-3/4
+  #   end
+  #   """
 
-    ast = Parser.parse_module(str, "test_arithmetic")
-    result = ErlTranslate.translate(ast, "/tmp/foo")
+  #   ast = Parser.parse_module(str, "test_arithmetic")
+  #   result = ErlTranslate.translate(ast, "/tmp/foo")
 
-    forms = [
-      {:attribute, 1, :file, {'/tmp/foo', 1}},
-      {:attribute, 1, :module, :test_arithmetic},
-      {:attribute, 3, :export, [a: 0]},
-      {:function, 3, :a, 0,
-       [
-         {:clause, 3, [], [],
-          [
-            {:op, 2, :+, {:integer, 2, 1},
-             {:op, 2, :/, {:op, 2, :*, {:integer, 2, 2}, {:op, 2, :-, {:integer, 2, 3}}},
-              {:integer, 2, 4}}}
-          ]}
-       ]}
-    ]
+  #   forms = [
+  #     {:attribute, 1, :file, {'/tmp/foo', 1}},
+  #     {:attribute, 1, :module, :test_arithmetic},
+  #     {:attribute, 3, :export, [a: 0]},
+  #     {:function, 3, :a, 0,
+  #      [
+  #        {:clause, 3, [], [],
+  #         [
+  #           {:op, 2, :+, {:integer, 2, 1},
+  #            {:op, 2, :/, {:op, 2, :*, {:integer, 2, 2}, {:op, 2, :-, {:integer, 2, 3}}},
+  #             {:integer, 2, 4}}}
+  #         ]}
+  #      ]}
+  #   ]
 
-    assert result == forms
-  end
+  #   assert result == forms
+  # end
 
-  test "logical operators" do
-    str = "(true | !false) & true"
+  # test "logical operators" do
+  #   str = "(true | !false) & true"
 
-    ast = TestParser.expression!(str)
+  #   ast = TestParser.expression!(str)
 
-    assert {:op, 1, :and, {:op, 1, :or, {:atom, 1, true}, {:op, 1, :not, {:atom, 1, false}}},
-            {:atom, 1, true}} = ErlTranslate.translate_expression(ast)
-  end
+  #   assert {:op, 1, :and, {:op, 1, :or, {:atom, 1, true}, {:op, 1, :not, {:atom, 1, false}}},
+  #           {:atom, 1, true}} = ErlTranslate.translate_expression(ast)
+  # end
 
-  test "logical operators precedence" do
-    str = "false | true & !true"
-    ast = TestParser.expression!(str)
+  # test "logical operators precedence" do
+  #   str = "false | true & !true"
+  #   ast = TestParser.expression!(str)
 
-    assert {:op, _, :or, {:atom, _, false},
-            {:op, _, :and, {:atom, _, true}, {:op, _, :not, {:atom, _, true}}}} =
-             ErlTranslate.translate_expression(ast)
-  end
+  #   assert {:op, _, :or, {:atom, _, false},
+  #           {:op, _, :and, {:atom, _, true}, {:op, _, :not, {:atom, _, true}}}} =
+  #            ErlTranslate.translate_expression(ast)
+  # end
 
   test "record" do
     str = "{foo: 1}"

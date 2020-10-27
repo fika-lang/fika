@@ -21,9 +21,10 @@ defmodule TestEvaluator do
   #      end
   def eval(str, bindings \\ []) do
     with {:ok, [ast], _, _, _, _} <- TestParser.expression(str),
-         {:ok, _type, _env} <- check_types(ast, bindings),
+         {:ok, type, _env} <- check_types(ast, bindings),
          forms <- ErlTranslate.translate_expression(ast) do
-      eval_forms(forms, untyped_bindings(bindings))
+      {:ok, {result, new_bindings}} = eval_forms(forms, untyped_bindings(bindings))
+      {:ok, {result, type, new_bindings}}
     end
   end
 

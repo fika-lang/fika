@@ -32,38 +32,38 @@ defmodule Fika.TypeCheckerTest do
     assert {:ok, "List(:a)", _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
-  test "infer type of arithmetic expressions" do
-    str = "-1 + 2"
+  # test "infer type of arithmetic expressions" do
+  #   str = "-1 + 2"
 
-    ast = TestParser.expression!(str)
+  #   ast = TestParser.expression!(str)
 
-    assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
-  end
+  #   assert {:ok, "Int", _} = TypeChecker.infer_exp(Env.init(), ast)
+  # end
 
-  describe "logical operators" do
-    test "infer type of logical expressions" do
-      # and
-      str = "true & false"
-      ast = TestParser.expression!(str)
-      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+  # describe "logical operators" do
+  #   test "infer type of logical expressions" do
+  #     # and
+  #     str = "true & false"
+  #     ast = TestParser.expression!(str)
+  #     assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
 
-      # or
-      str = "true | false"
-      ast = TestParser.expression!(str)
-      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+  #     # or
+  #     str = "true | false"
+  #     ast = TestParser.expression!(str)
+  #     assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
 
-      # negation
-      str = "!true"
-      ast = TestParser.expression!(str)
-      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
-    end
+  #     # negation
+  #     str = "!true"
+  #     ast = TestParser.expression!(str)
+  #     assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+  #   end
 
-    test "infer type of logical expressions when using atoms" do
-      str = "true & :false"
-      ast = TestParser.expression!(str)
-      assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
-    end
-  end
+  #   test "infer type of logical expressions when using atoms" do
+  #     str = "true & :false"
+  #     ast = TestParser.expression!(str)
+  #     assert {:ok, "Bool", _} = TypeChecker.infer_exp(Env.init(), ast)
+  #   end
+  # end
 
   test "infer undefined variable" do
     str = "foo"
