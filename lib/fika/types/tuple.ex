@@ -1,13 +1,9 @@
 defmodule Fika.Types.Tuple do
-  defstruct [:elements]
+  defstruct elements: %Fika.Types.ArgList{}
 
   defimpl String.Chars, for: Fika.Types.Tuple do
     def to_string(%{elements: elements}) do
-      str =
-        elements
-        |> Enum.join(", ")
-
-      "{" <> str <> "}"
+      "{" <> Kernel.to_string(elements) <> "}"
     end
   end
 end

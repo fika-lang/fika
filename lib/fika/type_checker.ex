@@ -117,15 +117,17 @@ defmodule Fika.TypeChecker do
   def infer_exp(env, {:call, {exp, _line}, args}) do
     case infer_exp(env, exp) do
       {:ok, %T.FunctionRef{arg_types: arg_types, return_type: type}, env} ->
+        arg_types_str = to_string(arg_types)
+
         case do_infer_args_without_name(env, args) do
-          {:ok, ^arg_types, env} ->
+          {:ok, ^arg_types_str, env} ->
             {:ok, type, env}
 
           {:ok, other_arg_types, _env} ->
             error =
               "Expected function reference to be called with" <>
-                " arguments (#{Enum.join(arg_types, ",")}), but it was called " <>
-                "with arguments (#{Enum.join(other_arg_types, ",")})"
+                " arguments (#{arg_types}), but it was called " <>
+                "with arguments (#{other_arg_types})"
 
             {:error, error}
         end
@@ -166,7 +168,7 @@ defmodule Fika.TypeChecker do
   def infer_exp(env, {:tuple, _, exps}) do
     case do_infer_tuple_exps(exps, env) do
       {:ok, exp_types, env} ->
-        {:ok, %T.Tuple{elements: exp_types}, env}
+        {:ok, %T.Tuple{elements: %T.ArgList{value: exp_types}}, env}
 
       error ->
         error
@@ -210,7 +212,7 @@ defmodule Fika.TypeChecker do
 
     case result do
       {:ok, type, env} ->
-        type = %T.FunctionRef{arg_types: arg_types, return_type: type}
+        type = %T.FunctionRef{arg_types: %T.ArgList{value: arg_types}, return_type: type}
         {:ok, type, env}
 
       error ->
@@ -357,17 +359,21 @@ defmodule Fika.TypeChecker do
   end
 
   defp do_infer_args_without_name(env, args) do
-    Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, type_acc, env} ->
+    Enum.reduce_while(args, {:ok, %T.ArgList{}, env}, fn arg, {:ok, acc, env} ->
       case infer_exp(env, arg) do
         {:ok, type, env} ->
           Logger.debug("Argument is type: #{type}")
-          {:cont, {:ok, type_acc ++ [type], env}}
+          {:cont, {:ok, %{acc | value: acc.value ++ [type]}, env}}
 
         error ->
           Logger.debug("Argument cannot be inferred")
           {:halt, error}
       end
     end)
+    |> case do
+      {:ok, inferred, env} -> {:ok, to_string(inferred), env}
+      error -> error
+    end
   end
 
   defp get_type_by_signature(env, signature) do
