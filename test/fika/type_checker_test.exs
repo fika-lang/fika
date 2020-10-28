@@ -328,9 +328,9 @@ defmodule Fika.TypeCheckerTest do
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
-        |> Env.add_function_type("bar.sum()", "Int")
+        |> Env.add_function_type("bar.sum()", :Int)
 
-      assert {:ok, %FunctionRef{arg_types: %Fika.Types.ArgList{}, return_type: "Int"}, _} =
+      assert {:ok, %FunctionRef{arg_types: %Fika.Types.ArgList{}, return_type: :Int}, _} =
                TypeChecker.infer_exp(env, ast)
     end
   end
