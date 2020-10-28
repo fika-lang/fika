@@ -35,8 +35,9 @@ defmodule Fika.Parser.Helper do
     result
   end
 
-  def do_to_ast({["!", exp], line}, :not) do
-    {:call, {:!, line}, [exp], :kernel}
+  def do_to_ast({[unary_op, exp], line}, :unary_op)
+      when unary_op in ["!", "+", "-"] do
+    {:call, {String.to_atom(unary_op), line}, [exp], :kernel}
   end
 
   def do_to_ast({[name], line}, :identifier) do

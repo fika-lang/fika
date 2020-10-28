@@ -55,6 +55,92 @@ defmodule Fika.ParserTest do
              }
     end
 
+    test "unary -" do
+      assert {
+               :call,
+               {:-, {1, 0, 2}},
+               [{:integer, {1, 0, 2}, 5}],
+               :kernel
+             } == TestParser.expression!("-5")
+    end
+
+    test "unary - has higher precedence than other arithmetic operators" do
+      str = """
+      11 + -5 - 10 * -1 / -2
+      """
+
+      assert {
+               :call,
+               {:-, {1, 0, 22}},
+               [
+                 {:call, {:+, {1, 0, 22}},
+                  [
+                    {:integer, {1, 0, 2}, 11},
+                    {:call, {:-, {1, 0, 7}}, [{:integer, {1, 0, 7}, 5}], :kernel}
+                  ], :kernel},
+                 {:call, {:/, {1, 0, 22}},
+                  [
+                    {:call, {:*, {1, 0, 22}},
+                     [
+                       {:integer, {1, 0, 12}, 10},
+                       {:call, {:-, {1, 0, 17}}, [{:integer, {1, 0, 17}, 1}], :kernel}
+                     ], :kernel},
+                    {:call, {:-, {1, 0, 22}}, [{:integer, {1, 0, 22}, 2}], :kernel}
+                  ], :kernel}
+               ],
+               :kernel
+             } == TestParser.expression!(str)
+    end
+
+    test "+ and - are parsed as unary operators when on new line" do
+      str = """
+      fn foo do
+        x
+        - y
+      end
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {
+                 :function,
+                 [position: {4, 20, 23}],
+                 {:foo, [], {:type, {1, 0, 6}, "Nothing"},
+                  [
+                    {:identifier, {2, 10, 13}, :x},
+                    {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
+                  ]}
+               }
+             ]
+    end
+
+    test "+ and - are parsed as binary operators when on the same line of the first operand" do
+      str = """
+      fn foo do
+        x -
+        y
+      end
+      """
+
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {
+                 :function,
+                 [position: {4, 20, 23}],
+                 {:foo, [], {:type, {1, 0, 6}, "Nothing"},
+                  [
+                    {:call, {:-, {3, 16, 19}},
+                     [
+                       {:identifier, {2, 10, 13}, :x},
+                       {:identifier, {3, 16, 19}, :y}
+                     ], :kernel}
+                  ]}
+               }
+             ]
+    end
+
     test "add/sub has less precedence than mult/div" do
       str = """
       10 + 20 * 30 - 40 / 50

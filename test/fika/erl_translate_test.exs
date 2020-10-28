@@ -40,10 +40,10 @@ defmodule Fika.ErlTranslateTest do
     assert result == forms
   end
 
-  test "infix arithmetic operators" do
+  test "arithmetic operators" do
     str = """
     fn a do
-      1+2*3/4
+      1+2*-3/4
     end
     """
 
@@ -59,7 +59,8 @@ defmodule Fika.ErlTranslateTest do
          {:clause, 3, [], [],
           [
             {:op, 2, :+, {:integer, 2, 1},
-             {:op, 2, :/, {:op, 2, :*, {:integer, 2, 2}, {:integer, 2, 3}}, {:integer, 2, 4}}}
+             {:op, 2, :/, {:op, 2, :*, {:integer, 2, 2}, {:op, 2, :-, {:integer, 2, 3}}},
+              {:integer, 2, 4}}}
           ]}
        ]}
     ]
