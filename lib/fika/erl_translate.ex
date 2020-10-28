@@ -108,7 +108,7 @@ defmodule Fika.ErlTranslate do
     {:tuple, line, translate_exps(value)}
   end
 
-  defp translate_exp({:record, {line, _, _}, name, k_vs}) do
+  defp translate_exp({:record, {line, _, _}, name, %T.Record{fields: k_vs}}) do
     k_vs =
       Enum.map(k_vs, fn {{:identifier, {l, _, _}, k}, v} ->
         {:map_field_assoc, l, {:atom, l, k}, translate_exp(v)}

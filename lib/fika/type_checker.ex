@@ -172,7 +172,7 @@ defmodule Fika.TypeChecker do
   end
 
   # Record
-  def infer_exp(env, {:record, _, name, key_values}) do
+  def infer_exp(env, {:record, _, name, %T.Record{fields: key_values}}) do
     if name do
       # Lookup type of name, ensure it matches.
       Logger.error("Not implemented")

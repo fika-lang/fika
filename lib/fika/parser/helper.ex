@@ -136,8 +136,7 @@ defmodule Fika.Parser.Helper do
         [name] -> name
       end
 
-    IO.inspect(ast, label: "record ast")
-    {:record, line, name, key_values}
+    {:record, line, name, %T.Record{fields: key_values}}
   end
 
   def do_to_ast({ast, line}, :function_ref) do
