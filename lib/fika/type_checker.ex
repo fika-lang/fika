@@ -32,8 +32,7 @@ defmodule Fika.TypeChecker do
   # Given the AST of a function definition, this function checks if the return
   # type is indeed the type that's inferred from the body of the function.
   def check({:function, _line, {_, _, return_type, _}} = function, env) do
-    {:type, _line, type} = return_type
-    expected_type = type
+    {:type, _line, expected_type} = return_type
 
     case infer(function, env) do
       {:ok, ^expected_type, _env} = result ->
@@ -57,7 +56,6 @@ defmodule Fika.TypeChecker do
     env
     |> infer_block(exprs)
     |> add_function_type(name, args)
-    |> to_str()
   end
 
   def infer_block(env, []) do
@@ -117,10 +115,8 @@ defmodule Fika.TypeChecker do
   def infer_exp(env, {:call, {exp, _line}, args}) do
     case infer_exp(env, exp) do
       {:ok, %T.FunctionRef{arg_types: arg_types, return_type: type}, env} ->
-        arg_types_str = to_string(arg_types)
-
         case do_infer_args_without_name(env, args) do
-          {:ok, ^arg_types_str, env} ->
+          {:ok, ^arg_types, env} ->
             {:ok, type, env}
 
           {:ok, other_arg_types, _env} ->
@@ -223,7 +219,7 @@ defmodule Fika.TypeChecker do
   # Atom value
   def infer_exp(env, {:atom, _line, atom}) do
     Logger.debug("Atom value found. Type: #{atom}")
-    {:ok, %T.Atom{value: atom}, env}
+    {:ok, atom, env}
   end
 
   # if-else expression
@@ -370,10 +366,6 @@ defmodule Fika.TypeChecker do
           {:halt, error}
       end
     end)
-    |> case do
-      {:ok, inferred, env} -> {:ok, to_string(inferred), env}
-      error -> error
-    end
   end
 
   defp get_type_by_signature(env, signature) do
@@ -435,16 +427,6 @@ defmodule Fika.TypeChecker do
       check(function, env)
     else
       {:error, "Undefined function: #{signature} in module #{module}"}
-    end
-  end
-
-  defp to_str(result) do
-    case result do
-      {:ok, type, env} ->
-        {:ok, to_string(type), env}
-
-      error ->
-        error
     end
   end
 end

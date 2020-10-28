@@ -89,7 +89,7 @@ defmodule Fika.TypeCheckerTest do
       Env.init()
       |> Env.init_module_env("test", ast)
 
-    assert {:ok, "Int", _} = TypeChecker.infer(function, env)
+    assert {:ok, :Int, _} = TypeChecker.infer(function, env)
   end
 
   test "check returns error when return type is not the inferred type" do
@@ -141,7 +141,7 @@ defmodule Fika.TypeCheckerTest do
       Env.init()
       |> Env.init_module_env("test", ast)
 
-    assert {:ok, "Int", env} = TypeChecker.infer(foo, env)
+    assert {:ok, :Int, env} = TypeChecker.infer(foo, env)
 
     assert Env.get_function_type(env, "test.foo(Int)") == :Int
     assert Env.get_function_type(env, "test.bar(Int)") == :Int
@@ -167,8 +167,8 @@ defmodule Fika.TypeCheckerTest do
       |> Env.add_function_type("test2.add(Int,Float)", :Float)
       |> Env.add_function_type("test2.add(Int,Int)", :Int)
 
-    assert {:ok, "Float", _} = TypeChecker.infer(function, env)
-    assert {:ok, "Float", _} = TypeChecker.check(function, env)
+    assert {:ok, :Float, _} = TypeChecker.infer(function, env)
+    assert {:ok, :Float, _} = TypeChecker.check(function, env)
   end
 
   test "string" do
@@ -436,7 +436,7 @@ defmodule Fika.TypeCheckerTest do
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("test2.bar(String,Int)", :Bool)
 
-      assert {:ok, "Bool", _} = TypeChecker.infer(function, env)
+      assert {:ok, :Bool, _} = TypeChecker.infer(function, env)
     end
 
     test "identifier is not a reference" do

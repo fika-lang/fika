@@ -68,7 +68,6 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({types, _line}, :function_type) do
-    IO.inspect(types)
     arg_types = types |> Keyword.take([:arg_type]) |> Keyword.values()
     return_type = Keyword.get(types, :return_type)
 
