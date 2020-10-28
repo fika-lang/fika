@@ -104,7 +104,15 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({value, line}, :string) do
-    {:string, line, to_string(value)}
+    str =
+      value
+      |> Enum.chunk_by(&is_tuple/1)
+      |> Enum.flat_map(fn
+        [h | _tail] = interpolations when is_tuple(h) -> interpolations
+        charlist -> [to_string(charlist)]
+      end)
+
+    {:string, line, str}
   end
 
   def do_to_ast({result, line}, :exp_list) do

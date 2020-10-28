@@ -434,7 +434,7 @@ defmodule Fika.ParserTest do
 
       result = TestParser.expression!(str)
 
-      assert result == {:string, {1, 0, 13}, "Hello world"}
+      assert result == {:string, {1, 0, 13}, ["Hello world"]}
     end
 
     test "parses a string with escaped double quotes" do
@@ -444,7 +444,35 @@ defmodule Fika.ParserTest do
 
       result = TestParser.expression!(str)
 
-      assert result == {:string, {1, 0, 17}, "Hello \\\"world\\\""}
+      assert result == {:string, {1, 0, 17}, ["Hello \\\"world\\\""]}
+    end
+
+    test "parses interpolated string" do
+      str = ~S"""
+      "Hello #{world}"
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result == {:string, {1, 0, 16}, ["Hello ", {:identifier, {1, 0, 14}, :world}]}
+    end
+
+    test "parses multiple interpolations" do
+      str = ~S"""
+      "#{hello} #{"World"}"
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result == {
+               :string,
+               {1, 0, 21},
+               [
+                 {:identifier, {1, 0, 8}, :hello},
+                 " ",
+                 {:string, {1, 0, 19}, ["World"]}
+               ]
+             }
     end
   end
 
@@ -519,7 +547,7 @@ defmodule Fika.ParserTest do
       assert result ==
                {:record, {1, 0, 26}, nil,
                 [
-                  {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, "World"}},
+                  {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, ["World"]}},
                   {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
                 ]}
     end
@@ -731,7 +759,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:string, {2, 10, 21}, "foo#bar"}]}}
+                {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:string, {2, 10, 21}, ["foo#bar"]}]}}
              ]
     end
   end

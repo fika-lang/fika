@@ -22,9 +22,14 @@ defmodule Fika.Parser.LiteralExps do
     |> label("boolean")
     |> Helper.to_ast(:boolean)
 
+  interpolation =
+    ignore(string("\#{"))
+    |> concat(exp)
+    |> ignore(string("}"))
+
   string_exp =
     ignore(string("\""))
-    |> repeat(choice([string("\\\""), utf8_char(not: ?")]))
+    |> repeat(choice([interpolation, string("\\\""), utf8_char(not: ?")]))
     |> ignore(string("\""))
     |> Helper.to_ast(:string)
 
