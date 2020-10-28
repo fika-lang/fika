@@ -104,7 +104,7 @@ defmodule Fika.ErlTranslate do
     do_translate_list(value, line)
   end
 
-  defp translate_exp({:tuple, {line, _, _}, value}) do
+  defp translate_exp({:tuple, {line, _, _}, %T.Tuple{elements: %T.ArgList{value: value}}}) do
     {:tuple, line, translate_exps(value)}
   end
 

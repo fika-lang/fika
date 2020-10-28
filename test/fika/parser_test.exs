@@ -541,7 +541,10 @@ defmodule Fika.ParserTest do
       """
 
       result = TestParser.expression!(str)
-      assert result == {:tuple, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]}
+
+      assert result ==
+               {:tuple, {1, 0, 3},
+                %T.Tuple{elements: %T.ArgList{value: [{:integer, {1, 0, 2}, 1}]}}}
     end
 
     test "parses tuple with multiple elements" do
@@ -553,11 +556,15 @@ defmodule Fika.ParserTest do
 
       assert result ==
                {:tuple, {1, 0, 9},
-                [
-                  {:integer, {1, 0, 2}, 1},
-                  {:integer, {1, 0, 5}, 2},
-                  {:integer, {1, 0, 8}, 3}
-                ]}
+                %T.Tuple{
+                  elements: %T.ArgList{
+                    value: [
+                      {:integer, {1, 0, 2}, 1},
+                      {:integer, {1, 0, 5}, 2},
+                      {:integer, {1, 0, 8}, 3}
+                    ]
+                  }
+                }}
     end
 
     test "parses tuple with match exps" do
@@ -569,11 +576,15 @@ defmodule Fika.ParserTest do
 
       assert result ==
                {:tuple, {1, 0, 13},
-                [
-                  {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
-                  {:integer, {1, 0, 9}, 2},
-                  {:integer, {1, 0, 12}, 3}
-                ]}
+                %T.Tuple{
+                  elements: %T.ArgList{
+                    value: [
+                      {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
+                      {:integer, {1, 0, 9}, 2},
+                      {:integer, {1, 0, 12}, 3}
+                    ]
+                  }
+                }}
     end
   end
 

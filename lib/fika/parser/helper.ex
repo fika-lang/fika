@@ -121,15 +121,14 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({result, line}, :tuple) do
-    IO.inspect(result, label: "tuple ast")
-    {:tuple, line, result}
+    {:tuple, line, %T.Tuple{elements: %T.ArgList{value: result}}}
   end
 
   def do_to_ast({[k, v], _line}, :key_value) do
     {k, v}
   end
 
-  def do_to_ast({[name | key_values] = ast, line}, :record) do
+  def do_to_ast({[name | key_values], line}, :record) do
     name =
       case name do
         [] -> nil
