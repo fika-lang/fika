@@ -89,12 +89,42 @@ defmodule Fika.Parser.Types do
     |> reduce({Enum, :join, []})
     |> label("tuple type")
 
+  list_type =
+    ignore(string("List("))
+    |> concat(parsec(:type))
+    |> ignore(string(")"))
+    |> label("list type")
+    |> Helper.to_ast(:list_type)
+
+  string_type =
+    string("String")
+    |> label("string")
+    |> reduce({Helper, :to_atom, []})
+
+  int_type =
+    string("Int")
+    |> label("int")
+    |> reduce({Helper, :to_atom, []})
+
+  float_type =
+    string("Float")
+    |> label("float")
+    |> reduce({Helper, :to_atom, []})
+
+  nothing_type =
+    string("Nothing")
+    |> label("nothing")
+    |> reduce({Helper, :to_atom, []})
+
   type =
     choice([
-      function_type,
-      simple_type
-      |> optional(type_parens),
+      string_type,
+      int_type,
+      float_type,
+      nothing_type,
       atom,
+      function_type,
+      list_type,
       record_type,
       tuple_type
     ])

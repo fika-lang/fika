@@ -68,7 +68,7 @@ defmodule Fika.Parser.Helper do
           acc <> ":#{value}"
 
         type, acc ->
-          acc <> type
+          acc <> "#{type}"
       end)
 
     {:type, line, type}
@@ -151,4 +151,6 @@ defmodule Fika.Parser.Helper do
   defp value_from_identifier({:identifier, _line, value}) do
     value
   end
+
+  def to_atom([value]), do: String.to_atom(value)
 end

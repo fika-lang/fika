@@ -298,7 +298,7 @@ defmodule Fika.ParserTest do
 
     test "with type params" do
       str = """
-      fn foo(a: List(String)) : List(Int) do
+      fn foo(a: List(List(List(String))) : List(Nothing) do
         x
       end
       """
