@@ -116,10 +116,12 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({result, line}, :exp_list) do
+    IO.inspect(result, label: "exp list ast")
     {:list, line, result}
   end
 
   def do_to_ast({result, line}, :tuple) do
+    IO.inspect(result, label: "tuple ast")
     {:tuple, line, result}
   end
 
@@ -127,24 +129,34 @@ defmodule Fika.Parser.Helper do
     {k, v}
   end
 
-  def do_to_ast({[name | key_values], line}, :record) do
+  def do_to_ast({[name | key_values] = ast, line}, :record) do
     name =
       case name do
         [] -> nil
         [name] -> name
       end
 
+    IO.inspect(ast, label: "record ast")
     {:record, line, name, key_values}
   end
 
   def do_to_ast({ast, line}, :function_ref) do
     case ast do
       [[], function, arg_types] ->
-        {:function_ref, line, {nil, value_from_identifier(function), arg_types}}
+        {:function_ref, line,
+         %T.FunctionRef{
+           module: nil,
+           name: value_from_identifier(function),
+           arg_types: %T.ArgList{value: arg_types}
+         }}
 
       [[module], function, arg_types] ->
         {:function_ref, line,
-         {value_from_identifier(module), value_from_identifier(function), arg_types}}
+         %T.FunctionRef{
+           module: value_from_identifier(module),
+           name: value_from_identifier(function),
+           arg_types: %T.ArgList{value: arg_types}
+         }}
     end
   end
 

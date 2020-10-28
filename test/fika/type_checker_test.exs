@@ -161,11 +161,11 @@ defmodule Fika.TypeCheckerTest do
     env =
       Env.init()
       |> Env.init_module_env("test", ast)
-      |> Env.add_function_type("test2.div(Float,Int)", :Float)
-      |> Env.add_function_type("test2.div(Int,Float)", :Float)
-      |> Env.add_function_type("test2.add(Float,Int)", :Float)
-      |> Env.add_function_type("test2.add(Int,Float)", :Float)
-      |> Env.add_function_type("test2.add(Int,Int)", :Int)
+      |> Env.add_function_type("test2.div(Float, Int)", :Float)
+      |> Env.add_function_type("test2.div(Int, Float)", :Float)
+      |> Env.add_function_type("test2.add(Float, Int)", :Float)
+      |> Env.add_function_type("test2.add(Int, Float)", :Float)
+      |> Env.add_function_type("test2.add(Int, Int)", :Int)
 
     assert {:ok, :Float, _} = TypeChecker.infer(function, env)
     assert {:ok, :Float, _} = TypeChecker.check(function, env)
@@ -312,7 +312,7 @@ defmodule Fika.TypeCheckerTest do
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
-        |> Env.add_function_type("bar.sum(Int,Int)", :Int)
+        |> Env.add_function_type("bar.sum(Int, Int)", :Int)
 
       assert {:ok,
               %FunctionRef{
@@ -434,7 +434,7 @@ defmodule Fika.TypeCheckerTest do
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
-        |> Env.add_function_type("test2.bar(String,Int)", :Bool)
+        |> Env.add_function_type("test2.bar(String, Int)", :Bool)
 
       assert {:ok, :Bool, _} = TypeChecker.infer(function, env)
     end
@@ -470,7 +470,7 @@ defmodule Fika.TypeCheckerTest do
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
-        |> Env.add_function_type("test2.bar(String,Int)", :Bool)
+        |> Env.add_function_type("test2.bar(String, Int)", :Bool)
 
       error =
         "Expected function reference to be called with arguments (String, Int), but it was called with arguments (Int)"
