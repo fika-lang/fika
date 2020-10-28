@@ -1,6 +1,8 @@
 defmodule Fika.ParserTest do
   use ExUnit.Case
 
+  alias Fika.Types, as: T
+
   test "integer" do
     str = """
     123
@@ -31,7 +33,7 @@ defmodule Fika.ParserTest do
       atom = :foobar
       str = ":#{atom}"
 
-      assert TestParser.expression!(str) == {:atom, {1, 0, 7}, atom}
+      assert TestParser.expression!(str) == %T.Atom{value: :foobar}
     end
   end
 
@@ -277,7 +279,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}}
+                {:foo, [], {:type, {1, 0, 12}, :Int}, [{:integer, {2, 16, 21}, 123}]}}
              ]
     end
 
@@ -292,13 +294,14 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 12}, ":ok"}, [{:integer, {2, 16, 21}, 123}]}}
+                {:foo, [], {:type, {1, 0, 12}, %T.Atom{value: :ok}},
+                 [{:integer, {2, 16, 21}, 123}]}}
              ]
     end
 
     test "with type params" do
       str = """
-      fn foo(a: List(List(List(String))) : List(Nothing) do
+      fn foo(a: List(List(List(String)))) : List(Nothing) do
         x
       end
       """
@@ -306,9 +309,13 @@ defmodule Fika.ParserTest do
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
 
       assert result == [
-               {:function, [position: {3, 43, 46}],
-                {:foo, [{{:identifier, {1, 0, 8}, :a}, {:type, {1, 0, 22}, "List(String)"}}],
-                 {:type, {1, 0, 35}, "List(Int)"}, [{:identifier, {2, 39, 42}, :x}]}}
+               {:function, [position: {3, 59, 62}],
+                {:foo,
+                 [
+                   {{:identifier, {1, 0, 8}, :a},
+                    {:type, {1, 0, 34}, %T.List{type: %T.List{type: %T.List{type: :String}}}}}
+                 ], {:type, {1, 0, 51}, %T.List{type: :Nothing}},
+                 [{:identifier, {2, 55, 58}, :x}]}}
              ]
     end
 
@@ -325,9 +332,9 @@ defmodule Fika.ParserTest do
                {:function, [position: {3, 40, 43}],
                 {:foo,
                  [
-                   {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, "Int"}},
-                   {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, "Int"}}
-                 ], {:type, {1, 0, 28}, "Int"},
+                   {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, :Int}},
+                   {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, :Int}}
+                 ], {:type, {1, 0, 28}, :Int},
                  [
                    {:call, {:+, {2, 32, 39}},
                     [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
@@ -574,7 +581,7 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 3}, "Int"}]
+      assert result == [{:type, {1, 0, 3}, :Int}]
     end
 
     test "parses types with an arg" do
@@ -582,7 +589,7 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 9}, "List(Int)"}]
+      assert result == [{:type, {1, 0, 9}, %T.List{type: :Int}}]
     end
 
     test "parses types with nested args" do
@@ -590,7 +597,7 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 18}, "List(List(String))"}]
+      assert result == [{:type, {1, 0, 18}, %T.List{type: %T.List{type: :String}}}]
     end
 
     test "parses function type with no args" do
@@ -620,14 +627,14 @@ defmodule Fika.ParserTest do
       str = ":foo"
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
-      assert result == [{:type, {1, 0, 4}, ":foo"}]
+      assert result == [{:type, {1, 0, 4}, %T.Atom{value: :foo}}]
     end
 
     test "list of atom" do
       str = "List(:foo)"
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
-      assert result == [{:type, {1, 0, 10}, "List(:foo)"}]
+      assert result == [{:type, {1, 0, 10}, %T.List{type: %T.Atom{value: :foo}}}]
     end
   end
 
@@ -671,8 +678,8 @@ defmodule Fika.ParserTest do
                   :foo,
                   :bar,
                   [
-                    "Int",
-                    "Int"
+                    :Int,
+                    :Int
                   ]
                 }}
     end

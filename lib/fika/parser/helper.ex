@@ -1,6 +1,8 @@
 defmodule Fika.Parser.Helper do
   import NimbleParsec
 
+  alias Fika.Types, as: T
+
   def to_ast(c, kind) do
     c
     |> line()
@@ -57,20 +59,11 @@ defmodule Fika.Parser.Helper do
     type
   end
 
-  def do_to_ast({[name], _line}, :simple_type) do
-    name
+  def do_to_ast({[inner_type], _line}, :list_type) do
+    %T.List{type: inner_type}
   end
 
-  def do_to_ast({types, line}, :type) do
-    type =
-      Enum.reduce(types, "", fn
-        {:atom, _l, value}, acc ->
-          acc <> ":#{value}"
-
-        type, acc ->
-          acc <> "#{type}"
-      end)
-
+  def do_to_ast({[type], line}, :type) do
     {:type, line, type}
   end
 
@@ -145,7 +138,7 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[{:identifier, line, value}], line}, :atom) do
-    {:atom, line, value}
+    %T.Atom{value: value}
   end
 
   defp value_from_identifier({:identifier, _line, value}) do

@@ -67,24 +67,19 @@ defmodule Fika.Parser.Types do
     |> reduce({Enum, :join, []})
     |> label("record type")
 
-  # To parse functions with tuple return type
-  type_tuple_element =
+  comma_separated_types =
     parsec(:type)
-    |> label("tuple element")
-
-  type_tuple_elements =
-    type_tuple_element
     |> repeat(
       allow_space
       |> ignore(string(","))
       |> concat(allow_space)
-      |> concat(type_tuple_element)
+      |> concat(parsec(:type))
     )
     |> reduce({Enum, :join, [","]})
 
   tuple_type =
     string("{")
-    |> concat(type_tuple_elements)
+    |> concat(comma_separated_types)
     |> string("}")
     |> reduce({Enum, :join, []})
     |> label("tuple type")
@@ -115,6 +110,18 @@ defmodule Fika.Parser.Types do
     string("Nothing")
     |> label("nothing")
     |> reduce({Helper, :to_atom, []})
+
+  function_type =
+    ignore(string("Fn"))
+    |> concat(allow_space)
+    |> ignore(string("("))
+    |> concat(allow_space)
+    |> concat(comma_separated_types)
+    |> concat(allow_space)
+    |> ignore(string("->"))
+    |> concat(parsec(:type))
+    |> ignore(string(")"))
+    |> label("function def")
 
   type =
     choice([
