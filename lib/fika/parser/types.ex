@@ -8,37 +8,26 @@ defmodule Fika.Parser.Types do
   atom = parsec({Common, :atom})
 
   type_args =
-    optional(
+    parsec(:type)
+    |> optional(
       allow_space
-      |> string(",")
+      |> ignore(string(","))
       |> concat(allow_space)
-      |> parsec(:type)
       |> parsec(:type_args)
     )
 
   function_type =
-    string("Fn")
-    |> string("(")
-    |> optional(parsec(:type) |> concat(type_args))
+    ignore(string("Fn("))
+    |> optional(type_args |> map({Helper, :tag, [:arg_type]}))
     |> concat(allow_space)
-    |> string("->")
+    |> ignore(string("->"))
     |> concat(allow_space)
-    |> parsec(:type)
-    |> string(")")
-
-  simple_type =
-    ascii_string([?A..?Z], 1)
-    |> ascii_string([?a..?z, ?A..?Z], min: 0)
-    |> reduce({Enum, :join, [""]})
-    |> Helper.to_ast(:simple_type)
-
-  type_parens =
-    string("(")
-    |> concat(allow_space)
-    |> parsec(:type)
-    |> concat(type_args)
-    |> concat(allow_space)
-    |> string(")")
+    |> concat(
+      parsec(:type)
+      |> map({Helper, :tag, [:return_type]})
+    )
+    |> ignore(string(")"))
+    |> Helper.to_ast(:function_type)
 
   type_key_value =
     allow_space
@@ -67,19 +56,9 @@ defmodule Fika.Parser.Types do
     |> reduce({Enum, :join, []})
     |> label("record type")
 
-  comma_separated_types =
-    parsec(:type)
-    |> repeat(
-      allow_space
-      |> ignore(string(","))
-      |> concat(allow_space)
-      |> concat(parsec(:type))
-    )
-    |> reduce({Enum, :join, [","]})
-
   tuple_type =
     string("{")
-    |> concat(comma_separated_types)
+    |> concat(type_args)
     |> string("}")
     |> reduce({Enum, :join, []})
     |> label("tuple type")
@@ -110,18 +89,6 @@ defmodule Fika.Parser.Types do
     string("Nothing")
     |> label("nothing")
     |> reduce({Helper, :to_atom, []})
-
-  function_type =
-    ignore(string("Fn"))
-    |> concat(allow_space)
-    |> ignore(string("("))
-    |> concat(allow_space)
-    |> concat(comma_separated_types)
-    |> concat(allow_space)
-    |> ignore(string("->"))
-    |> concat(parsec(:type))
-    |> ignore(string(")"))
-    |> label("function def")
 
   type =
     choice([

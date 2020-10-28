@@ -605,7 +605,13 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 10}, "Fn(->Int)"}]
+      assert result == [
+               {:type, {1, 0, 10},
+                %T.FunctionRef{
+                  arg_types: %T.ArgList{value: []},
+                  return_type: :Int
+                }}
+             ]
     end
 
     test "parses function type with args" do
@@ -613,7 +619,13 @@ defmodule Fika.ParserTest do
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
 
-      assert result == [{:type, {1, 0, 19}, "Fn(Int,Int->Int)"}]
+      assert result == [
+               {:type, {1, 0, 19},
+                %T.FunctionRef{
+                  arg_types: %T.ArgList{value: [:Int, :Int]},
+                  return_type: :Int
+                }}
+             ]
     end
 
     test "record type" do

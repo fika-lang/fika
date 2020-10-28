@@ -63,6 +63,14 @@ defmodule Fika.Parser.Helper do
     %T.List{type: inner_type}
   end
 
+  def do_to_ast({types, _line}, :function_type) do
+    IO.inspect(types)
+    arg_types = types |> Keyword.take([:arg_type]) |> Keyword.values()
+    return_type = Keyword.get(types, :return_type)
+
+    %T.FunctionRef{arg_types: %T.ArgList{value: arg_types}, return_type: return_type}
+  end
+
   def do_to_ast({[type], line}, :type) do
     {:type, line, type}
   end
@@ -146,4 +154,8 @@ defmodule Fika.Parser.Helper do
   end
 
   def to_atom([value]), do: String.to_atom(value)
+
+  def tag(value, tag) do
+    {tag, value}
+  end
 end
