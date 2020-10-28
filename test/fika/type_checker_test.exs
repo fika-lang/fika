@@ -6,6 +6,8 @@ defmodule Fika.TypeCheckerTest do
     TypeChecker
   }
 
+  alias Fika.Types, as: T
+
   alias Fika.Types.FunctionRef
 
   test "infer type of integer literals" do
@@ -19,9 +21,9 @@ defmodule Fika.TypeCheckerTest do
   test "infer type of atom expressions" do
     str = ":a"
 
-    {:atom, {1, 0, 2}, :a} = ast = TestParser.expression!(str)
+    {:atom, {1, 0, 2}, %T.Atom{value: :a}} = ast = TestParser.expression!(str)
 
-    assert {:ok, %Fika.Types.Atom{value: :a}, _} = TypeChecker.infer_exp(Env.init(), ast)
+    assert {:ok, %T.Atom{value: :a}, _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
   test "infer type for list of atom expressions" do
@@ -159,11 +161,11 @@ defmodule Fika.TypeCheckerTest do
     env =
       Env.init()
       |> Env.init_module_env("test", ast)
-      |> Env.add_function_type("test2.div(Float,Int)", "Float")
-      |> Env.add_function_type("test2.div(Int,Float)", "Float")
-      |> Env.add_function_type("test2.add(Float,Int)", "Float")
-      |> Env.add_function_type("test2.add(Int,Float)", "Float")
-      |> Env.add_function_type("test2.add(Int,Int)", "Int")
+      |> Env.add_function_type("test2.div(Float,Int)", :Float)
+      |> Env.add_function_type("test2.div(Int,Float)", :Float)
+      |> Env.add_function_type("test2.add(Float,Int)", :Float)
+      |> Env.add_function_type("test2.add(Int,Float)", :Float)
+      |> Env.add_function_type("test2.add(Int,Int)", :Int)
 
     assert {:ok, "Float", _} = TypeChecker.infer(function, env)
     assert {:ok, "Float", _} = TypeChecker.check(function, env)
@@ -310,12 +312,12 @@ defmodule Fika.TypeCheckerTest do
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
-        |> Env.add_function_type("bar.sum(Int,Int)", "Int")
+        |> Env.add_function_type("bar.sum(Int,Int)", :Int)
 
       assert {:ok,
               %FunctionRef{
-                arg_types: %Fika.Types.ArgList{value: ["Int", "Int"]},
-                return_type: "Int"
+                arg_types: %Fika.Types.ArgList{value: [:Int, :Int]},
+                return_type: :Int
               }, _} = TypeChecker.infer_exp(env, ast)
     end
 

@@ -52,11 +52,15 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[], line}, :return_type) do
-    {:type, line, "Nothing"}
+    {:type, line, :Nothing}
   end
 
   def do_to_ast({[type], _line}, :return_type) do
     type
+  end
+
+  def do_to_ast({[{_, _, inner_type}], _line}, :list_type) when is_struct(inner_type) do
+    %T.List{type: inner_type}
   end
 
   def do_to_ast({[inner_type], _line}, :list_type) do
@@ -69,6 +73,10 @@ defmodule Fika.Parser.Helper do
     return_type = Keyword.get(types, :return_type)
 
     %T.FunctionRef{arg_types: %T.ArgList{value: arg_types}, return_type: return_type}
+  end
+
+  def do_to_ast({[{_, _, type}], line}, :type) when is_struct(type) do
+    {:type, line, type}
   end
 
   def do_to_ast({[type], line}, :type) do
@@ -146,7 +154,7 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[{:identifier, line, value}], line}, :atom) do
-    %T.Atom{value: value}
+    {:atom, line, %T.Atom{value: value}}
   end
 
   defp value_from_identifier({:identifier, _line, value}) do
