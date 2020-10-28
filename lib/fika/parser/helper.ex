@@ -116,7 +116,6 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({result, line}, :exp_list) do
-    IO.inspect(result, label: "exp list ast")
     {:list, line, result}
   end
 
