@@ -562,7 +562,7 @@ defmodule Fika.ParserTest do
       result = TestParser.expression!(str)
 
       assert result ==
-               {:map, {1, 0, 10}, [{{:string, {1, 0, 4}, "a"}, {:integer, {1, 0, 9}, 1}}]}
+               {:map, {1, 0, 10}, [{{:string, {1, 0, 4}, ["a"]}, {:integer, {1, 0, 9}, 1}}]}
     end
 
     test "parses map with complex expression" do
@@ -586,7 +586,7 @@ defmodule Fika.ParserTest do
                       ]},
                      {:map, {1, 0, 31},
                       [
-                        {{:string, {1, 0, 17}, "1"},
+                        {{:string, {1, 0, 17}, ["1"]},
                          {:tuple, {1, 0, 30},
                           [
                             {:integer, {1, 0, 23}, 1},
