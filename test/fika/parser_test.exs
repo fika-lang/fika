@@ -564,6 +564,70 @@ defmodule Fika.ParserTest do
       assert result ==
                {:map, {1, 0, 10}, [{{:string, {1, 0, 4}, "a"}, {:integer, {1, 0, 9}, 1}}]}
     end
+
+    test "parses map with complex expression" do
+      str = """
+      {[1+1, 2] => {"1" => {1, 2, 3}}}
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {
+                 :map,
+                 {1, 0, 32},
+                 [
+                   {
+                     {:list, {1, 0, 9},
+                      [
+                        {:call, {:+, {1, 0, 5}},
+                         [{:integer, {1, 0, 3}, 1}, {:integer, {1, 0, 5}, 1}], :kernel},
+                        {:integer, {1, 0, 8}, 2}
+                      ]},
+                     {:map, {1, 0, 31},
+                      [
+                        {{:string, {1, 0, 17}, "1"},
+                         {:tuple, {1, 0, 30},
+                          [
+                            {:integer, {1, 0, 23}, 1},
+                            {:integer, {1, 0, 26}, 2},
+                            {:integer, {1, 0, 29}, 3}
+                          ]}}
+                      ]}
+                   }
+                 ]
+               }
+
+      str = """
+      {true & false => false}
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {:map, {1, 0, 23},
+                [
+                  {{:call, {:&, {1, 0, 13}},
+                    [{:boolean, {1, 0, 5}, true}, {:boolean, {1, 0, 13}, false}], :kernel},
+                   {:boolean, {1, 0, 22}, false}}
+                ]}
+    end
+
+    test "parses map with function as key-values" do
+      str = """
+      {foo(1, 2) => bar(true)}
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {:map, {1, 0, 24},
+                [
+                  {{:call, {:foo, {1, 0, 10}},
+                    [{:integer, {1, 0, 6}, 1}, {:integer, {1, 0, 9}, 2}], nil},
+                   {:call, {:bar, {1, 0, 23}}, [{:boolean, {1, 0, 22}, true}], nil}}
+                ]}
+    end
   end
 
   describe "tuple" do
