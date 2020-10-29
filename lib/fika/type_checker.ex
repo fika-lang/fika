@@ -221,25 +221,27 @@ defmodule Fika.TypeChecker do
 
   # Map
   def infer_exp(env, {:map, _, [kv | rest_kvs]}) do
-    {:ok, expected_type, env} = infer_map_key_value(env, kv)
+    with {:ok, expected_type, env} <- infer_map_key_value(env, kv) do
+      Enum.reduce_while(rest_kvs, {:ok, expected_type, env}, fn kv, {:ok, acc_type, acc_env} ->
+        case infer_map_key_value(acc_env, kv) do
+          {:ok, ^expected_type, env} ->
+            acc = {:ok, acc_type, env}
+            {:cont, acc}
 
-    Enum.reduce_while(rest_kvs, {:ok, expected_type, env}, fn kv, {:ok, acc_type, acc_env} ->
-      case infer_map_key_value(acc_env, kv) do
-        {:ok, ^expected_type, env} ->
-          acc = {:ok, acc_type, env}
-          {:cont, acc}
+          {:ok, diff_type, _} ->
+            error =
+              {:error,
+               "Elements of map have different types. Expected: #{expected_type}, got: #{
+                 diff_type
+               }"}
 
-        {:ok, diff_type, _} ->
-          error =
-            {:error,
-             "Elements of map have different types. Expected: #{expected_type}, got: #{diff_type}"}
+            {:halt, error}
 
-          {:halt, error}
-
-        error ->
-          {:halt, error}
-      end
-    end)
+          error ->
+            {:halt, error}
+        end
+      end)
+    end
   end
 
   # Function ref
@@ -330,9 +332,10 @@ defmodule Fika.TypeChecker do
   end
 
   defp infer_map_key_value(env, {key, value}) do
-    {:ok, key_type, env} = infer_exp(env, key)
-    {:ok, val_type, env} = infer_exp(env, value)
-    {:ok, "Map(#{key_type},#{val_type})", env}
+    with {:ok, key_type, env} <- infer_exp(env, key),
+         {:ok, val_type, env} <- infer_exp(env, value) do
+      {:ok, "Map(#{key_type},#{val_type})", env}
+    end
   end
 
   defp do_infer_tuple_exps(exps, env) do
