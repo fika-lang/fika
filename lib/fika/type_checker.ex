@@ -220,6 +220,7 @@ defmodule Fika.TypeChecker do
   end
 
   # Map
+  # TODO: refactor this when union types are available
   def infer_exp(env, {:map, _, [kv | rest_kvs]}) do
     {key, value} = kv
 
