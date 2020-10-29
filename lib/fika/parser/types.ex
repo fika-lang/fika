@@ -71,11 +71,11 @@ defmodule Fika.Parser.Types do
   map_type =
     string("Map")
     |> string("(")
-    |> concat(parsec(:type) |> concat(type_args))
+    |> parsec(:type)
     |> concat(allow_space)
     |> string(",")
     |> concat(allow_space)
-    |> concat(parsec(:type) |> concat(type_args))
+    |> parsec(:type)
     |> concat(allow_space)
     |> string(")")
     |> label("map type")
