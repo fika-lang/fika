@@ -18,7 +18,10 @@ defmodule TestParser do
   @horizontal_space ["\s", "\t"]
   @space @vertical_space ++ @horizontal_space ++ ["# Dummy comment\n"]
 
+  # Returns a random combination of horizontal space symbols
   def h_space(), do: do_space(@horizontal_space)
+
+  # Returns a random combination of space symbols (both horizontal and vertical)
   def space(), do: do_space(@space)
 
   # Returns a random combination of space symbols which is
@@ -33,13 +36,14 @@ defmodule TestParser do
     |> Enum.join("")
   end
 
-  def expression!(str) do
-    {:ok, [result], _rest, _context, _line, _byte_offset} = expression(str)
-    result
-  end
+  def expression!(str), do: do_parse(&expression/1, str)
 
-  def function_def!(str) do
-    {:ok, [result], _rest, _context, _line, _byte_offset} = function_def(str)
+  def function_def!(str), do: do_parse(&function_def/1, str)
+
+  def type_str!(str), do: do_parse(&type_str/1, str)
+
+  defp do_parse(parser, str) do
+    {:ok, [result], _rest, _context, _line, _byte_offset} = parser.(str)
     result
   end
 
