@@ -19,14 +19,14 @@ defmodule TestParser do
   @space @vertical_space ++ @horizontal_space ++ ["# Dummy comment\n"]
 
   # Returns a random combination of horizontal space symbols
-  def h_space(), do: do_space(@horizontal_space)
+  def h_space(length \\ 5), do: do_space(@horizontal_space, length)
 
   # Returns a random combination of space symbols (both horizontal and vertical)
-  def space(), do: do_space(@space)
+  def space(length \\ 5), do: do_space(@space, length)
 
   # Returns a random combination of space symbols which is
   # guaranteed to contain at leat one occurence of any of them
-  defp do_space(symbols, length \\ 5) do
+  defp do_space(symbols, length) do
     n = :rand.uniform(length)
     more = for _ <- 1..n, do: Enum.random(symbols)
 

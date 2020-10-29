@@ -1,27 +1,27 @@
 defmodule Fika.ParserTest do
   use ExUnit.Case
-  import TestEvaluator
-  import TestParser
+  alias TestEvaluator, as: TE
+  alias TestParser, as: TP
 
   test "integer" do
     str = """
     123
     """
 
-    assert {:integer, {1, 0, 3}, 123} == expression!(str)
+    assert {:integer, {1, 0, 3}, 123} == TestParser.expression!(str)
   end
 
   describe "boolean" do
     test "true" do
       str = "true"
 
-      assert {:boolean, {1, 0, 4}, true} == expression!(str)
+      assert {:boolean, {1, 0, 4}, true} == TestParser.expression!(str)
     end
 
     test "false" do
       str = "false"
 
-      assert {:boolean, {1, 0, 5}, false} == expression!(str)
+      assert {:boolean, {1, 0, 5}, false} == TestParser.expression!(str)
     end
   end
 
@@ -30,7 +30,7 @@ defmodule Fika.ParserTest do
       atom = :foobar
       str = ":#{atom}"
 
-      assert {:atom, {1, 0, 7}, atom} == expression!(str)
+      assert {:atom, {1, 0, 7}, atom} == TestParser.expression!(str)
     end
   end
 
@@ -52,59 +52,63 @@ defmodule Fika.ParserTest do
     # &           Unary           Capture operator                          Parser refactoring
 
     test "arithmetic binary * and / have less precedence than unary -" do
-      assert {:ok, {-2, "Int", _}} = eval("1 * -2")
-      assert {:ok, {2.0, "Float", _}} = eval("-10 / -5")
+      assert {:ok, {-2, "Int", _}} = TE.eval("1 * -2")
+      assert {:ok, {2.0, "Float", _}} = TE.eval("-10 / -5")
     end
 
     test "arithmetic binary + and - have less precedence than * and /" do
-      assert {:ok, {12.5, "Float", _}} = eval("1 / 2 + 3 * 4")
-      assert {:ok, {3.0, "Float", _}} = eval("1 * 5 - 4 / 2")
+      assert {:ok, {12.5, "Float", _}} = TE.eval("1 / 2 + 3 * 4")
+      assert {:ok, {3.0, "Float", _}} = TE.eval("1 * 5 - 4 / 2")
     end
 
     test "boolean & has less precedence than !" do
-      assert {:ok, {false, "Bool", _}} = eval("!true & :false")
+      assert {:ok, {false, "Bool", _}} = TE.eval("!true & :false")
     end
 
     test "boolean | has less precedence than &" do
-      assert {:ok, {true, "Bool", _}} = eval("true | true & false")
-      assert {:ok, {true, "Bool", _}} = eval("false & :true | true")
+      assert {:ok, {true, "Bool", _}} = TE.eval("true | true & false")
+      assert {:ok, {true, "Bool", _}} = TE.eval("false & :true | true")
     end
 
     test "expressions in parenthesis have higher precedence than anything else" do
-      assert {:ok, {1, "Int", _}} = eval("-(-1)")
-      assert {:ok, {6, "Int", _}} = eval("(3 - 1) * (1 + 2)")
-      assert {:ok, {true, "Bool", _}} = eval("true & (false | true)")
+      assert {:ok, {1, "Int", _}} = TE.eval("-(-1)")
+      assert {:ok, {6, "Int", _}} = TE.eval("(3 - 1) * (1 + 2)")
+      assert {:ok, {true, "Bool", _}} = TE.eval("true & (false | true)")
     end
   end
 
   describe "operators with spaces" do
     # Unary operators' operand doesn't necessarily have to reside on the same line of the operator
     test "both vertical and horizontal space allowed between unary operators and their operand" do
-      assert {:ok, {false, "Bool", _}} = eval("!#{space()}true")
-      assert {:ok, {-1, "Int", _}} = eval("-#{space()}1")
+      assert {:ok, {false, "Bool", _}} = TE.eval("!#{TP.space()}true")
+      assert {:ok, {-1, "Int", _}} = TE.eval("-#{TP.space()}1")
     end
 
     # Horizontal space allowed between first operand and binary operator
     # Both vertical and horizontal space allowed between binary operator and second operand
     test "allowed spaces between binary operators and their operands" do
-      assert {:ok, {12, "Int", _}} = eval("3#{h_space()}*#{space()}4")
-      assert {:ok, {2.0, "Float", _}} = eval("4#{h_space()}/#{space()}2")
-      assert {:ok, {7, "Int", _}} = eval("3#{h_space()}+#{space()}4")
-      assert {:ok, {1, "Int", _}} = eval("3#{h_space()}-#{space()}2")
-      assert {:ok, {true, "Bool", _}} = eval("true#{h_space()}&#{space()}true")
-      assert {:ok, {true, "Bool", _}} = eval("false#{h_space()}|#{space()}true")
+      assert {:ok, {12, "Int", _}} = TE.eval("3#{TP.h_space()}*#{TP.space()}4")
+      assert {:ok, {2.0, "Float", _}} = TE.eval("4#{TP.h_space()}/#{TP.space()}2")
+      assert {:ok, {7, "Int", _}} = TE.eval("3#{TP.h_space()}+#{TP.space()}4")
+      assert {:ok, {1, "Int", _}} = TE.eval("3#{TP.h_space()}-#{TP.space()}2")
+
+      assert {:ok, {true, "Bool", _}} = TE.eval("true#{TP.h_space()}&#{TP.space()}true")
+
+      assert {:ok, {true, "Bool", _}} = TE.eval("false#{TP.h_space()}|#{TP.space()}true")
     end
 
     # Vertical space forbidden between first operand and binary operator
     test "forbidden vertical space between first operand and binary operator" do
       msg = "expected end of string"
 
-      assert {:error, ^msg, _, _, _, _} = eval("3#{space()}*#{space()}4")
-      assert {:error, ^msg, _, _, _, _} = eval("3#{space()}/#{space()}2")
-      assert {:error, ^msg, _, _, _, _} = eval("3#{space()}+#{space()}4")
-      assert {:error, ^msg, _, _, _, _} = eval("3#{space()}-#{space()}2")
-      assert {:error, ^msg, _, _, _, _} = eval("true#{space()}&#{space()}true")
-      assert {:error, ^msg, _, _, _, _} = eval("false#{space()}|#{space()}true")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("3#{TP.space()}*#{TP.space()}4")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("3#{TP.space()}/#{TP.space()}2")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("3#{TP.space()}+#{TP.space()}4")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("3#{TP.space()}-#{TP.space()}2")
+
+      assert {:error, ^msg, _, _, _, _} = TE.eval("true#{TP.space()}&#{TP.space()}true")
+
+      assert {:error, ^msg, _, _, _, _} = TE.eval("false#{TP.space()}|#{TP.space()}true")
     end
 
     # Minus is the only operator which is both unary and binary,
@@ -126,7 +130,7 @@ defmodule Fika.ParserTest do
                   {:identifier, {2, 10, 13}, :x},
                   {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
                 ]}
-             } == function_def!(str)
+             } == TestParser.function_def!(str)
     end
   end
 
@@ -145,7 +149,7 @@ defmodule Fika.ParserTest do
                   :kernel}
                ],
                :kernel
-             } == expression!(str)
+             } == TestParser.expression!(str)
     end
 
     test "unary -" do
@@ -154,7 +158,7 @@ defmodule Fika.ParserTest do
                {:-, {1, 0, 2}},
                [{:integer, {1, 0, 2}, 5}],
                :kernel
-             } == expression!("-5")
+             } == TestParser.expression!("-5")
     end
 
     test "unary - has higher precedence than other arithmetic operators" do
@@ -182,7 +186,7 @@ defmodule Fika.ParserTest do
                   ], :kernel}
                ],
                :kernel
-             } == expression!(str)
+             } == TestParser.expression!(str)
     end
 
     test "+ and - are parsed as unary operators when on new line" do
@@ -201,7 +205,7 @@ defmodule Fika.ParserTest do
                   {:identifier, {2, 10, 13}, :x},
                   {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
                 ]}
-             } == function_def!(str)
+             } == TestParser.function_def!(str)
     end
 
     test "+ and - are parsed as binary operators when on the same line of the first operand" do
@@ -223,7 +227,7 @@ defmodule Fika.ParserTest do
                      {:identifier, {3, 16, 19}, :y}
                    ], :kernel}
                 ]}
-             } == function_def!(str)
+             } == TestParser.function_def!(str)
     end
 
     test "add/sub has less precedence than mult/div" do
@@ -245,7 +249,7 @@ defmodule Fika.ParserTest do
                   [{:integer, {1, 0, 17}, 40}, {:integer, {1, 0, 22}, 50}], :kernel}
                ],
                :kernel
-             } == expression!(str)
+             } == TestParser.expression!(str)
     end
 
     test "grouping using parens" do
@@ -271,7 +275,7 @@ defmodule Fika.ParserTest do
                  {:integer, {1, 0, 26}, 50}
                ],
                :kernel
-             } == expression!(str)
+             } == TestParser.expression!(str)
     end
   end
 
@@ -281,7 +285,7 @@ defmodule Fika.ParserTest do
       my_func()
       """
 
-      assert {:call, {:my_func, {1, 0, 9}}, [], nil} == expression!(str)
+      assert {:call, {:my_func, {1, 0, 9}}, [], nil} == TestParser.expression!(str)
     end
 
     test "local function call with args" do
@@ -294,7 +298,7 @@ defmodule Fika.ParserTest do
         {:integer, {1, 0, 14}, 123}
       ]
 
-      assert {:call, {:my_func, {1, 0, 15}}, args, nil} == expression!(str)
+      assert {:call, {:my_func, {1, 0, 15}}, args, nil} == TestParser.expression!(str)
     end
 
     test "remote function call with args" do
@@ -307,7 +311,7 @@ defmodule Fika.ParserTest do
         {:integer, {1, 0, 24}, 123}
       ]
 
-      assert {:call, {:my_func, {1, 0, 25}}, args, :my_module} == expression!(str)
+      assert {:call, {:my_func, {1, 0, 25}}, args, :my_module} == TestParser.expression!(str)
     end
 
     test "function calls with another function call as arg" do
@@ -320,7 +324,7 @@ defmodule Fika.ParserTest do
         {:call, {:bar, {1, 0, 13}}, [{:identifier, {1, 0, 12}, :y}], nil}
       ]
 
-      assert {:call, {:foo, {1, 0, 14}}, args, nil} == expression!(str)
+      assert {:call, {:foo, {1, 0, 14}}, args, nil} == TestParser.expression!(str)
     end
   end
 
@@ -334,7 +338,7 @@ defmodule Fika.ParserTest do
 
       assert {:function, [position: {3, 16, 19}],
               {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 10, 15}, 123}]}} ==
-               function_def!(str)
+               TestParser.function_def!(str)
     end
 
     test "with return type Int" do
@@ -346,7 +350,7 @@ defmodule Fika.ParserTest do
 
       assert {:function, [position: {3, 22, 25}],
               {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}} ==
-               function_def!(str)
+               TestParser.function_def!(str)
     end
 
     test "with return type :ok" do
@@ -358,7 +362,7 @@ defmodule Fika.ParserTest do
 
       assert {:function, [position: {3, 22, 25}],
               {:foo, [], {:type, {1, 0, 12}, ":ok"}, [{:integer, {2, 16, 21}, 123}]}} ==
-               function_def!(str)
+               TestParser.function_def!(str)
     end
 
     test "with type params" do
@@ -372,7 +376,7 @@ defmodule Fika.ParserTest do
               {:foo, [{{:identifier, {1, 0, 8}, :a}, {:type, {1, 0, 22}, "List(String)"}}],
                {:type, {1, 0, 35}, "List(Int)"},
                [{:identifier, {2, 39, 42}, :x}]}} ==
-               function_def!(str)
+               TestParser.function_def!(str)
     end
 
     test "with args" do
@@ -392,7 +396,7 @@ defmodule Fika.ParserTest do
                  {:call, {:+, {2, 32, 39}},
                   [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
                ]}} ==
-               function_def!(str)
+               TestParser.function_def!(str)
     end
   end
 
@@ -434,7 +438,7 @@ defmodule Fika.ParserTest do
       """
 
       assert {{:=, {1, 0, 5}}, {:identifier, {1, 0, 1}, :x}, {:integer, {1, 0, 5}, 1}} ==
-               expression!(str)
+               TestParser.expression!(str)
     end
 
     test "multiple match" do
@@ -450,7 +454,7 @@ defmodule Fika.ParserTest do
                  {:identifier, {1, 0, 5}, :y},
                  {:integer, {1, 0, 9}, 1}
                }
-             } == expression!(str)
+             } == TestParser.expression!(str)
     end
 
     test "errors when non match exps come on the left of the match" do
@@ -458,7 +462,7 @@ defmodule Fika.ParserTest do
       x + y = 1
       """
 
-      assert {:error, "expected end of string", "= 1\n", _, _, _} = expression(str)
+      assert {:error, "expected end of string", "= 1\n", _, _, _} = TestParser.expression(str)
     end
 
     test "match exps can exist as a whole exp" do
@@ -474,7 +478,7 @@ defmodule Fika.ParserTest do
                   {:identifier, {1, 0, 6}, :x},
                   {:integer, {1, 0, 10}, 2}
                 }
-              ], :kernel} == expression!(str)
+              ], :kernel} == TestParser.expression!(str)
     end
   end
 
@@ -484,7 +488,7 @@ defmodule Fika.ParserTest do
       "Hello world"
       """
 
-      assert {:string, {1, 0, 13}, ["Hello world"]} == expression!(str)
+      assert {:string, {1, 0, 13}, ["Hello world"]} == TestParser.expression!(str)
     end
 
     test "parses a string with escaped double quotes" do
@@ -492,7 +496,7 @@ defmodule Fika.ParserTest do
       "Hello \\\"world\\\""
       """
 
-      assert {:string, {1, 0, 17}, ["Hello \\\"world\\\""]} == expression!(str)
+      assert {:string, {1, 0, 17}, ["Hello \\\"world\\\""]} == TestParser.expression!(str)
     end
 
     test "parses interpolated string" do
@@ -501,7 +505,7 @@ defmodule Fika.ParserTest do
       """
 
       assert {:string, {1, 0, 16}, ["Hello ", {:identifier, {1, 0, 14}, :world}]} ==
-               expression!(str)
+               TestParser.expression!(str)
     end
 
     test "parses multiple interpolations" do
@@ -517,7 +521,7 @@ defmodule Fika.ParserTest do
                  " ",
                  {:string, {1, 0, 19}, ["World"]}
                ]
-             } == expression!(str)
+             } == TestParser.expression!(str)
     end
   end
 
@@ -527,7 +531,7 @@ defmodule Fika.ParserTest do
       []
       """
 
-      assert {:list, {1, 0, 2}, []} == expression!(str)
+      assert {:list, {1, 0, 2}, []} == TestParser.expression!(str)
     end
 
     test "parses list with one element" do
@@ -535,7 +539,7 @@ defmodule Fika.ParserTest do
       [1]
       """
 
-      assert {:list, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]} == expression!(str)
+      assert {:list, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]} == TestParser.expression!(str)
     end
 
     test "parses list with multiple elements" do
@@ -548,7 +552,7 @@ defmodule Fika.ParserTest do
                 {:integer, {1, 0, 2}, 1},
                 {:integer, {1, 0, 5}, 2},
                 {:integer, {1, 0, 8}, 3}
-              ]} == expression!(str)
+              ]} == TestParser.expression!(str)
     end
 
     test "parses list with match exps" do
@@ -561,7 +565,7 @@ defmodule Fika.ParserTest do
                 {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
                 {:integer, {1, 0, 9}, 2},
                 {:integer, {1, 0, 12}, 3}
-              ]} == expression!(str)
+              ]} == TestParser.expression!(str)
     end
   end
 
@@ -571,7 +575,7 @@ defmodule Fika.ParserTest do
       {}
       """
 
-      assert {:error, _, "{}\n", %{}, {1, 0}, 0} = expression(str)
+      assert {:error, _, "{}\n", %{}, {1, 0}, 0} = TestParser.expression(str)
     end
 
     test "parses a record" do
@@ -583,7 +587,7 @@ defmodule Fika.ParserTest do
               [
                 {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, ["World"]}},
                 {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
-              ]} == expression!(str)
+              ]} == TestParser.expression!(str)
     end
   end
 
@@ -593,7 +597,7 @@ defmodule Fika.ParserTest do
       {1}
       """
 
-      assert {:tuple, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]} == expression!(str)
+      assert {:tuple, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]} == TestParser.expression!(str)
     end
 
     test "parses tuple with multiple elements" do
@@ -606,7 +610,7 @@ defmodule Fika.ParserTest do
                 {:integer, {1, 0, 2}, 1},
                 {:integer, {1, 0, 5}, 2},
                 {:integer, {1, 0, 8}, 3}
-              ]} == expression!(str)
+              ]} == TestParser.expression!(str)
     end
 
     test "parses tuple with match exps" do
@@ -619,7 +623,7 @@ defmodule Fika.ParserTest do
                 {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
                 {:integer, {1, 0, 9}, 2},
                 {:integer, {1, 0, 12}, 3}
-              ]} == expression!(str)
+              ]} == TestParser.expression!(str)
     end
   end
 
@@ -627,49 +631,49 @@ defmodule Fika.ParserTest do
     test "types with no args" do
       str = "Int"
 
-      assert {:type, {1, 0, 3}, "Int"} == type_str!(str)
+      assert {:type, {1, 0, 3}, "Int"} == TestParser.type_str!(str)
     end
 
     test "parses types with an arg" do
       str = "List(Int)"
 
-      assert {:type, {1, 0, 9}, "List(Int)"} == type_str!(str)
+      assert {:type, {1, 0, 9}, "List(Int)"} == TestParser.type_str!(str)
     end
 
     test "parses types with nested args" do
       str = "List(List(String))"
 
-      assert {:type, {1, 0, 18}, "List(List(String))"} == type_str!(str)
+      assert {:type, {1, 0, 18}, "List(List(String))"} == TestParser.type_str!(str)
     end
 
     test "parses function type with no args" do
       str = "Fn(-> Int)"
 
-      assert {:type, {1, 0, 10}, "Fn(->Int)"} == type_str!(str)
+      assert {:type, {1, 0, 10}, "Fn(->Int)"} == TestParser.type_str!(str)
     end
 
     test "parses function type with args" do
       str = "Fn(Int, Int -> Int)"
 
-      assert {:type, {1, 0, 19}, "Fn(Int,Int->Int)"} == type_str!(str)
+      assert {:type, {1, 0, 19}, "Fn(Int,Int->Int)"} == TestParser.type_str!(str)
     end
 
     test "record type" do
       str = "{foo: Int, bar: String}"
 
-      assert {:type, {1, 0, 23}, "{foo:Int,bar:String}"} == type_str!(str)
+      assert {:type, {1, 0, 23}, "{foo:Int,bar:String}"} == TestParser.type_str!(str)
     end
 
     test "atom type" do
       str = ":foo"
 
-      assert {:type, {1, 0, 4}, ":foo"} == type_str!(str)
+      assert {:type, {1, 0, 4}, ":foo"} == TestParser.type_str!(str)
     end
 
     test "list of atom" do
       str = "List(:foo)"
 
-      assert {:type, {1, 0, 10}, "List(:foo)"} == type_str!(str)
+      assert {:type, {1, 0, 10}, "List(:foo)"} == TestParser.type_str!(str)
     end
   end
 
@@ -679,7 +683,7 @@ defmodule Fika.ParserTest do
       &foo
       """
 
-      assert {:function_ref, {1, 0, 4}, {nil, :foo, []}} == expression!(str)
+      assert {:function_ref, {1, 0, 4}, {nil, :foo, []}} == TestParser.expression!(str)
     end
 
     test "parses a remote function ref with no args" do
@@ -692,7 +696,7 @@ defmodule Fika.ParserTest do
                 :foo,
                 :bar,
                 []
-              }} == expression!(str)
+              }} == TestParser.expression!(str)
     end
 
     test "parses a function ref with arg types" do
@@ -708,7 +712,7 @@ defmodule Fika.ParserTest do
                   "Int",
                   "Int"
                 ]
-              }} == expression!(str)
+              }} == TestParser.expression!(str)
     end
   end
 
@@ -723,7 +727,7 @@ defmodule Fika.ParserTest do
 
       assert {:function, [position: {4, 36, 39}],
               {:foo, [], {:type, {2, 20, 26}, "Nothing"}, [{:integer, {3, 30, 35}, 123}]}} ==
-               function_def!(str)
+               TestParser.function_def!(str)
     end
 
     test "At end of line" do
@@ -735,7 +739,7 @@ defmodule Fika.ParserTest do
 
       assert {:function, [position: {3, 40, 43}],
               {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 22, 27}, 123}]}} ==
-               function_def!(str)
+               TestParser.function_def!(str)
     end
 
     test "Can't appear in between characters" do
@@ -745,7 +749,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:error, _, _, _, _, _} = function_def(str)
+      assert {:error, _, _, _, _, _} = TestParser.function_def(str)
     end
 
     test "Strings can have # in them" do
@@ -757,7 +761,7 @@ defmodule Fika.ParserTest do
 
       assert {:function, [position: {3, 22, 25}],
               {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:string, {2, 10, 21}, ["foo#bar"]}]}} ==
-               function_def!(str)
+               TestParser.function_def!(str)
     end
   end
 
@@ -770,7 +774,8 @@ defmodule Fika.ParserTest do
         {:identifier, {1, 0, 9}, :y}
       ]
 
-      assert {:call, {{:identifier, {1, 0, 3}, :foo}, {1, 0, 10}}, args} == expression!(str)
+      assert {:call, {{:identifier, {1, 0, 3}, :foo}, {1, 0, 10}}, args} ==
+               TestParser.expression!(str)
     end
 
     test "using function call" do
@@ -783,19 +788,19 @@ defmodule Fika.ParserTest do
 
       exp = {:call, {:foo, {1, 0, 5}}, [], nil}
 
-      assert {:call, {exp, {1, 0, 12}}, args} == expression!(str)
+      assert {:call, {exp, {1, 0, 12}}, args} == TestParser.expression!(str)
     end
 
     test "using literal expression fails" do
       str = "123.(x, y)"
 
-      assert {:error, _, _, _, _, _} = expression(str)
+      assert {:error, _, _, _, _, _} = TestParser.expression(str)
     end
   end
 
   describe "logical operators" do
     test "supports negation" do
-      assert {:call, {:!, _}, [{:boolean, _, true}], _kernel} = expression!("!true")
+      assert {:call, {:!, _}, [{:boolean, _, true}], _kernel} = TestParser.expression!("!true")
     end
 
     test "supports negation with more complex expressions" do
@@ -806,7 +811,7 @@ defmodule Fika.ParserTest do
           {:call, {:|, _}, [{:boolean, _, true}, {:boolean, _, false}], :kernel}
         ],
         :kernel
-      } = expression!("!(true | false)")
+      } = TestParser.expression!("!(true | false)")
     end
 
     test "simple usage" do
@@ -816,7 +821,7 @@ defmodule Fika.ParserTest do
               [
                 {:boolean, _, false},
                 {:boolean, _, true}
-              ], :kernel} = expression!(str)
+              ], :kernel} = TestParser.expression!(str)
     end
 
     test "more complex expressions" do
@@ -830,7 +835,7 @@ defmodule Fika.ParserTest do
                  {:call, {:|, _}, [{:boolean, _, false}, {:boolean, _, true}], :kernel}
                ],
                :kernel
-             } = expression!(str)
+             } = TestParser.expression!(str)
     end
   end
 
@@ -838,12 +843,12 @@ defmodule Fika.ParserTest do
     test "cannot have two assignments in the same line" do
       str = "x = 1 y = 2"
 
-      assert {:error, _, _, _, _, _} = exps(str)
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
     end
 
     test "cannot have two variables in the same line" do
       str = "foo bar"
-      assert {:error, _, _, _, _, _} = exps(str)
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
     end
 
     test "can have expressions in multiple lines" do
@@ -852,7 +857,7 @@ defmodule Fika.ParserTest do
       y = 2
       """
 
-      assert {:ok, [_, _], _, _, _, _} = exps(str)
+      assert {:ok, [_, _], _, _, _, _} = TestParser.exps(str)
     end
 
     test "can have expressions separated by ;" do
@@ -860,7 +865,7 @@ defmodule Fika.ParserTest do
       x = 1; y=2
       """
 
-      assert {:ok, [_, _], _, _, _, _} = exps(str)
+      assert {:ok, [_, _], _, _, _, _} = TestParser.exps(str)
     end
 
     test "can have a single expression split across multiple lines" do
@@ -870,14 +875,14 @@ defmodule Fika.ParserTest do
           345
       """
 
-      assert {:ok, [_], _, _, _, _} = exps(str)
+      assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
 
       str = """
       x = foo &
         bar
       """
 
-      assert {:ok, [_], _, _, _, _} = exps(str)
+      assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
     end
 
     test "function ref on new line" do
@@ -886,7 +891,7 @@ defmodule Fika.ParserTest do
         &bar
       """
 
-      assert {:ok, [_, {:function_ref, _, _}], _, _, _, _} = exps(str)
+      assert {:ok, [_, {:function_ref, _, _}], _, _, _, _} = TestParser.exps(str)
     end
 
     # TODO: This actually looks cleaner, so we may eventually allow this
@@ -898,7 +903,7 @@ defmodule Fika.ParserTest do
         | baz
       """
 
-      assert {:error, _, _, _, _, _} = exps(str)
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
     end
 
     test "| on same line is ok" do
@@ -908,7 +913,7 @@ defmodule Fika.ParserTest do
         baz
       """
 
-      assert {:ok, [_], _, _, _, _} = exps(str)
+      assert {:ok, [_], _, _, _, _} = TestParser.exps(str)
     end
 
     test "= on newline is an error" do
@@ -917,7 +922,7 @@ defmodule Fika.ParserTest do
       = 123
       """
 
-      assert {:error, _, _, _, _, _} = exps(str)
+      assert {:error, _, _, _, _, _} = TestParser.exps(str)
     end
   end
 end
