@@ -349,11 +349,15 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {
-               :error,
-               "Elements of map have different types. " <>
-                 "Expected: Map(Int,List(Int)), got: Map(String,Int)"
-             } = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:error, "Expected map key of type Int, but got String"} =
+               TypeChecker.infer_exp(Env.init(), ast)
+
+      str = ~s({"foo" => [1, 2], "bar" => 345})
+
+      ast = TestParser.expression!(str)
+
+      assert {:error, "Expected map value of type List(Int), but got Int"} =
+               TypeChecker.infer_exp(Env.init(), ast)
     end
   end
 
