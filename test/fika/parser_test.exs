@@ -627,6 +627,24 @@ defmodule Fika.ParserTest do
                     [{:integer, {1, 0, 6}, 1}, {:integer, {1, 0, 9}, 2}], nil},
                    {:call, {:bar, {1, 0, 23}}, [{:boolean, {1, 0, 22}, true}], nil}}
                 ]}
+
+      str = """
+      {&foo.bar => jar(true)}
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {
+                 :map,
+                 {1, 0, 23},
+                 [
+                   {
+                     {:function_ref, {1, 0, 9}, {:foo, :bar, []}},
+                     {:call, {:jar, {1, 0, 22}}, [{:boolean, {1, 0, 21}, true}], nil}
+                   }
+                 ]
+               }
     end
   end
 
