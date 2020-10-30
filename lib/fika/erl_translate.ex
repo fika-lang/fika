@@ -36,8 +36,16 @@ defmodule Fika.ErlTranslate do
   end
 
   defp translate_exp({:call, {bin_op, {line, _, _}}, [arg1, arg2], _module})
-       when bin_op in [:+, :-, :*, :/] do
+       when bin_op in [:+, :-, :*, :/, :<, :>, :>=, :==] do
     {:op, line, bin_op, translate_exp(arg1), translate_exp(arg2)}
+  end
+
+  defp translate_exp({:call, {:<=, {line, _, _}}, [arg1, arg2], _module}) do
+    {:op, line, :"=<", translate_exp(arg1), translate_exp(arg2)}
+  end
+
+  defp translate_exp({:call, {:!=, {line, _, _}}, [arg1, arg2], _module}) do
+    {:op, line, :"/=", translate_exp(arg1), translate_exp(arg2)}
   end
 
   defp translate_exp({:call, {:!, {line, _, _}}, [arg], _module}) do

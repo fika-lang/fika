@@ -26,7 +26,7 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[left, bin_op, right | rest], line}, :exp_bin_op)
-      when bin_op in ["+", "-", "*", "/", "|", "&"] do
+      when bin_op in ["+", "-", "*", "/", "|", "&", "<", ">", "<=", ">=", "==", "!="] do
     new_left = {:call, {String.to_atom(bin_op), line}, [left, right], :kernel}
     do_to_ast({[new_left | rest], line}, :exp_bin_op)
   end
@@ -36,7 +36,7 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[unary_op, exp], line}, :unary_op)
-      when unary_op in ["!", "+", "-"] do
+      when unary_op in ["!", "-"] do
     {:call, {String.to_atom(unary_op), line}, [exp], :kernel}
   end
 
