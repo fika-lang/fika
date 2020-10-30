@@ -74,3 +74,12 @@ end
 fn unary_minus(a: Int) : Int do
   -a
 end
+
+# Comparison operators
+fn max(a: Int, b: Int) : Int do
+  if a > b do
+    a
+  else
+    b
+  end
+end
