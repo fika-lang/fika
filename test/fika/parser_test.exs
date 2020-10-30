@@ -94,7 +94,7 @@ defmodule Fika.ParserTest do
     # TODO: Test using evaluation instead of AST as soon as == and != support booleans.
     #   Replace the content of this test with something like:
     #     assert {:ok, {true, "Bool", _}} = TE.eval("1 < 1 == 2 > 2")
-    #     assert {:ok, {true, "Bool", _}} = TE.eval("1 <= 1 == 2 >= 2")
+    #     assert {:ok, {true, "Bool", _}} = TE.eval("1 <= 1 != 2 >= 3")
     test "comparison operators == and != have less precedence than <, >, <=, >=" do
       # Just for now, we test the parser for precedence
       assert {
@@ -111,15 +111,15 @@ defmodule Fika.ParserTest do
 
       assert {
                :call,
-               {:==, {1, 0, 16}},
+               {:!=, {1, 0, 16}},
                [
                  {:call, {:<=, {1, 0, 6}}, [{:integer, {1, 0, 1}, 1}, {:integer, {1, 0, 6}, 1}],
                   :kernel},
                  {:call, {:>=, {1, 0, 16}},
-                  [{:integer, {1, 0, 11}, 2}, {:integer, {1, 0, 16}, 2}], :kernel}
+                  [{:integer, {1, 0, 11}, 2}, {:integer, {1, 0, 16}, 3}], :kernel}
                ],
                :kernel
-             } == TestParser.expression!("1 <= 1 == 2 >= 2")
+             } == TestParser.expression!("1 <= 1 != 2 >= 3")
 
       # Then we test == and != actually work
       assert {:ok, {true, "Bool", _}} = TE.eval("1 == 1")
