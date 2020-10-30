@@ -84,6 +84,30 @@ defmodule Fika.Parser.LiteralExps do
     |> label("record")
     |> Helper.to_ast(:record)
 
+  map_key_value =
+    allow_space
+    |> concat(exp)
+    |> concat(allow_space)
+    |> ignore(string("=>"))
+    |> concat(allow_space)
+    |> concat(exp)
+    |> label("map key value pair")
+    |> Helper.to_ast(:key_value)
+
+  map_content =
+    allow_space
+    |> ignore(string(","))
+    |> concat(allow_space)
+    |> concat(map_key_value)
+
+  map =
+    ignore(string("{"))
+    |> concat(map_key_value)
+    |> repeat(map_content)
+    |> optional(ignore(string(",")))
+    |> ignore(string("}"))
+    |> Helper.to_ast(:map)
+
   type_args_list =
     optional(
       allow_space
@@ -115,6 +139,7 @@ defmodule Fika.Parser.LiteralExps do
       exp_list,
       tuple,
       record,
+      map,
       function_ref,
       atom
     ])

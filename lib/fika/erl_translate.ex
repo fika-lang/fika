@@ -137,6 +137,15 @@ defmodule Fika.ErlTranslate do
     {:map, line, k_vs}
   end
 
+  defp translate_exp({:map, {line, _, _}, key_values}) do
+    key_values =
+      Enum.map(key_values, fn {{_, {l, _, _}, _} = k, v} ->
+        {:map_field_assoc, l, translate_exp(k), translate_exp(v)}
+      end)
+
+    {:map, line, key_values}
+  end
+
   defp translate_exp({:function_ref, {line, _, _}, {module, function, arg_types}}) do
     arity = length(arg_types)
 

@@ -67,6 +67,19 @@ defmodule Fika.Parser.Types do
     |> reduce({Enum, :join, []})
     |> label("record type")
 
+  # To parse functions with map return type
+  map_type =
+    string("Map")
+    |> string("(")
+    |> parsec(:type)
+    |> concat(allow_space)
+    |> string(",")
+    |> concat(allow_space)
+    |> parsec(:type)
+    |> concat(allow_space)
+    |> string(")")
+    |> label("map type")
+
   # To parse functions with tuple return type
   type_tuple_element =
     parsec(:type)
@@ -96,6 +109,7 @@ defmodule Fika.Parser.Types do
       |> optional(type_parens),
       atom,
       record_type,
+      map_type,
       tuple_type
     ])
 

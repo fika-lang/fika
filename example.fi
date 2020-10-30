@@ -54,6 +54,11 @@ fn rec : {foo: List(Int)} do
   {foo: [1, 2, 3]}
 end
 
+# Maps are useful for holding data when keys are only know at runtime
+# A map can hold key-value data that grows dynamically but have the same type
+fn map : Map(String, List(Int)) do
+  {"james-bond" => [0, 0, 7]}
+end
 
 # Logical operator - or
 fn or(a: Bool, b: Bool) : Bool do
