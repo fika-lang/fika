@@ -161,7 +161,7 @@ defmodule Fika.TypeChecker do
   end
 
   # Tuple
-  def infer_exp(env, {:tuple, _, %T.Tuple{elements: %T.ArgList{value: exps}}}) do
+  def infer_exp(env, {:tuple, _, exps}) do
     case do_infer_tuple_exps(exps, env) do
       {:ok, exp_types, env} ->
         {:ok, %T.Tuple{elements: %T.ArgList{value: exp_types}}, env}
