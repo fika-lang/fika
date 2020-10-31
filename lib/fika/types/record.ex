@@ -10,7 +10,7 @@ defmodule Fika.Types.Record do
         end)
         |> Enum.join(", ")
 
-      "{" <> str <> "}"
+      "{#{str}}"
     end
   end
 end
