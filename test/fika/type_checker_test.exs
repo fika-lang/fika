@@ -8,8 +8,6 @@ defmodule Fika.TypeCheckerTest do
 
   alias Fika.Types, as: T
 
-  alias Fika.Types.FunctionRef
-
   test "infer type of integer literals" do
     str = "123"
 
@@ -21,9 +19,9 @@ defmodule Fika.TypeCheckerTest do
   test "infer type of atom expressions" do
     str = ":a"
 
-    {:atom, {1, 0, 2}, %T.Atom{value: :a}} = ast = TestParser.expression!(str)
+    {:atom, {1, 0, 2}, :a} = ast = TestParser.expression!(str)
 
-    assert {:ok, %T.Atom{value: :a}, _} = TypeChecker.infer_exp(Env.init(), ast)
+    assert {:ok, :a, _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
   test "infer type for list of atom expressions" do
@@ -31,8 +29,7 @@ defmodule Fika.TypeCheckerTest do
 
     ast = TestParser.expression!(str)
 
-    assert {:ok, %Fika.Types.List{type: %Fika.Types.Atom{value: :a}}, _} =
-             TypeChecker.infer_exp(Env.init(), ast)
+    assert {:ok, %T.List{type: :a}, _} = TypeChecker.infer_exp(Env.init(), ast)
   end
 
   test "infer type of arithmetic expressions" do
@@ -185,7 +182,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.List{type: :Int}, _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.List{type: :Int}, _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "list of integers and floats" do
@@ -202,7 +199,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.List{type: :Float}, _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.List{type: :Float}, _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "List of strings" do
@@ -210,7 +207,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.List{type: :String}, _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.List{type: :String}, _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "List of list of integers" do
@@ -218,8 +215,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.List{type: %Fika.Types.List{type: :Int}}, _} =
-               TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.List{type: %T.List{type: :Int}}, _} = TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "empty list" do
@@ -227,7 +223,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.List{type: :Nothing}, _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.List{type: :Nothing}, _} = TypeChecker.infer_exp(Env.init(), ast)
     end
   end
 
@@ -237,8 +233,8 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.Tuple{elements: %Fika.Types.ArgList{value: [:Int, :Int, :Int]}},
-              _env} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.Tuple{elements: %T.ArgList{value: [:Int, :Int, :Int]}}, _env} =
+               TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "tuple of integers and floats" do
@@ -246,8 +242,8 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.Tuple{elements: %Fika.Types.ArgList{value: [:Int, :Float, :Int]}},
-              _env} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.Tuple{elements: %T.ArgList{value: [:Int, :Float, :Int]}}, _env} =
+               TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "tuple of floats inferred from fn calls" do
@@ -255,8 +251,8 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.Tuple{elements: %Fika.Types.ArgList{value: [:Float, :Float]}},
-              _env} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.Tuple{elements: %T.ArgList{value: [:Float, :Float]}}, _env} =
+               TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "tuple of strings" do
@@ -264,8 +260,8 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.Tuple{elements: %Fika.Types.ArgList{value: [:String, :String]}},
-              _env} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.Tuple{elements: %T.ArgList{value: [:String, :String]}}, _env} =
+               TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "tuple of tuple of mixed types" do
@@ -274,11 +270,11 @@ defmodule Fika.TypeCheckerTest do
       ast = TestParser.expression!(str)
 
       assert {:ok,
-              %Fika.Types.Tuple{
-                elements: %Fika.Types.ArgList{
+              %T.Tuple{
+                elements: %T.ArgList{
                   value: [
-                    %Fika.Types.Tuple{elements: %Fika.Types.ArgList{value: [:Bool, :String]}},
-                    %Fika.Types.Tuple{elements: %Fika.Types.ArgList{value: [:Float, :Int]}}
+                    %T.Tuple{elements: %T.ArgList{value: [:Bool, :String]}},
+                    %T.Tuple{elements: %T.ArgList{value: [:Float, :Int]}}
                   ]
                 }
               }, _env} = TypeChecker.infer_exp(Env.init(), ast)
@@ -291,7 +287,7 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %Fika.Types.Record{fields: [bar: :String, foo: :Int]}, _} =
+      assert {:ok, %T.Record{fields: [bar: :String, foo: :Int]}, _} =
                TypeChecker.infer_exp(Env.init(), ast)
     end
 
@@ -315,8 +311,8 @@ defmodule Fika.TypeCheckerTest do
         |> Env.add_function_type("bar.sum(Int, Int)", :Int)
 
       assert {:ok,
-              %FunctionRef{
-                arg_types: %Fika.Types.ArgList{value: [:Int, :Int]},
+              %T.FunctionRef{
+                arg_types: %T.ArgList{value: [:Int, :Int]},
                 return_type: :Int
               }, _} = TypeChecker.infer_exp(env, ast)
     end
@@ -330,7 +326,7 @@ defmodule Fika.TypeCheckerTest do
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("bar.sum()", :Int)
 
-      assert {:ok, %FunctionRef{arg_types: %Fika.Types.ArgList{}, return_type: :Int}, _} =
+      assert {:ok, %T.FunctionRef{arg_types: %T.ArgList{}, return_type: :Int}, _} =
                TypeChecker.infer_exp(env, ast)
     end
   end

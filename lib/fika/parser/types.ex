@@ -7,6 +7,8 @@ defmodule Fika.Parser.Types do
   identifier_str = parsec({Common, :identifier_str})
   atom = parsec({Common, :atom})
 
+  atom_type = Helper.to_ast(atom, :atom_type)
+
   type_args =
     parsec(:type)
     |> optional(
@@ -96,7 +98,7 @@ defmodule Fika.Parser.Types do
       int_type,
       float_type,
       nothing_type,
-      atom,
+      atom_type,
       function_type,
       list_type,
       record_type,

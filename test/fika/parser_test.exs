@@ -33,7 +33,7 @@ defmodule Fika.ParserTest do
       atom = :foobar
       str = ":#{atom}"
 
-      assert TestParser.expression!(str) == {:atom, {1, 0, 7}, %T.Atom{value: :foobar}}
+      assert TestParser.expression!(str) == {:atom, {1, 0, 7}, :foobar}
     end
   end
 
@@ -294,8 +294,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 12}, %T.Atom{value: :ok}},
-                 [{:integer, {2, 16, 21}, 123}]}}
+                {:foo, [], {:type, {1, 0, 12}, :ok}, [{:integer, {2, 16, 21}, 123}]}}
              ]
     end
 
@@ -641,14 +640,14 @@ defmodule Fika.ParserTest do
       str = ":foo"
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
-      assert result == [{:type, {1, 0, 4}, %T.Atom{value: :foo}}]
+      assert result == [{:type, {1, 0, 4}, :foo}]
     end
 
     test "list of atom" do
       str = "List(:foo)"
 
       {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
-      assert result == [{:type, {1, 0, 10}, %T.List{type: %T.Atom{value: :foo}}}]
+      assert result == [{:type, {1, 0, 10}, %T.List{type: :foo}}]
     end
   end
 

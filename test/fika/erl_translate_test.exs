@@ -143,7 +143,7 @@ defmodule Fika.ErlTranslateTest do
     ast = TestParser.expression!(str)
     result = ErlTranslate.translate_expression(ast)
 
-    assert result == {:atom, 1, %Fika.Types.Atom{value: :foo}}
+    assert result == {:atom, 1, :foo}
   end
 
   test "if-else expression" do
