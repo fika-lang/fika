@@ -33,7 +33,7 @@ defmodule Fika.ParserTest do
       atom = :foobar
       str = ":#{atom}"
 
-      assert TestParser.expression!(str) == {:atom, {1, 0, 7}, :foobar}
+      assert TestParser.expression!(str) == {:atom, {1, 0, 7}, atom}
     end
   end
 
@@ -538,9 +538,7 @@ defmodule Fika.ParserTest do
       """
 
       result = TestParser.expression!(str)
-
-      assert result ==
-               {:tuple, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]}
+      assert result == {:tuple, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]}
     end
 
     test "parses tuple with multiple elements" do
