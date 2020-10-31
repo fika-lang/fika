@@ -190,12 +190,7 @@ defmodule Fika.TypeChecker do
   # Function ref
   def infer_exp(
         env,
-        {:function_ref, _,
-         %T.FunctionRef{
-           module: module,
-           name: function_name,
-           arg_types: arg_types
-         } = func_ref}
+        {:function_ref, _, {module, function_name, arg_types}}
       ) do
     Logger.debug("Inferring type of function: #{function_name}")
 
@@ -217,7 +212,8 @@ defmodule Fika.TypeChecker do
 
     case result do
       {:ok, return_type, env} ->
-        {:ok, %{func_ref | return_type: return_type}, env}
+        type = %T.FunctionRef{return_type: return_type, arg_types: %T.ArgList{value: arg_types}}
+        {:ok, type, env}
 
       error ->
         error
@@ -297,7 +293,7 @@ defmodule Fika.TypeChecker do
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->
-        signature = get_signature(module, exp.name, %T.ArgList{value: type_acc})
+        signature = get_signature(module, exp.name, type_acc)
 
         if module == Env.current_module(env) && !Env.known_function?(env, signature) do
           Logger.debug("Checking unknown function #{signature} in module: #{module}")
@@ -402,7 +398,7 @@ defmodule Fika.TypeChecker do
       end)
 
     module = Env.current_module(env)
-    signature = get_signature(module, name, %T.ArgList{value: types})
+    signature = get_signature(module, name, types)
 
     env = Env.add_function_type(env, signature, type)
 
@@ -415,11 +411,13 @@ defmodule Fika.TypeChecker do
 
   defp signature({:function, _line, {name, args, _type, _exprs}}, module) do
     arg_types = Enum.map(args, fn {_, {:type, _, type}} -> type end)
-    get_signature(module, name, %T.ArgList{value: arg_types})
+    get_signature(module, name, arg_types)
   end
 
   defp get_signature(module, name, arg_types) do
-    "#{module}.#{name}(#{arg_types})"
+    # We use T.ArgList here just because it makes the conversion to string easier and uniform
+    arg_types_str = to_string(%T.ArgList{value: arg_types})
+    "#{module}.#{name}(#{arg_types_str})"
   end
 
   defp check_by_signature(env, signature) do

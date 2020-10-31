@@ -140,20 +140,11 @@ defmodule Fika.Parser.Helper do
   def do_to_ast({ast, line}, :function_ref) do
     case ast do
       [[], function, arg_types] ->
-        {:function_ref, line,
-         %T.FunctionRef{
-           module: nil,
-           name: value_from_identifier(function),
-           arg_types: %T.ArgList{value: arg_types}
-         }}
+        {:function_ref, line, {nil, value_from_identifier(function), arg_types}}
 
       [[module], function, arg_types] ->
         {:function_ref, line,
-         %T.FunctionRef{
-           module: value_from_identifier(module),
-           name: value_from_identifier(function),
-           arg_types: %T.ArgList{value: arg_types}
-         }}
+         {value_from_identifier(module), value_from_identifier(function), arg_types}}
     end
   end
 

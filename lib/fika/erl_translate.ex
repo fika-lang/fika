@@ -1,6 +1,4 @@
 defmodule Fika.ErlTranslate do
-  alias Fika.Types, as: T
-
   def translate({:module, module_name, functions}, file) do
     line = 1
     file = String.to_charlist(file)
@@ -119,10 +117,7 @@ defmodule Fika.ErlTranslate do
     {:map, line, k_vs}
   end
 
-  defp translate_exp(
-         {:function_ref, {line, _, _},
-          %T.FunctionRef{module: module, name: function, arg_types: %{value: arg_types}}}
-       ) do
+  defp translate_exp({:function_ref, {line, _, _}, {module, function, arg_types}}) do
     arity = length(arg_types)
 
     f =

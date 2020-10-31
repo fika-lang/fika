@@ -661,8 +661,7 @@ defmodule Fika.ParserTest do
       result = TestParser.expression!(str)
 
       assert result ==
-               {:function_ref, {1, 0, 4},
-                %T.FunctionRef{module: nil, name: :foo, arg_types: %T.ArgList{value: []}}}
+               {:function_ref, {1, 0, 4}, {nil, :foo, []}}
     end
 
     test "parses a remote function ref with no args" do
@@ -673,13 +672,7 @@ defmodule Fika.ParserTest do
       result = TestParser.expression!(str)
 
       assert result ==
-               {:function_ref, {1, 0, 8},
-                %Fika.Types.FunctionRef{
-                  arg_types: %Fika.Types.ArgList{value: []},
-                  module: :foo,
-                  name: :bar,
-                  return_type: nil
-                }}
+               {:function_ref, {1, 0, 8}, {:foo, :bar, []}}
     end
 
     test "parses a function ref with arg types" do
@@ -690,17 +683,7 @@ defmodule Fika.ParserTest do
       result = TestParser.expression!(str)
 
       assert result ==
-               {:function_ref, {1, 0, 18},
-                %T.FunctionRef{
-                  module: :foo,
-                  name: :bar,
-                  arg_types: %T.ArgList{
-                    value: [
-                      :Int,
-                      :Int
-                    ]
-                  }
-                }}
+               {:function_ref, {1, 0, 18}, {:foo, :bar, [:Int, :Int]}}
     end
   end
 
