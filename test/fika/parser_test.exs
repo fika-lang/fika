@@ -525,12 +525,10 @@ defmodule Fika.ParserTest do
 
       assert result ==
                {:record, {1, 0, 26}, nil,
-                %T.Record{
-                  fields: [
-                    {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, "World"}},
-                    {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
-                  ]
-                }}
+                [
+                  {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, "World"}},
+                  {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
+                ]}
     end
   end
 
