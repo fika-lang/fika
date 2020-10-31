@@ -3,7 +3,7 @@ defmodule Fika.Types.Tuple do
 
   defimpl String.Chars, for: Fika.Types.Tuple do
     def to_string(%{elements: elements}) do
-      "{" <> Kernel.to_string(elements) <> "}"
+      "{#{elements}}"
     end
   end
 end
