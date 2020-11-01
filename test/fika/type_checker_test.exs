@@ -467,7 +467,8 @@ defmodule Fika.TypeCheckerTest do
       ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
-      assert {:ok, %T.Union{types: [:String, :Int]}, _env} = TypeChecker.infer_exp(env, ast)
+      types = MapSet.new([:String, :Int])
+      assert {:ok, %T.Union{types: ^types}, _env} = TypeChecker.infer_exp(env, ast)
     end
 
     test "with multiple expressions in blocks" do
@@ -525,7 +526,8 @@ defmodule Fika.TypeCheckerTest do
         |> Env.init_module_env("test", ast)
         |> Env.add_function_type("test2.bar(String, Int)", :Bool)
 
-      assert {:ok, %T.Union{types: [:ok, :error]}, _} = TypeChecker.infer(function, env)
+      types = MapSet.new([:ok, :error])
+      assert {:ok, %T.Union{types: ^types}, _} = TypeChecker.infer(function, env)
     end
 
     test "when function accepts union types and calls a function ref" do
@@ -538,13 +540,15 @@ defmodule Fika.TypeCheckerTest do
 
       {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
 
+      types = MapSet.new([:error, :ok])
+
       env =
         Env.init()
         |> Env.init_module_env("test", ast)
-        |> Env.add_function_type("test2.bar(String, Int)", %T.Union{types: [:error, :ok]})
+        |> Env.add_function_type("test2.bar(String, Int)", %T.Union{types: types})
 
-      assert {:ok, %T.Union{types: [:error, :ok]}, _env} = TypeChecker.infer(function, env)
-      assert {:ok, %T.Union{types: [:ok, :error]}, _env} = TypeChecker.check(function, env)
+      assert {:ok, %T.Union{types: ^types}, _env} = TypeChecker.infer(function, env)
+      assert {:ok, %T.Union{types: ^types}, _env} = TypeChecker.check(function, env)
     end
 
     test "identifier is not a reference" do

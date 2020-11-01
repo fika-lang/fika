@@ -513,21 +513,26 @@ defmodule Fika.ParserTest do
       end
       """
 
+      arg_union = MapSet.new([:Int, :Float])
+
+      return_union =
+        MapSet.new([
+          :ok,
+          %T.Tuple{elements: [:error, :String]}
+        ])
+
       assert {:ok,
               [
                 {:function, [position: {7, 120, 123}],
                  {:foo,
                   [
                     {{:identifier, {1, 0, 8}, :a},
-                     {:type, {1, 0, 21}, %T.Union{types: [:Int, :Float]}}},
+                     {:type, {1, 0, 21}, %T.Union{types: ^arg_union}}},
                     {{:identifier, {1, 0, 24}, :b}, {:type, {1, 0, 33}, :Nothing}}
                   ],
                   {:type, {1, 0, 59},
                    %T.Union{
-                     types: [
-                       :ok,
-                       %T.Tuple{elements: [:error, :String]}
-                     ]
+                     types: ^return_union
                    }},
                   [
                     {{:if, {6, 114, 119}}, {:boolean, {2, 63, 72}, true},

@@ -34,26 +34,16 @@ defmodule Fika.TypeChecker do
   def check({:function, _line, {_, _, return_type, _}} = function, env) do
     {:type, _line, expected_type} = return_type
 
-    with {:ok, inferred_type, _env} <- infer(function, env),
-         :ok <- check_equality(expected_type, inferred_type) do
-      {:ok, expected_type, env}
-    else
-      {:error, {:different_types, expected_type, inferred_type}} ->
+    case infer(function, env) do
+      {:ok, ^expected_type, _env} ->
+        {:ok, expected_type, env}
+
+      {:ok, inferred_type, _env} ->
         {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
 
       error ->
         error
     end
-  end
-
-  defp check_equality(expected, inferred) when expected == inferred, do: :ok
-
-  defp check_equality(%s1{} = expected, %s2{} = inferred) when T.Union in [s1, s2] do
-    T.Union.check_equality(expected, inferred)
-  end
-
-  defp check_equality(expected, inferred) do
-    {:error, {:different_types, expected, inferred}}
   end
 
   # Given the AST of a function definition, this function infers the
@@ -316,7 +306,8 @@ defmodule Fika.TypeChecker do
       if if_type_val == else_type_val do
         {:ok, if_type_val, env}
       else
-        {:ok, %T.Union{types: [if_type_val, else_type_val]}, env}
+        type = %T.Union{types: MapSet.new(T.Union.flatten_types([if_type_val, else_type_val]))}
+        {:ok, type, env}
       end
     end
   end
