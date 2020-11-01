@@ -83,7 +83,7 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({types, _line}, :union_type) do
-    %T.Union{types: MapSet.new(types)}
+    T.Union.new(types)
   end
 
   def do_to_ast({[{_, _, type}], line}, :type) when is_struct(type) do

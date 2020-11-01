@@ -1,14 +1,24 @@
 defmodule Fika.Types.Union do
-  defstruct [:types]
+  defstruct types: MapSet.new()
 
-  def flatten_types(types) when is_list(types) do
-    Enum.flat_map(types, fn
+  @type t :: %__MODULE__{types: MapSet.t()}
+
+  @spec new(types :: Enumerable.t()) :: t()
+  def new(types) do
+    %__MODULE__{types: flatten_types(types)}
+  end
+
+  @spec flatten_types(types :: Enumerable.t()) :: MapSet.t()
+  def flatten_types(types) do
+    types
+    |> Enum.flat_map(fn
       %__MODULE__{types: t} ->
         flatten_types(t)
 
       t ->
         [t]
     end)
+    |> MapSet.new()
   end
 
   defimpl String.Chars, for: Fika.Types.Union do

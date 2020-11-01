@@ -306,8 +306,7 @@ defmodule Fika.TypeChecker do
       if if_type_val == else_type_val do
         {:ok, if_type_val, env}
       else
-        type = %T.Union{types: MapSet.new(T.Union.flatten_types([if_type_val, else_type_val]))}
-        {:ok, type, env}
+        {:ok, T.Union.new([if_type_val, else_type_val]), env}
       end
     end
   end
