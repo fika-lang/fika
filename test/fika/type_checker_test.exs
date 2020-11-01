@@ -352,7 +352,8 @@ defmodule Fika.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, "Map(String,Int)", _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, %T.Map{key_type: :String, value_type: :Int}, _} =
+               TypeChecker.infer_exp(Env.init(), ast)
     end
 
     test "type check for map with mixed type" do
