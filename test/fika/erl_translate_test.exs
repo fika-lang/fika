@@ -99,6 +99,15 @@ defmodule Fika.ErlTranslateTest do
               ]}
   end
 
+  test "map" do
+    str = ~s({"foo" => 1})
+    ast = TestParser.expression!(str)
+    result = ErlTranslate.translate_expression(ast)
+
+    assert result ==
+             {:map, 1, [{:map_field_assoc, 1, {:string, 1, 'foo'}, {:integer, 1, 1}}]}
+  end
+
   describe "function reference" do
     test "with module" do
       str = "&my_module.foo(Int, Int)"
@@ -163,6 +172,40 @@ defmodule Fika.ErlTranslateTest do
               {:clause, 5, [{:atom, 5, true}], [], [{:string, 2, 'foo'}]},
               {:clause, 5, [{:atom, 5, false}], [], [{:string, 4, 'bar'}]}
             ]} = result
+  end
+
+  describe "string interpolation" do
+    test "replaces with string" do
+      str = ~S"""
+      "#{"Hello"} #{"World"}"
+      """
+
+      ast = TestParser.expression!(str)
+      result = ErlTranslate.translate_expression(ast)
+
+      assert {
+               :bin,
+               1,
+               [
+                 {:bin_element, 1, {:string, 1, 'Hello'}, :default, :default},
+                 {:bin_element, 1, {:string, 1, ' '}, :default, :default},
+                 {:bin_element, 1, {:string, 1, 'World'}, :default, :default}
+               ]
+             } = result
+    end
+
+    test "parses known variable in string interpolation" do
+      str = ~S"""
+      hello = "Hello"
+      "#{hello}"
+      """
+
+      {:ok, [_, interpolation], _, _, _, _} = TestParser.exps(str)
+
+      result = ErlTranslate.translate_expression(interpolation)
+
+      assert {:bin, 2, [{:bin_element, 2, {:var, 2, :hello}, :default, :default}]} = result
+    end
   end
 
   describe "tuple" do

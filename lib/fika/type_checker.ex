@@ -150,9 +150,29 @@ defmodule Fika.TypeChecker do
   end
 
   # String
-  def infer_exp(env, {:string, _line, string}) do
-    Logger.debug("String #{string} found. Type: String")
-    {:ok, :String, env}
+  def infer_exp(env, {:string, _line, string_parts}) do
+    Enum.reduce_while(string_parts, env, fn
+      string, env when is_binary(string) ->
+        Logger.debug("String #{string} found. Type: String")
+        {:cont, {:ok, :String, env}}
+
+      exp, env ->
+        Logger.debug("String interpolation found. Inferring type of expression")
+
+        case infer_exp(env, exp) do
+          {:ok, :String, _env} = result ->
+            {:cont, result}
+
+          {:ok, other_type, _env} ->
+            message =
+              "Expression used in string interpolation expected to be String, got #{other_type}"
+
+            {:halt, {:error, message}}
+
+          error ->
+            {:halt, error}
+        end
+    end)
   end
 
   # List
@@ -184,6 +204,43 @@ defmodule Fika.TypeChecker do
         error ->
           error
       end
+    end
+  end
+
+  # Map
+  # TODO: refactor this when union types are available
+  def infer_exp(env, {:map, _, [kv | rest_kvs]}) do
+    {key, value} = kv
+
+    with {:ok, key_type, env} <- infer_exp(env, key),
+         {:ok, val_type, env} <- infer_exp(env, value) do
+      final_type = "Map(#{key_type},#{val_type})"
+
+      Enum.reduce_while(rest_kvs, {:ok, final_type, env}, fn {k, v}, {:ok, acc_type, acc_env} ->
+        case infer_exp(acc_env, k) do
+          {:ok, ^key_type, env} ->
+            case infer_exp(env, v) do
+              {:ok, ^val_type, env} ->
+                acc = {:ok, acc_type, env}
+                {:cont, acc}
+
+              {:ok, diff_type, _} ->
+                error = {:error, "Expected map value of type #{val_type}, but got #{diff_type}"}
+
+                {:halt, error}
+
+              error ->
+                {:halt, error}
+            end
+
+          {:ok, diff_type, _} ->
+            error = {:error, "Expected map key of type #{key_type}, but got #{diff_type}"}
+            {:halt, error}
+
+          error ->
+            {:halt, error}
+        end
+      end)
     end
   end
 

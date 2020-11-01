@@ -28,7 +28,7 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[left, bin_op, right | rest], line}, :exp_bin_op)
-      when bin_op in ["+", "-", "*", "/", "|", "&"] do
+      when bin_op in ["+", "-", "*", "/", "|", "&", "<", ">", "<=", ">=", "==", "!="] do
     new_left = {:call, {String.to_atom(bin_op), line}, [left, right], :kernel}
     do_to_ast({[new_left | rest], line}, :exp_bin_op)
   end
@@ -38,7 +38,7 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[unary_op, exp], line}, :unary_op)
-      when unary_op in ["!", "+", "-"] do
+      when unary_op in ["!", "-"] do
     {:call, {String.to_atom(unary_op), line}, [exp], :kernel}
   end
 
@@ -116,7 +116,15 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({value, line}, :string) do
-    {:string, line, to_string(value)}
+    str =
+      value
+      |> Enum.chunk_by(&is_tuple/1)
+      |> Enum.flat_map(fn
+        [h | _tail] = interpolations when is_tuple(h) -> interpolations
+        charlist -> [to_string(charlist)]
+      end)
+
+    {:string, line, str}
   end
 
   def do_to_ast({result, line}, :exp_list) do
@@ -125,6 +133,10 @@ defmodule Fika.Parser.Helper do
 
   def do_to_ast({result, line}, :tuple) do
     {:tuple, line, result}
+  end
+
+  def do_to_ast({key_values, line}, :map) do
+    {:map, line, key_values}
   end
 
   def do_to_ast({[k, v], _line}, :key_value) do

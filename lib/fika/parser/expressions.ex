@@ -33,32 +33,76 @@ defmodule Fika.Parser.Expressions do
       factor
     ])
 
-  term =
+  exp_mult_op =
     unary_exp
     |> optional(
       allow_horizontal_space
-      |> choice([string("*"), string("/"), string("&")])
+      |> choice([string("*"), string("/")])
       |> concat(allow_space)
-      |> parsec(:term)
+      |> parsec(:exp_mult_op)
     )
 
-  exp_mult_op = Helper.to_ast(term, :exp_bin_op)
+  exp_mult = Helper.to_ast(exp_mult_op, :exp_bin_op)
 
-  exp_bin_op =
-    exp_mult_op
+  exp_add_op =
+    exp_mult
     |> optional(
       allow_horizontal_space
-      |> choice([string("+"), string("-"), string("|")])
+      |> choice([string("+"), string("-")])
       |> concat(allow_space)
-      |> parsec(:exp_bin_op)
+      |> parsec(:exp_add_op)
     )
 
-  exp_add_op = Helper.to_ast(exp_bin_op, :exp_bin_op)
+  exp_add = Helper.to_ast(exp_add_op, :exp_bin_op)
+
+  exp_rel_op =
+    exp_add
+    |> optional(
+      allow_horizontal_space
+      |> choice([string("<="), string(">="), string("<"), string(">")])
+      |> concat(allow_space)
+      |> parsec(:exp_rel_op)
+    )
+
+  exp_rel = Helper.to_ast(exp_rel_op, :exp_bin_op)
+
+  exp_comp_op =
+    exp_rel
+    |> optional(
+      allow_horizontal_space
+      |> choice([string("=="), string("!=")])
+      |> concat(allow_space)
+      |> parsec(:exp_comp_op)
+    )
+
+  exp_comp = Helper.to_ast(exp_comp_op, :exp_bin_op)
+
+  exp_and_op =
+    exp_comp
+    |> optional(
+      allow_horizontal_space
+      |> concat(string("&"))
+      |> concat(allow_space)
+      |> parsec(:exp_and_op)
+    )
+
+  exp_and = Helper.to_ast(exp_and_op, :exp_bin_op)
+
+  exp_or_op =
+    exp_and
+    |> optional(
+      allow_horizontal_space
+      |> concat(string("|"))
+      |> concat(allow_space)
+      |> parsec(:exp_or_op)
+    )
+
+  exp_or = Helper.to_ast(exp_or_op, :exp_bin_op)
 
   exp =
     choice([
       exp_match,
-      exp_add_op
+      exp_or
     ])
     |> label("expression")
 
@@ -74,8 +118,12 @@ defmodule Fika.Parser.Expressions do
       |> parsec(:exps)
     )
 
-  defcombinatorp :exp_bin_op, exp_bin_op
-  defcombinatorp :term, term
+  defcombinatorp :exp_mult_op, exp_mult_op
+  defcombinatorp :exp_add_op, exp_add_op
+  defcombinatorp :exp_rel_op, exp_rel_op
+  defcombinatorp :exp_comp_op, exp_comp_op
+  defcombinatorp :exp_and_op, exp_and_op
+  defcombinatorp :exp_or_op, exp_or_op
   defcombinator :factor, factor
   defcombinator :exp, exp
   defcombinator :exps, exps

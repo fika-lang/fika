@@ -168,12 +168,60 @@ defmodule Fika.TypeCheckerTest do
     assert {:ok, :Float, _} = TypeChecker.check(function, env)
   end
 
-  test "string" do
-    str = "\"Hello world\""
+  describe "string" do
+    test "string" do
+      str = "\"Hello world\""
 
-    ast = TestParser.expression!(str)
+      ast = TestParser.expression!(str)
 
-    assert {:ok, :String, _} = TypeChecker.infer_exp(Env.init(), ast)
+      assert {:ok, :String, _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "parses string inside interpolation" do
+      str = ~S"""
+      "#{"test"}"
+      """
+
+      ast = TestParser.expression!(str)
+
+      assert {:ok, :String, _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "returns error when unknown variable in string interpolation" do
+      str = ~S"""
+      "#{x}"
+      """
+
+      ast = TestParser.expression!(str)
+
+      assert {:error, "Unknown variable: x"} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "parses known variable in string interpolation" do
+      str = ~S"""
+      hello = "Hello"
+      "#{hello}"
+      """
+
+      {:ok, ast, _, _, _, _} = TestParser.exps(str)
+
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      assert {:ok, :String, _} = TypeChecker.infer_block(env, ast)
+    end
+
+    test "accepts only strings in interpolation" do
+      str = ~S"""
+      "#{1}"
+      """
+
+      ast = TestParser.expression!(str)
+
+      assert {
+               :error,
+               "Expression used in string interpolation expected to be String, got Int"
+             } = TypeChecker.infer_exp(Env.init(), ast)
+    end
   end
 
   describe "lists" do
@@ -295,6 +343,32 @@ defmodule Fika.TypeCheckerTest do
       ast = TestParser.expression!(str)
 
       assert {:error, "Unknown variable: x"} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+  end
+
+  describe "map" do
+    test "type check for a valid expression" do
+      str = ~s({"foo" => 123, "bar" => 345})
+
+      ast = TestParser.expression!(str)
+
+      assert {:ok, "Map(String,Int)", _} = TypeChecker.infer_exp(Env.init(), ast)
+    end
+
+    test "type check for map with mixed type" do
+      str = ~s({1 => [1, 2], "foo" => 345})
+
+      ast = TestParser.expression!(str)
+
+      assert {:error, "Expected map key of type Int, but got String"} =
+               TypeChecker.infer_exp(Env.init(), ast)
+
+      str = ~s({"foo" => [1, 2], "bar" => 345})
+
+      ast = TestParser.expression!(str)
+
+      assert {:error, "Expected map value of type List(Int), but got Int"} =
+               TypeChecker.infer_exp(Env.init(), ast)
     end
   end
 

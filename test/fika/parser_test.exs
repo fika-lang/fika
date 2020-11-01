@@ -1,5 +1,7 @@
 defmodule Fika.ParserTest do
   use ExUnit.Case
+  alias TestEvaluator, as: TE
+  alias TestParser, as: TP
 
   alias Fika.Types, as: T
 
@@ -8,23 +10,20 @@ defmodule Fika.ParserTest do
     123
     """
 
-    result = TestParser.expression!(str)
-    assert result == {:integer, {1, 0, 3}, 123}
+    assert {:integer, {1, 0, 3}, 123} == TestParser.expression!(str)
   end
 
   describe "boolean" do
     test "true" do
       str = "true"
 
-      result = TestParser.expression!(str)
-      assert result == {:boolean, {1, 0, 4}, true}
+      assert {:boolean, {1, 0, 4}, true} == TestParser.expression!(str)
     end
 
     test "false" do
       str = "false"
 
-      result = TestParser.expression!(str)
-      assert result == {:boolean, {1, 0, 5}, false}
+      assert {:boolean, {1, 0, 5}, false} == TestParser.expression!(str)
     end
   end
 
@@ -33,7 +32,182 @@ defmodule Fika.ParserTest do
       atom = :foobar
       str = ":#{atom}"
 
-      assert TestParser.expression!(str) == {:atom, {1, 0, 7}, atom}
+      assert {:atom, {1, 0, 7}, atom} == TestParser.expression!(str)
+    end
+  end
+
+  describe "operators precedence" do
+    # Table of all Fika operators, from higher to lower precedence.
+    # Note that we respect Elixir operators precedence.
+    #
+    # Operator    Associativity   Description                               TODO
+    # ----------------------------------------------------------------------------------------
+    # .           Left            Dot operator                              Parser refactoring
+    # ! -         Unary           Boolean not and arithmetic unary minus
+    # * /         Left            Arithmetic binary mult and div
+    # + -         Left            Arithmetic binary plus and minus
+    # < > <= >=   Left            Comparison
+    # == !=       Left            Comparison
+    # &           Left            Boolean AND
+    # |           Left            Boolean OR
+    # =           Right           Match operator                            Parser refactoring
+    # &           Unary           Capture operator                          Parser refactoring
+
+    # These operators cannot be combined to form a valid expression but we test the parser anyway
+    test "arithmetic binary * and / have less precedence than unary !" do
+      assert {
+               :call,
+               {:*, {1, 0, 14}},
+               [
+                 {:integer, {1, 0, 1}, 1},
+                 {:call, {:!, {1, 0, 14}}, [{:identifier, {1, 0, 14}, :something}], :kernel}
+               ],
+               :kernel
+             } == TestParser.expression!("1 * !something")
+
+      assert {
+               :call,
+               {:/, {1, 0, 14}},
+               [
+                 {:call, {:!, {1, 0, 10}}, [{:identifier, {1, 0, 10}, :something}], :kernel},
+                 {:integer, {1, 0, 14}, 2}
+               ],
+               :kernel
+             } == TestParser.expression!("!something / 2")
+    end
+
+    test "arithmetic binary * and / have less precedence than unary -" do
+      assert {:ok, {-2, "Int", _}} = TE.eval("1 * -2")
+      assert {:ok, {2.0, "Float", _}} = TE.eval("-10 / -5")
+    end
+
+    test "arithmetic binary + and - have less precedence than * and /" do
+      assert {:ok, {12.5, "Float", _}} = TE.eval("1 / 2 + 3 * 4")
+      assert {:ok, {3.0, "Float", _}} = TE.eval("1 * 5 - 4 / 2")
+    end
+
+    test "comparison operators <, >, <= and >= have less precedence than arithmetic + and -" do
+      assert {:ok, {false, "Bool", _}} = TE.eval("1 + 2 < 4 - 1")
+      assert {:ok, {true, "Bool", _}} = TE.eval("1 + 2 <= 4 - 1")
+      assert {:ok, {false, "Bool", _}} = TE.eval("5 - 2 > 2 + 1")
+      assert {:ok, {true, "Bool", _}} = TE.eval("5 - 2 >= 2 + 1")
+    end
+
+    # TODO: Test using evaluation instead of AST as soon as == and != support booleans.
+    #   Replace the content of this test with something like:
+    #     assert {:ok, {true, "Bool", _}} = TE.eval("1 < 1 == 2 > 2")
+    #     assert {:ok, {true, "Bool", _}} = TE.eval("1 <= 1 != 2 >= 3")
+    test "comparison operators == and != have less precedence than <, >, <=, >=" do
+      # Just for now, we test the parser for precedence
+      assert {
+               :call,
+               {:==, {1, 0, 14}},
+               [
+                 {:call, {:<, {1, 0, 5}}, [{:integer, {1, 0, 1}, 1}, {:integer, {1, 0, 5}, 1}],
+                  :kernel},
+                 {:call, {:>, {1, 0, 14}}, [{:integer, {1, 0, 10}, 2}, {:integer, {1, 0, 14}, 2}],
+                  :kernel}
+               ],
+               :kernel
+             } == TestParser.expression!("1 < 1 == 2 > 2")
+
+      assert {
+               :call,
+               {:!=, {1, 0, 16}},
+               [
+                 {:call, {:<=, {1, 0, 6}}, [{:integer, {1, 0, 1}, 1}, {:integer, {1, 0, 6}, 1}],
+                  :kernel},
+                 {:call, {:>=, {1, 0, 16}},
+                  [{:integer, {1, 0, 11}, 2}, {:integer, {1, 0, 16}, 3}], :kernel}
+               ],
+               :kernel
+             } == TestParser.expression!("1 <= 1 != 2 >= 3")
+
+      # Then we test == and != actually work
+      assert {:ok, {true, "Bool", _}} = TE.eval("1 == 1")
+      assert {:ok, {false, "Bool", _}} = TE.eval("1 != 1")
+    end
+
+    test "boolean & has less precedence than == and !=" do
+      assert {:ok, {true, "Bool", _}} = TE.eval("1 == 1 & 1 != 2")
+      assert {:ok, {false, "Bool", _}} = TE.eval("2 == 1 & 1 != 2")
+    end
+
+    test "boolean | has less precedence than &" do
+      assert {:ok, {true, "Bool", _}} = TE.eval("true | true & false")
+      assert {:ok, {true, "Bool", _}} = TE.eval("false & :true | true")
+    end
+
+    test "expressions in parenthesis have higher precedence than anything else" do
+      assert {:ok, {1, "Int", _}} = TE.eval("-(-1)")
+      assert {:ok, {6, "Int", _}} = TE.eval("(3 - 1) * (1 + 2)")
+      assert {:ok, {true, "Bool", _}} = TE.eval("2 >= (1 + 1)")
+      assert {:ok, {true, "Bool", _}} = TE.eval("true & (false | true)")
+    end
+  end
+
+  describe "operators with spaces" do
+    # Unary operators' operand doesn't necessarily have to reside on the same line of the operator
+    test "both vertical and horizontal space allowed between unary operators and their operand" do
+      assert {:ok, {false, "Bool", _}} = TE.eval("!#{TP.space()}true")
+      assert {:ok, {-1, "Int", _}} = TE.eval("-#{TP.space()}1")
+    end
+
+    # Horizontal space allowed between first operand and binary operator
+    # Both vertical and horizontal space allowed between binary operator and second operand
+    test "allowed spaces between binary operators and their operands" do
+      assert {:ok, {12, "Int", _}} = TE.eval("3#{TP.h_space()}*#{TP.space()}4")
+      assert {:ok, {2.0, "Float", _}} = TE.eval("4#{TP.h_space()}/#{TP.space()}2")
+      assert {:ok, {7, "Int", _}} = TE.eval("3#{TP.h_space()}+#{TP.space()}4")
+      assert {:ok, {1, "Int", _}} = TE.eval("3#{TP.h_space()}-#{TP.space()}2")
+      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}<#{TP.space()}3")
+      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}<=#{TP.space()}3")
+      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}>#{TP.space()}1")
+      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}>=#{TP.space()}1")
+      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}==#{TP.space()}2")
+      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}!=#{TP.space()}1")
+      assert {:ok, {true, "Bool", _}} = TE.eval("true#{TP.h_space()}&#{TP.space()}true")
+      assert {:ok, {true, "Bool", _}} = TE.eval("false#{TP.h_space()}|#{TP.space()}true")
+    end
+
+    # Vertical space forbidden between first operand and binary operator
+    test "forbidden vertical space between first operand and binary operator" do
+      msg = "expected end of string"
+
+      assert {:error, ^msg, _, _, _, _} = TE.eval("3#{TP.space()}*#{TP.space()}4")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("3#{TP.space()}/#{TP.space()}2")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("3#{TP.space()}+#{TP.space()}4")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("3#{TP.space()}-#{TP.space()}2")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("2#{TP.space()}<#{TP.space()}3")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("2#{TP.space()}<=#{TP.space()}3")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("2#{TP.space()}>#{TP.space()}1")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("2#{TP.space()}>=#{TP.space()}1")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("2#{TP.space()}==#{TP.space()}2")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("2#{TP.space()}!=#{TP.space()}1")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("true#{TP.space()}&#{TP.space()}true")
+      assert {:error, ^msg, _, _, _, _} = TE.eval("false#{TP.space()}|#{TP.space()}true")
+    end
+
+    # Minus is the only operator which is both unary and binary,
+    # therefore we make sure is parsed as unary when it appears on new line
+    # (actually, also & is both unary and binary, but needs parser refactoring first)
+    test "minus operator is parsed as unary (not binary) when on new line" do
+      str = """
+      fn foo do
+        x
+        - y
+      end
+      """
+
+      assert {
+               :function,
+               [position: {4, 20, 23}],
+               {:foo, [], {:type, {1, 0, 6}, "Nothing"},
+                [
+                  {:identifier, {2, 10, 13}, :x},
+                  {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
+                ]}
+             } == TestParser.function_def!(str)
     end
   end
 
@@ -43,9 +217,7 @@ defmodule Fika.ParserTest do
       2 + 3 * 4
       """
 
-      result = TestParser.expression!(str)
-
-      assert result == {
+      assert {
                :call,
                {:+, {1, 0, 9}},
                [
@@ -54,7 +226,7 @@ defmodule Fika.ParserTest do
                   :kernel}
                ],
                :kernel
-             }
+             } == TestParser.expression!(str)
     end
 
     test "unary -" do
@@ -148,9 +320,7 @@ defmodule Fika.ParserTest do
       10 + 20 * 30 - 40 / 50
       """
 
-      result = TestParser.expression!(str)
-
-      assert result == {
+      assert {
                :call,
                {:-, {1, 0, 22}},
                [
@@ -164,7 +334,7 @@ defmodule Fika.ParserTest do
                   [{:integer, {1, 0, 17}, 40}, {:integer, {1, 0, 22}, 50}], :kernel}
                ],
                :kernel
-             }
+             } == TestParser.expression!(str)
     end
 
     test "grouping using parens" do
@@ -172,9 +342,7 @@ defmodule Fika.ParserTest do
       (10 + 20) * (30 - 40) / 50
       """
 
-      result = TestParser.expression!(str)
-
-      assert result == {
+      assert {
                :call,
                {:/, {1, 0, 26}},
                [
@@ -192,7 +360,7 @@ defmodule Fika.ParserTest do
                  {:integer, {1, 0, 26}, 50}
                ],
                :kernel
-             }
+             } == TestParser.expression!(str)
     end
   end
 
@@ -202,8 +370,7 @@ defmodule Fika.ParserTest do
       my_func()
       """
 
-      result = TestParser.expression!(str)
-      assert result == {:call, {:my_func, {1, 0, 9}}, [], nil}
+      assert {:call, {:my_func, {1, 0, 9}}, [], nil} == TestParser.expression!(str)
     end
 
     test "local function call with args" do
@@ -211,14 +378,12 @@ defmodule Fika.ParserTest do
       my_func(x, 123)
       """
 
-      result = TestParser.expression!(str)
-
       args = [
         {:identifier, {1, 0, 9}, :x},
         {:integer, {1, 0, 14}, 123}
       ]
 
-      assert result == {:call, {:my_func, {1, 0, 15}}, args, nil}
+      assert {:call, {:my_func, {1, 0, 15}}, args, nil} == TestParser.expression!(str)
     end
 
     test "remote function call with args" do
@@ -226,14 +391,12 @@ defmodule Fika.ParserTest do
       my_module.my_func(x, 123)
       """
 
-      result = TestParser.expression!(str)
-
       args = [
         {:identifier, {1, 0, 19}, :x},
         {:integer, {1, 0, 24}, 123}
       ]
 
-      assert result == {:call, {:my_func, {1, 0, 25}}, args, :my_module}
+      assert {:call, {:my_func, {1, 0, 25}}, args, :my_module} == TestParser.expression!(str)
     end
 
     test "function calls with another function call as arg" do
@@ -241,14 +404,12 @@ defmodule Fika.ParserTest do
       foo(x, bar(y))
       """
 
-      result = TestParser.expression!(str)
-
       args = [
         {:identifier, {1, 0, 5}, :x},
         {:call, {:bar, {1, 0, 13}}, [{:identifier, {1, 0, 12}, :y}], nil}
       ]
 
-      assert result == {:call, {:foo, {1, 0, 14}}, args, nil}
+      assert {:call, {:foo, {1, 0, 14}}, args, nil} == TestParser.expression!(str)
     end
   end
 
@@ -379,10 +540,8 @@ defmodule Fika.ParserTest do
       x = 1
       """
 
-      result = TestParser.expression!(str)
-
-      assert result ==
-               {{:=, {1, 0, 5}}, {:identifier, {1, 0, 1}, :x}, {:integer, {1, 0, 5}, 1}}
+      assert {{:=, {1, 0, 5}}, {:identifier, {1, 0, 1}, :x}, {:integer, {1, 0, 5}, 1}} ==
+               TestParser.expression!(str)
     end
 
     test "multiple match" do
@@ -390,18 +549,15 @@ defmodule Fika.ParserTest do
       x = y = 1
       """
 
-      result = TestParser.expression!(str)
-
-      assert result ==
+      assert {
+               {:=, {1, 0, 9}},
+               {:identifier, {1, 0, 1}, :x},
                {
                  {:=, {1, 0, 9}},
-                 {:identifier, {1, 0, 1}, :x},
-                 {
-                   {:=, {1, 0, 9}},
-                   {:identifier, {1, 0, 5}, :y},
-                   {:integer, {1, 0, 9}, 1}
-                 }
+                 {:identifier, {1, 0, 5}, :y},
+                 {:integer, {1, 0, 9}, 1}
                }
+             } == TestParser.expression!(str)
     end
 
     test "errors when non match exps come on the left of the match" do
@@ -417,18 +573,15 @@ defmodule Fika.ParserTest do
       1 + (x = 2)
       """
 
-      result = TestParser.expression!(str)
-
-      assert result ==
-               {:call, {:+, {1, 0, 11}},
-                [
-                  {:integer, {1, 0, 1}, 1},
-                  {
-                    {:=, {1, 0, 10}},
-                    {:identifier, {1, 0, 6}, :x},
-                    {:integer, {1, 0, 10}, 2}
-                  }
-                ], :kernel}
+      assert {:call, {:+, {1, 0, 11}},
+              [
+                {:integer, {1, 0, 1}, 1},
+                {
+                  {:=, {1, 0, 10}},
+                  {:identifier, {1, 0, 6}, :x},
+                  {:integer, {1, 0, 10}, 2}
+                }
+              ], :kernel} == TestParser.expression!(str)
     end
   end
 
@@ -438,9 +591,7 @@ defmodule Fika.ParserTest do
       "Hello world"
       """
 
-      result = TestParser.expression!(str)
-
-      assert result == {:string, {1, 0, 13}, "Hello world"}
+      assert {:string, {1, 0, 13}, ["Hello world"]} == TestParser.expression!(str)
     end
 
     test "parses a string with escaped double quotes" do
@@ -448,9 +599,32 @@ defmodule Fika.ParserTest do
       "Hello \\\"world\\\""
       """
 
-      result = TestParser.expression!(str)
+      assert {:string, {1, 0, 17}, ["Hello \\\"world\\\""]} == TestParser.expression!(str)
+    end
 
-      assert result == {:string, {1, 0, 17}, "Hello \\\"world\\\""}
+    test "parses interpolated string" do
+      str = ~S"""
+      "Hello #{world}"
+      """
+
+      assert {:string, {1, 0, 16}, ["Hello ", {:identifier, {1, 0, 14}, :world}]} ==
+               TestParser.expression!(str)
+    end
+
+    test "parses multiple interpolations" do
+      str = ~S"""
+      "#{hello} #{"World"}"
+      """
+
+      assert {
+               :string,
+               {1, 0, 21},
+               [
+                 {:identifier, {1, 0, 8}, :hello},
+                 " ",
+                 {:string, {1, 0, 19}, ["World"]}
+               ]
+             } == TestParser.expression!(str)
     end
   end
 
@@ -460,8 +634,7 @@ defmodule Fika.ParserTest do
       []
       """
 
-      result = TestParser.expression!(str)
-      assert result == {:list, {1, 0, 2}, []}
+      assert {:list, {1, 0, 2}, []} == TestParser.expression!(str)
     end
 
     test "parses list with one element" do
@@ -469,8 +642,7 @@ defmodule Fika.ParserTest do
       [1]
       """
 
-      result = TestParser.expression!(str)
-      assert result == {:list, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]}
+      assert {:list, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]} == TestParser.expression!(str)
     end
 
     test "parses list with multiple elements" do
@@ -478,15 +650,12 @@ defmodule Fika.ParserTest do
       [1, 2, 3]
       """
 
-      result = TestParser.expression!(str)
-
-      assert result ==
-               {:list, {1, 0, 9},
-                [
-                  {:integer, {1, 0, 2}, 1},
-                  {:integer, {1, 0, 5}, 2},
-                  {:integer, {1, 0, 8}, 3}
-                ]}
+      assert {:list, {1, 0, 9},
+              [
+                {:integer, {1, 0, 2}, 1},
+                {:integer, {1, 0, 5}, 2},
+                {:integer, {1, 0, 8}, 3}
+              ]} == TestParser.expression!(str)
     end
 
     test "parses list with match exps" do
@@ -494,15 +663,12 @@ defmodule Fika.ParserTest do
       [a = 1, 2, 3]
       """
 
-      result = TestParser.expression!(str)
-
-      assert result ==
-               {:list, {1, 0, 13},
-                [
-                  {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
-                  {:integer, {1, 0, 9}, 2},
-                  {:integer, {1, 0, 12}, 3}
-                ]}
+      assert {:list, {1, 0, 13},
+              [
+                {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
+                {:integer, {1, 0, 9}, 2},
+                {:integer, {1, 0, 12}, 3}
+              ]} == TestParser.expression!(str)
     end
   end
 
@@ -520,14 +686,106 @@ defmodule Fika.ParserTest do
       {hello: "World", foo: 123}
       """
 
+      assert {:record, {1, 0, 26}, nil,
+              [
+                {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, ["World"]}},
+                {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
+              ]} == TestParser.expression!(str)
+    end
+  end
+
+  describe "map" do
+    test "parses map with key values" do
+      str = """
+      {"a" => 1}
+      """
+
       result = TestParser.expression!(str)
 
       assert result ==
-               {:record, {1, 0, 26}, nil,
+               {:map, {1, 0, 10}, [{{:string, {1, 0, 4}, ["a"]}, {:integer, {1, 0, 9}, 1}}]}
+    end
+
+    test "parses map with complex expression" do
+      str = """
+      {[1+1, 2] => {"1" => {1, 2, 3}}}
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {
+                 :map,
+                 {1, 0, 32},
+                 [
+                   {
+                     {:list, {1, 0, 9},
+                      [
+                        {:call, {:+, {1, 0, 5}},
+                         [{:integer, {1, 0, 3}, 1}, {:integer, {1, 0, 5}, 1}], :kernel},
+                        {:integer, {1, 0, 8}, 2}
+                      ]},
+                     {:map, {1, 0, 31},
+                      [
+                        {{:string, {1, 0, 17}, ["1"]},
+                         {:tuple, {1, 0, 30},
+                          [
+                            {:integer, {1, 0, 23}, 1},
+                            {:integer, {1, 0, 26}, 2},
+                            {:integer, {1, 0, 29}, 3}
+                          ]}}
+                      ]}
+                   }
+                 ]
+               }
+
+      str = """
+      {true & false => false}
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {:map, {1, 0, 23},
                 [
-                  {{:identifier, {1, 0, 6}, :hello}, {:string, {1, 0, 15}, "World"}},
-                  {{:identifier, {1, 0, 20}, :foo}, {:integer, {1, 0, 25}, 123}}
+                  {{:call, {:&, {1, 0, 13}},
+                    [{:boolean, {1, 0, 5}, true}, {:boolean, {1, 0, 13}, false}], :kernel},
+                   {:boolean, {1, 0, 22}, false}}
                 ]}
+    end
+
+    test "parses map with function as key-values" do
+      str = """
+      {foo(1, 2) => bar(true)}
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {:map, {1, 0, 24},
+                [
+                  {{:call, {:foo, {1, 0, 10}},
+                    [{:integer, {1, 0, 6}, 1}, {:integer, {1, 0, 9}, 2}], nil},
+                   {:call, {:bar, {1, 0, 23}}, [{:boolean, {1, 0, 22}, true}], nil}}
+                ]}
+
+      str = """
+      {&foo.bar => jar(true)}
+      """
+
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {
+                 :map,
+                 {1, 0, 23},
+                 [
+                   {
+                     {:function_ref, {1, 0, 9}, {:foo, :bar, []}},
+                     {:call, {:jar, {1, 0, 22}}, [{:boolean, {1, 0, 21}, true}], nil}
+                   }
+                 ]
+               }
     end
   end
 
@@ -537,8 +795,7 @@ defmodule Fika.ParserTest do
       {1}
       """
 
-      result = TestParser.expression!(str)
-      assert result == {:tuple, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]}
+      assert {:tuple, {1, 0, 3}, [{:integer, {1, 0, 2}, 1}]} == TestParser.expression!(str)
     end
 
     test "parses tuple with multiple elements" do
@@ -546,15 +803,12 @@ defmodule Fika.ParserTest do
       {1, 2, 3}
       """
 
-      result = TestParser.expression!(str)
-
-      assert result ==
-               {:tuple, {1, 0, 9},
-                [
-                  {:integer, {1, 0, 2}, 1},
-                  {:integer, {1, 0, 5}, 2},
-                  {:integer, {1, 0, 8}, 3}
-                ]}
+      assert {:tuple, {1, 0, 9},
+              [
+                {:integer, {1, 0, 2}, 1},
+                {:integer, {1, 0, 5}, 2},
+                {:integer, {1, 0, 8}, 3}
+              ]} == TestParser.expression!(str)
     end
 
     test "parses tuple with match exps" do
@@ -562,15 +816,12 @@ defmodule Fika.ParserTest do
       {a = 1, 2, 3}
       """
 
-      result = TestParser.expression!(str)
-
-      assert result ==
-               {:tuple, {1, 0, 13},
-                [
-                  {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
-                  {:integer, {1, 0, 9}, 2},
-                  {:integer, {1, 0, 12}, 3}
-                ]}
+      assert {:tuple, {1, 0, 13},
+              [
+                {{:=, {1, 0, 6}}, {:identifier, {1, 0, 2}, :a}, {:integer, {1, 0, 6}, 1}},
+                {:integer, {1, 0, 9}, 2},
+                {:integer, {1, 0, 12}, 3}
+              ]} == TestParser.expression!(str)
     end
   end
 
@@ -630,8 +881,7 @@ defmodule Fika.ParserTest do
     test "record type" do
       str = "{foo: Int, bar: String}"
 
-      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
-      assert result == [{:type, {1, 0, 23}, "{foo:Int,bar:String}"}]
+      assert {:type, {1, 0, 23}, "{foo:Int,bar:String}"} == TestParser.type_str!(str)
     end
 
     test "atom type" do
@@ -723,7 +973,7 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:error, _error, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+      assert {:error, _, _, _, _, _} = TestParser.function_def(str)
     end
 
     test "Strings can have # in them" do
@@ -745,19 +995,18 @@ defmodule Fika.ParserTest do
   describe "call using function reference" do
     test "using identifier" do
       str = "foo.(x, y)"
-      result = TestParser.expression!(str)
 
       args = [
         {:identifier, {1, 0, 6}, :x},
         {:identifier, {1, 0, 9}, :y}
       ]
 
-      assert result == {:call, {{:identifier, {1, 0, 3}, :foo}, {1, 0, 10}}, args}
+      assert {:call, {{:identifier, {1, 0, 3}, :foo}, {1, 0, 10}}, args} ==
+               TestParser.expression!(str)
     end
 
     test "using function call" do
       str = "foo().(x, y)"
-      result = TestParser.expression!(str)
 
       args = [
         {:identifier, {1, 0, 8}, :x},
@@ -765,11 +1014,13 @@ defmodule Fika.ParserTest do
       ]
 
       exp = {:call, {:foo, {1, 0, 5}}, [], nil}
-      assert result == {:call, {exp, {1, 0, 12}}, args}
+
+      assert {:call, {exp, {1, 0, 12}}, args} == TestParser.expression!(str)
     end
 
     test "using literal expression fails" do
       str = "123.(x, y)"
+
       assert {:error, _, _, _, _, _} = TestParser.expression(str)
     end
   end
@@ -792,18 +1043,16 @@ defmodule Fika.ParserTest do
 
     test "simple usage" do
       str = "false | true"
-      result = TestParser.expression!(str)
 
       assert {:call, {:|, _},
               [
                 {:boolean, _, false},
                 {:boolean, _, true}
-              ], :kernel} = result
+              ], :kernel} = TestParser.expression!(str)
     end
 
     test "more complex expressions" do
       str = "true & (false | :true)"
-      result = TestParser.expression!(str)
 
       assert {
                :call,
@@ -813,13 +1062,14 @@ defmodule Fika.ParserTest do
                  {:call, {:|, _}, [{:boolean, _, false}, {:boolean, _, true}], :kernel}
                ],
                :kernel
-             } = result
+             } = TestParser.expression!(str)
     end
   end
 
   describe "expression delimiter" do
     test "cannot have two assignments in the same line" do
       str = "x = 1 y = 2"
+
       assert {:error, _, _, _, _, _} = TestParser.exps(str)
     end
 
