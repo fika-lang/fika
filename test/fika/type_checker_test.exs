@@ -505,9 +505,9 @@ defmodule Fika.TypeCheckerTest do
       assert {:ok, :Bool, _} = TypeChecker.infer(function, env)
     end
 
-    test "when function accepts union types" do
+    test "when function accepts union types and has if-else clause" do
       str = """
-      fn foo(x: String, y: Int) : Bool do
+      fn foo(x: String, y: Int) : :ok | :error do
         f = &test2.bar(String, Int)
         if f.(x, y) do
           :ok
@@ -525,6 +525,25 @@ defmodule Fika.TypeCheckerTest do
         |> Env.add_function_type("test2.bar(String, Int)", :Bool)
 
       assert {:ok, %T.Union{types: [:ok, :error]}, _} = TypeChecker.infer(function, env)
+    end
+
+    test "when function accepts union types and calls a function ref" do
+      str = """
+      fn foo(x: String, y: Int) : :ok | :error do
+        f = &test2.bar(String, Int)
+        f.(x, y)
+      end
+      """
+
+      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+
+      env =
+        Env.init()
+        |> Env.init_module_env("test", ast)
+        |> Env.add_function_type("test2.bar(String, Int)", %T.Union{types: [:error, :ok]})
+
+      assert {:ok, %T.Union{types: [:error, :ok]}, _env} = TypeChecker.infer(function, env)
+      assert {:ok, %T.Union{types: [:ok, :error]}, _env} = TypeChecker.check(function, env)
     end
 
     test "identifier is not a reference" do
