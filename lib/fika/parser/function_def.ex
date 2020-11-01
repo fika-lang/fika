@@ -24,12 +24,13 @@ defmodule Fika.Parser.FunctionDef do
 
   args =
     arg
-    |> optional(
+    |> repeat(
       allow_space
       |> ignore(string(","))
       |> concat(allow_space)
-      |> parsec(:args)
+      |> concat(arg)
     )
+    |> map({IO, :inspect, []})
 
   arg_parens =
     choice([

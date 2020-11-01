@@ -49,6 +49,7 @@ defmodule Fika.Parser.NonLiteralExps do
     ])
     |> label("function call")
 
+  # TO-DO: accept nested if-else expressions
   exp_if_else =
     ignore(string("if"))
     |> concat(require_space)

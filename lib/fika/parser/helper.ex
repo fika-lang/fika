@@ -94,7 +94,8 @@ defmodule Fika.Parser.Helper do
     {:type, line, type}
   end
 
-  def do_to_ast({[identifier, type], _line}, :arg) do
+  def do_to_ast({[identifier, type] = arg, _line}, :arg) do
+    IO.inspect(arg, label: "arg")
     {identifier, type}
   end
 

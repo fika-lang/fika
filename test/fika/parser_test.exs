@@ -504,7 +504,7 @@ defmodule Fika.ParserTest do
 
     test "with union types" do
       code = """
-      fn foo(a: Int | Float) : :ok | {:error, String} do
+      fn foo(a: Int | Float, b: Nothing) : :ok | {:error, String} do
         if true do
           :ok
         else
@@ -515,13 +515,14 @@ defmodule Fika.ParserTest do
 
       assert {:ok,
               [
-                {:function, [position: {7, 108, 111}],
+                {:function, [position: {7, 120, 123}],
                  {:foo,
                   [
                     {{:identifier, {1, 0, 8}, :a},
-                     {:type, {1, 0, 21}, %T.Union{types: [:Int, :Float]}}}
+                     {:type, {1, 0, 21}, %T.Union{types: [:Int, :Float]}}},
+                    {{:identifier, {1, 0, 24}, :b}, {:type, {1, 0, 33}, :Nothing}}
                   ],
-                  {:type, {1, 0, 47},
+                  {:type, {1, 0, 59},
                    %T.Union{
                      types: [
                        :ok,
@@ -529,14 +530,14 @@ defmodule Fika.ParserTest do
                      ]
                    }},
                   [
-                    {{:if, {6, 102, 107}}, {:boolean, {2, 51, 60}, true},
-                     [{:atom, {3, 64, 71}, :ok}],
+                    {{:if, {6, 114, 119}}, {:boolean, {2, 63, 72}, true},
+                     [{:atom, {3, 76, 83}, :ok}],
                      [
-                       {:tuple, {5, 79, 101},
-                        [{:atom, {5, 79, 90}, :error}, {:string, {5, 79, 100}, ["not ok"]}]}
+                       {:tuple, {5, 91, 113},
+                        [{:atom, {5, 91, 102}, :error}, {:string, {5, 91, 112}, ["not ok"]}]}
                      ]}
                   ]}}
-              ], "\n", %{}, {7, 108}, 111} = TestParser.function_def(code)
+              ], "\n", %{}, {7, 120}, 123} = TestParser.function_def(code)
     end
   end
 

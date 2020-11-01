@@ -116,7 +116,7 @@ defmodule Fika.Parser.Types do
       int_type,
       float_type,
       nothing_type,
-      atom_type,
+      atom_type
     ])
 
   union_type =
