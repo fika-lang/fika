@@ -107,16 +107,16 @@ defmodule Fika.Parser.Types do
 
   base_type =
     choice([
-      list_type,
-      record_type,
-      map_type,
-      tuple_type,
-      function_type,
       string_type,
       int_type,
       float_type,
       nothing_type,
-      atom_type
+      atom_type,
+      function_type,
+      list_type,
+      record_type,
+      map_type,
+      tuple_type
     ])
 
   union_type =
