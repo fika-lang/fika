@@ -3,6 +3,8 @@ defmodule Fika.ParserTest do
   alias TestEvaluator, as: TE
   alias TestParser, as: TP
 
+  alias Fika.Types, as: T
+
   test "integer" do
     str = """
     123
@@ -75,26 +77,26 @@ defmodule Fika.ParserTest do
     end
 
     test "arithmetic binary * and / have less precedence than unary -" do
-      assert {:ok, {-2, "Int", _}} = TE.eval("1 * -2")
-      assert {:ok, {2.0, "Float", _}} = TE.eval("-10 / -5")
+      assert {:ok, {-2, :Int, _}} = TE.eval("1 * -2")
+      assert {:ok, {2.0, :Float, _}} = TE.eval("-10 / -5")
     end
 
     test "arithmetic binary + and - have less precedence than * and /" do
-      assert {:ok, {12.5, "Float", _}} = TE.eval("1 / 2 + 3 * 4")
-      assert {:ok, {3.0, "Float", _}} = TE.eval("1 * 5 - 4 / 2")
+      assert {:ok, {12.5, :Float, _}} = TE.eval("1 / 2 + 3 * 4")
+      assert {:ok, {3.0, :Float, _}} = TE.eval("1 * 5 - 4 / 2")
     end
 
     test "comparison operators <, >, <= and >= have less precedence than arithmetic + and -" do
-      assert {:ok, {false, "Bool", _}} = TE.eval("1 + 2 < 4 - 1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("1 + 2 <= 4 - 1")
-      assert {:ok, {false, "Bool", _}} = TE.eval("5 - 2 > 2 + 1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("5 - 2 >= 2 + 1")
+      assert {:ok, {false, :Bool, _}} = TE.eval("1 + 2 < 4 - 1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("1 + 2 <= 4 - 1")
+      assert {:ok, {false, :Bool, _}} = TE.eval("5 - 2 > 2 + 1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("5 - 2 >= 2 + 1")
     end
 
     # TODO: Test using evaluation instead of AST as soon as == and != support booleans.
     #   Replace the content of this test with something like:
-    #     assert {:ok, {true, "Bool", _}} = TE.eval("1 < 1 == 2 > 2")
-    #     assert {:ok, {true, "Bool", _}} = TE.eval("1 <= 1 != 2 >= 3")
+    #     assert {:ok, {true, :Bool, _}} = TE.eval("1 < 1 == 2 > 2")
+    #     assert {:ok, {true, :Bool, _}} = TE.eval("1 <= 1 != 2 >= 3")
     test "comparison operators == and != have less precedence than <, >, <=, >=" do
       # Just for now, we test the parser for precedence
       assert {
@@ -122,50 +124,50 @@ defmodule Fika.ParserTest do
              } == TestParser.expression!("1 <= 1 != 2 >= 3")
 
       # Then we test == and != actually work
-      assert {:ok, {true, "Bool", _}} = TE.eval("1 == 1")
-      assert {:ok, {false, "Bool", _}} = TE.eval("1 != 1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("1 == 1")
+      assert {:ok, {false, :Bool, _}} = TE.eval("1 != 1")
     end
 
     test "boolean & has less precedence than == and !=" do
-      assert {:ok, {true, "Bool", _}} = TE.eval("1 == 1 & 1 != 2")
-      assert {:ok, {false, "Bool", _}} = TE.eval("2 == 1 & 1 != 2")
+      assert {:ok, {true, :Bool, _}} = TE.eval("1 == 1 & 1 != 2")
+      assert {:ok, {false, :Bool, _}} = TE.eval("2 == 1 & 1 != 2")
     end
 
     test "boolean | has less precedence than &" do
-      assert {:ok, {true, "Bool", _}} = TE.eval("true | true & false")
-      assert {:ok, {true, "Bool", _}} = TE.eval("false & :true | true")
+      assert {:ok, {true, :Bool, _}} = TE.eval("true | true & false")
+      assert {:ok, {true, :Bool, _}} = TE.eval("false & :true | true")
     end
 
     test "expressions in parenthesis have higher precedence than anything else" do
-      assert {:ok, {1, "Int", _}} = TE.eval("-(-1)")
-      assert {:ok, {6, "Int", _}} = TE.eval("(3 - 1) * (1 + 2)")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2 >= (1 + 1)")
-      assert {:ok, {true, "Bool", _}} = TE.eval("true & (false | true)")
+      assert {:ok, {1, :Int, _}} = TE.eval("-(-1)")
+      assert {:ok, {6, :Int, _}} = TE.eval("(3 - 1) * (1 + 2)")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2 >= (1 + 1)")
+      assert {:ok, {true, :Bool, _}} = TE.eval("true & (false | true)")
     end
   end
 
   describe "operators with spaces" do
     # Unary operators' operand doesn't necessarily have to reside on the same line of the operator
     test "both vertical and horizontal space allowed between unary operators and their operand" do
-      assert {:ok, {false, "Bool", _}} = TE.eval("!#{TP.space()}true")
-      assert {:ok, {-1, "Int", _}} = TE.eval("-#{TP.space()}1")
+      assert {:ok, {false, :Bool, _}} = TE.eval("!#{TP.space()}true")
+      assert {:ok, {-1, :Int, _}} = TE.eval("-#{TP.space()}1")
     end
 
     # Horizontal space allowed between first operand and binary operator
     # Both vertical and horizontal space allowed between binary operator and second operand
     test "allowed spaces between binary operators and their operands" do
-      assert {:ok, {12, "Int", _}} = TE.eval("3#{TP.h_space()}*#{TP.space()}4")
-      assert {:ok, {2.0, "Float", _}} = TE.eval("4#{TP.h_space()}/#{TP.space()}2")
-      assert {:ok, {7, "Int", _}} = TE.eval("3#{TP.h_space()}+#{TP.space()}4")
-      assert {:ok, {1, "Int", _}} = TE.eval("3#{TP.h_space()}-#{TP.space()}2")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}<#{TP.space()}3")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}<=#{TP.space()}3")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}>#{TP.space()}1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}>=#{TP.space()}1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}==#{TP.space()}2")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}!=#{TP.space()}1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("true#{TP.h_space()}&#{TP.space()}true")
-      assert {:ok, {true, "Bool", _}} = TE.eval("false#{TP.h_space()}|#{TP.space()}true")
+      assert {:ok, {12, :Int, _}} = TE.eval("3#{TP.h_space()}*#{TP.space()}4")
+      assert {:ok, {2.0, :Float, _}} = TE.eval("4#{TP.h_space()}/#{TP.space()}2")
+      assert {:ok, {7, :Int, _}} = TE.eval("3#{TP.h_space()}+#{TP.space()}4")
+      assert {:ok, {1, :Int, _}} = TE.eval("3#{TP.h_space()}-#{TP.space()}2")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}<#{TP.space()}3")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}<=#{TP.space()}3")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}>#{TP.space()}1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}>=#{TP.space()}1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}==#{TP.space()}2")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}!=#{TP.space()}1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("true#{TP.h_space()}&#{TP.space()}true")
+      assert {:ok, {true, :Bool, _}} = TE.eval("false#{TP.h_space()}|#{TP.space()}true")
     end
 
     # Vertical space forbidden between first operand and binary operator
@@ -200,7 +202,7 @@ defmodule Fika.ParserTest do
       assert {
                :function,
                [position: {4, 20, 23}],
-               {:foo, [], {:type, {1, 0, 6}, "Nothing"},
+               {:foo, [], {:type, {1, 0, 6}, :Nothing},
                 [
                   {:identifier, {2, 10, 13}, :x},
                   {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
@@ -272,15 +274,19 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {
-               :function,
-               [position: {4, 20, 23}],
-               {:foo, [], {:type, {1, 0, 6}, "Nothing"},
-                [
-                  {:identifier, {2, 10, 13}, :x},
-                  {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
-                ]}
-             } == TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {
+                 :function,
+                 [position: {4, 20, 23}],
+                 {:foo, [], {:type, {1, 0, 6}, :Nothing},
+                  [
+                    {:identifier, {2, 10, 13}, :x},
+                    {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
+                  ]}
+               }
+             ]
     end
 
     test "+ and - are parsed as binary operators when on the same line of the first operand" do
@@ -291,18 +297,22 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {
-               :function,
-               [position: {4, 20, 23}],
-               {:foo, [], {:type, {1, 0, 6}, "Nothing"},
-                [
-                  {:call, {:-, {3, 16, 19}},
-                   [
-                     {:identifier, {2, 10, 13}, :x},
-                     {:identifier, {3, 16, 19}, :y}
-                   ], :kernel}
-                ]}
-             } == TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {
+                 :function,
+                 [position: {4, 20, 23}],
+                 {:foo, [], {:type, {1, 0, 6}, :Nothing},
+                  [
+                    {:call, {:-, {3, 16, 19}},
+                     [
+                       {:identifier, {2, 10, 13}, :x},
+                       {:identifier, {3, 16, 19}, :y}
+                     ], :kernel}
+                  ]}
+               }
+             ]
     end
 
     test "add/sub has less precedence than mult/div" do
@@ -411,9 +421,12 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:function, [position: {3, 16, 19}],
-              {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 10, 15}, 123}]}} ==
-               TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {:function, [position: {3, 16, 19}],
+                {:foo, [], {:type, {1, 0, 6}, :Nothing}, [{:integer, {2, 10, 15}, 123}]}}
+             ]
     end
 
     test "with return type Int" do
@@ -423,9 +436,12 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:function, [position: {3, 22, 25}],
-              {:foo, [], {:type, {1, 0, 12}, "Int"}, [{:integer, {2, 16, 21}, 123}]}} ==
-               TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {:function, [position: {3, 22, 25}],
+                {:foo, [], {:type, {1, 0, 12}, :Int}, [{:integer, {2, 16, 21}, 123}]}}
+             ]
     end
 
     test "with return type :ok" do
@@ -435,23 +451,32 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:function, [position: {3, 22, 25}],
-              {:foo, [], {:type, {1, 0, 12}, ":ok"}, [{:integer, {2, 16, 21}, 123}]}} ==
-               TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {:function, [position: {3, 22, 25}],
+                {:foo, [], {:type, {1, 0, 12}, :ok}, [{:integer, {2, 16, 21}, 123}]}}
+             ]
     end
 
     test "with type params" do
       str = """
-      fn foo(a: List(String)) : List(Int) do
+      fn foo(a: List(List(List(String)))) : List(Nothing) do
         x
       end
       """
 
-      assert {:function, [position: {3, 43, 46}],
-              {:foo, [{{:identifier, {1, 0, 8}, :a}, {:type, {1, 0, 22}, "List(String)"}}],
-               {:type, {1, 0, 35}, "List(Int)"},
-               [{:identifier, {2, 39, 42}, :x}]}} ==
-               TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {:function, [position: {3, 59, 62}],
+                {:foo,
+                 [
+                   {{:identifier, {1, 0, 8}, :a},
+                    {:type, {1, 0, 34}, %T.List{type: %T.List{type: %T.List{type: :String}}}}}
+                 ], {:type, {1, 0, 51}, %T.List{type: :Nothing}},
+                 [{:identifier, {2, 55, 58}, :x}]}}
+             ]
     end
 
     test "with args" do
@@ -461,17 +486,20 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:function, [position: {3, 40, 43}],
-              {:foo,
-               [
-                 {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, "Int"}},
-                 {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, "Int"}}
-               ], {:type, {1, 0, 28}, "Int"},
-               [
-                 {:call, {:+, {2, 32, 39}},
-                  [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
-               ]}} ==
-               TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {:function, [position: {3, 40, 43}],
+                {:foo,
+                 [
+                   {{:identifier, {1, 0, 8}, :x}, {:type, {1, 0, 13}, :Int}},
+                   {{:identifier, {1, 0, 16}, :y}, {:type, {1, 0, 21}, :Int}}
+                 ], {:type, {1, 0, 28}, :Int},
+                 [
+                   {:call, {:+, {2, 32, 39}},
+                    [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
+                 ]}}
+             ]
     end
   end
 
@@ -801,31 +829,53 @@ defmodule Fika.ParserTest do
     test "types with no args" do
       str = "Int"
 
-      assert {:type, {1, 0, 3}, "Int"} == TestParser.type_str!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
+
+      assert result == [{:type, {1, 0, 3}, :Int}]
     end
 
     test "parses types with an arg" do
       str = "List(Int)"
 
-      assert {:type, {1, 0, 9}, "List(Int)"} == TestParser.type_str!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
+
+      assert result == [{:type, {1, 0, 9}, %T.List{type: :Int}}]
     end
 
     test "parses types with nested args" do
       str = "List(List(String))"
 
-      assert {:type, {1, 0, 18}, "List(List(String))"} == TestParser.type_str!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
+
+      assert result == [{:type, {1, 0, 18}, %T.List{type: %T.List{type: :String}}}]
     end
 
     test "parses function type with no args" do
       str = "Fn(-> Int)"
 
-      assert {:type, {1, 0, 10}, "Fn(->Int)"} == TestParser.type_str!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
+
+      assert result == [
+               {:type, {1, 0, 10},
+                %T.FunctionRef{
+                  arg_types: [],
+                  return_type: :Int
+                }}
+             ]
     end
 
     test "parses function type with args" do
       str = "Fn(Int, Int -> Int)"
 
-      assert {:type, {1, 0, 19}, "Fn(Int,Int->Int)"} == TestParser.type_str!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
+
+      assert result == [
+               {:type, {1, 0, 19},
+                %T.FunctionRef{
+                  arg_types: [:Int, :Int],
+                  return_type: :Int
+                }}
+             ]
     end
 
     test "record type" do
@@ -837,13 +887,15 @@ defmodule Fika.ParserTest do
     test "atom type" do
       str = ":foo"
 
-      assert {:type, {1, 0, 4}, ":foo"} == TestParser.type_str!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
+      assert result == [{:type, {1, 0, 4}, :foo}]
     end
 
     test "list of atom" do
       str = "List(:foo)"
 
-      assert {:type, {1, 0, 10}, "List(:foo)"} == TestParser.type_str!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.type_str(str)
+      assert result == [{:type, {1, 0, 10}, %T.List{type: :foo}}]
     end
   end
 
@@ -853,7 +905,10 @@ defmodule Fika.ParserTest do
       &foo
       """
 
-      assert {:function_ref, {1, 0, 4}, {nil, :foo, []}} == TestParser.expression!(str)
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {:function_ref, {1, 0, 4}, {nil, :foo, []}}
     end
 
     test "parses a remote function ref with no args" do
@@ -861,12 +916,10 @@ defmodule Fika.ParserTest do
       &foo.bar
       """
 
-      assert {:function_ref, {1, 0, 8},
-              {
-                :foo,
-                :bar,
-                []
-              }} == TestParser.expression!(str)
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {:function_ref, {1, 0, 8}, {:foo, :bar, []}}
     end
 
     test "parses a function ref with arg types" do
@@ -874,15 +927,10 @@ defmodule Fika.ParserTest do
       &foo.bar(Int, Int)
       """
 
-      assert {:function_ref, {1, 0, 18},
-              {
-                :foo,
-                :bar,
-                [
-                  "Int",
-                  "Int"
-                ]
-              }} == TestParser.expression!(str)
+      result = TestParser.expression!(str)
+
+      assert result ==
+               {:function_ref, {1, 0, 18}, {:foo, :bar, [:Int, :Int]}}
     end
   end
 
@@ -895,9 +943,12 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:function, [position: {4, 36, 39}],
-              {:foo, [], {:type, {2, 20, 26}, "Nothing"}, [{:integer, {3, 30, 35}, 123}]}} ==
-               TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {:function, [position: {4, 36, 39}],
+                {:foo, [], {:type, {2, 20, 26}, :Nothing}, [{:integer, {3, 30, 35}, 123}]}}
+             ]
     end
 
     test "At end of line" do
@@ -907,9 +958,12 @@ defmodule Fika.ParserTest do
       end # Comment 3
       """
 
-      assert {:function, [position: {3, 40, 43}],
-              {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:integer, {2, 22, 27}, 123}]}} ==
-               TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {:function, [position: {3, 40, 43}],
+                {:foo, [], {:type, {1, 0, 6}, :Nothing}, [{:integer, {2, 22, 27}, 123}]}}
+             ]
     end
 
     test "Can't appear in between characters" do
@@ -929,9 +983,12 @@ defmodule Fika.ParserTest do
       end
       """
 
-      assert {:function, [position: {3, 22, 25}],
-              {:foo, [], {:type, {1, 0, 6}, "Nothing"}, [{:string, {2, 10, 21}, ["foo#bar"]}]}} ==
-               TestParser.function_def!(str)
+      {:ok, result, _rest, _context, _line, _byte_offset} = TestParser.function_def(str)
+
+      assert result == [
+               {:function, [position: {3, 22, 25}],
+                {:foo, [], {:type, {1, 0, 6}, :Nothing}, [{:string, {2, 10, 21}, ["foo#bar"]}]}}
+             ]
     end
   end
 

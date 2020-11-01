@@ -7,38 +7,29 @@ defmodule Fika.Parser.Types do
   identifier_str = parsec({Common, :identifier_str})
   atom = parsec({Common, :atom})
 
+  atom_type = Helper.to_ast(atom, :atom_type)
+
   type_args =
-    optional(
+    parsec(:type)
+    |> optional(
       allow_space
-      |> string(",")
+      |> ignore(string(","))
       |> concat(allow_space)
-      |> parsec(:type)
       |> parsec(:type_args)
     )
 
   function_type =
-    string("Fn")
-    |> string("(")
-    |> optional(parsec(:type) |> concat(type_args))
+    ignore(string("Fn("))
+    |> optional(type_args |> map({Helper, :tag, [:arg_type]}))
     |> concat(allow_space)
-    |> string("->")
+    |> ignore(string("->"))
     |> concat(allow_space)
-    |> parsec(:type)
-    |> string(")")
-
-  simple_type =
-    ascii_string([?A..?Z], 1)
-    |> ascii_string([?a..?z, ?A..?Z], min: 0)
-    |> reduce({Enum, :join, [""]})
-    |> Helper.to_ast(:simple_type)
-
-  type_parens =
-    string("(")
-    |> concat(allow_space)
-    |> parsec(:type)
-    |> concat(type_args)
-    |> concat(allow_space)
-    |> string(")")
+    |> concat(
+      parsec(:type)
+      |> map({Helper, :tag, [:return_type]})
+    )
+    |> ignore(string(")"))
+    |> Helper.to_ast(:function_type)
 
   type_key_value =
     allow_space
@@ -80,34 +71,49 @@ defmodule Fika.Parser.Types do
     |> string(")")
     |> label("map type")
 
-  # To parse functions with tuple return type
-  type_tuple_element =
-    parsec(:type)
-    |> label("tuple element")
-
-  type_tuple_elements =
-    type_tuple_element
-    |> repeat(
-      allow_space
-      |> ignore(string(","))
-      |> concat(allow_space)
-      |> concat(type_tuple_element)
-    )
-    |> reduce({Enum, :join, [","]})
-
   tuple_type =
     string("{")
-    |> concat(type_tuple_elements)
+    |> concat(type_args)
     |> string("}")
     |> reduce({Enum, :join, []})
     |> label("tuple type")
 
+  list_type =
+    ignore(string("List("))
+    |> concat(parsec(:type))
+    |> ignore(string(")"))
+    |> label("list type")
+    |> Helper.to_ast(:list_type)
+
+  string_type =
+    string("String")
+    |> label("string")
+    |> reduce({Helper, :to_atom, []})
+
+  int_type =
+    string("Int")
+    |> label("int")
+    |> reduce({Helper, :to_atom, []})
+
+  float_type =
+    string("Float")
+    |> label("float")
+    |> reduce({Helper, :to_atom, []})
+
+  nothing_type =
+    string("Nothing")
+    |> label("nothing")
+    |> reduce({Helper, :to_atom, []})
+
   type =
     choice([
+      string_type,
+      int_type,
+      float_type,
+      nothing_type,
+      atom_type,
       function_type,
-      simple_type
-      |> optional(type_parens),
-      atom,
+      list_type,
       record_type,
       map_type,
       tuple_type

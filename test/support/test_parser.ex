@@ -49,6 +49,11 @@ defmodule TestParser do
 
   defparsec :expression, exp |> concat(allow_space) |> eos()
   defparsec :function_def, function_def
-  defparsec :type_str, parse_type |> concat(allow_space) |> eos()
+
+  defparsec :type_str,
+            parse_type
+            |> concat(allow_space)
+            |> eos()
+
   defparsec :exps, exps |> concat(allow_space) |> eos()
 end

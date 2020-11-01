@@ -1,6 +1,6 @@
 defmodule Fika.TypeChecker do
   alias Fika.Env
-  alias Fika.Types.FunctionRef
+  alias Fika.Types, as: T
   require Logger
 
   # Given the AST of a module, this function type checks each of the
@@ -32,8 +32,7 @@ defmodule Fika.TypeChecker do
   # Given the AST of a function definition, this function checks if the return
   # type is indeed the type that's inferred from the body of the function.
   def check({:function, _line, {_, _, return_type, _}} = function, env) do
-    {:type, _line, type} = return_type
-    expected_type = type
+    {:type, _line, expected_type} = return_type
 
     case infer(function, env) do
       {:ok, ^expected_type, _env} = result ->
@@ -57,12 +56,11 @@ defmodule Fika.TypeChecker do
     env
     |> infer_block(exprs)
     |> add_function_type(name, args)
-    |> to_str()
   end
 
   def infer_block(env, []) do
     Logger.debug("Block is empty.")
-    {:ok, "Nothing", env}
+    {:ok, :Nothing, env}
   end
 
   def infer_block(env, [exp]) do
@@ -82,13 +80,13 @@ defmodule Fika.TypeChecker do
   # Integer literals
   def infer_exp(env, {:integer, _line, integer}) do
     Logger.debug("Integer #{integer} found. Type: Int")
-    {:ok, "Int", env}
+    {:ok, :Int, env}
   end
 
   # Booleans
   def infer_exp(env, {:boolean, _line, boolean}) do
     Logger.debug("Boolean #{boolean} found. Type: Bool")
-    {:ok, "Bool", env}
+    {:ok, :Bool, env}
   end
 
   # Variables
@@ -116,7 +114,7 @@ defmodule Fika.TypeChecker do
   # exp has to be a function ref type
   def infer_exp(env, {:call, {exp, _line}, args}) do
     case infer_exp(env, exp) do
-      {:ok, %FunctionRef{arg_types: arg_types, return_type: type}, env} ->
+      {:ok, %T.FunctionRef{arg_types: arg_types, return_type: type}, env} ->
         case do_infer_args_without_name(env, args) do
           {:ok, ^arg_types, env} ->
             {:ok, type, env}
@@ -124,8 +122,8 @@ defmodule Fika.TypeChecker do
           {:ok, other_arg_types, _env} ->
             error =
               "Expected function reference to be called with" <>
-                " arguments (#{Enum.join(arg_types, ",")}), but it was called " <>
-                "with arguments (#{Enum.join(other_arg_types, ",")})"
+                " arguments (#{T.Helper.join_list(arg_types)}), but it was called " <>
+                "with arguments (#{T.Helper.join_list(other_arg_types)})"
 
             {:error, error}
         end
@@ -156,13 +154,13 @@ defmodule Fika.TypeChecker do
     Enum.reduce_while(string_parts, env, fn
       string, env when is_binary(string) ->
         Logger.debug("String #{string} found. Type: String")
-        {:cont, {:ok, "String", env}}
+        {:cont, {:ok, :String, env}}
 
       exp, env ->
         Logger.debug("String interpolation found. Inferring type of expression")
 
         case infer_exp(env, exp) do
-          {:ok, "String", _env} = result ->
+          {:ok, :String, _env} = result ->
             {:cont, result}
 
           {:ok, other_type, _env} ->
@@ -186,12 +184,7 @@ defmodule Fika.TypeChecker do
   def infer_exp(env, {:tuple, _, exps}) do
     case do_infer_tuple_exps(exps, env) do
       {:ok, exp_types, env} ->
-        exp_types =
-          exp_types
-          |> Enum.reverse()
-          |> Enum.join(",")
-
-        {:ok, "{#{exp_types}}", env}
+        {:ok, %T.Tuple{elements: exp_types}, env}
 
       error ->
         error
@@ -206,12 +199,7 @@ defmodule Fika.TypeChecker do
     else
       case do_infer_key_values(key_values, env) do
         {:ok, k_v_types, env} ->
-          k_v_types =
-            k_v_types
-            |> Enum.reverse()
-            |> Enum.join(",")
-
-          {:ok, "{#{k_v_types}}", env}
+          {:ok, %T.Record{fields: k_v_types}, env}
 
         error ->
           error
@@ -225,28 +213,23 @@ defmodule Fika.TypeChecker do
     {key, value} = kv
 
     with {:ok, key_type, env} <- infer_exp(env, key),
-         {:ok, val_type, env} <- infer_exp(env, value) do
-      final_type = "Map(#{key_type},#{val_type})"
+         {:ok, value_type, env} <- infer_exp(env, value) do
+      map_type = %T.Map{key_type: key_type, value_type: value_type}
 
-      Enum.reduce_while(rest_kvs, {:ok, final_type, env}, fn {k, v}, {:ok, acc_type, acc_env} ->
-        case infer_exp(acc_env, k) do
-          {:ok, ^key_type, env} ->
-            case infer_exp(env, v) do
-              {:ok, ^val_type, env} ->
-                acc = {:ok, acc_type, env}
-                {:cont, acc}
+      Enum.reduce_while(rest_kvs, {:ok, map_type, env}, fn {k, v}, {:ok, type, env} ->
+        %{key_type: key_type, value_type: value_type} = type
 
-              {:ok, diff_type, _} ->
-                error = {:error, "Expected map value of type #{val_type}, but got #{diff_type}"}
-
-                {:halt, error}
-
-              error ->
-                {:halt, error}
-            end
-
-          {:ok, diff_type, _} ->
+        with {:key, {:ok, ^key_type, env}} <- {:key, infer_exp(env, k)},
+             {:value, {:ok, ^value_type, env}} <- {:value, infer_exp(env, v)} do
+          {:cont, {:ok, type, env}}
+        else
+          {:key, {:ok, diff_type, _}} ->
             error = {:error, "Expected map key of type #{key_type}, but got #{diff_type}"}
+            {:halt, error}
+
+          {:value, {:ok, diff_type, _}} ->
+            error = {:error, "Expected map value of type #{value_type}, but got #{diff_type}"}
+
             {:halt, error}
 
           error ->
@@ -257,10 +240,14 @@ defmodule Fika.TypeChecker do
   end
 
   # Function ref
-  def infer_exp(env, {:function_ref, _, {module, function_name, arg_types}}) do
+  def infer_exp(
+        env,
+        {:function_ref, _, {module, function_name, arg_types}}
+      ) do
     Logger.debug("Inferring type of function: #{function_name}")
 
     module_name = module || Env.current_module(env)
+
     signature = get_signature(module_name, function_name, arg_types)
 
     result =
@@ -276,8 +263,8 @@ defmodule Fika.TypeChecker do
       end
 
     case result do
-      {:ok, type, env} ->
-        type = %FunctionRef{arg_types: arg_types, return_type: type}
+      {:ok, return_type, env} ->
+        type = %T.FunctionRef{return_type: return_type, arg_types: arg_types}
         {:ok, type, env}
 
       error ->
@@ -288,7 +275,7 @@ defmodule Fika.TypeChecker do
   # Atom value
   def infer_exp(env, {:atom, _line, atom}) do
     Logger.debug("Atom value found. Type: #{atom}")
-    {:ok, ":#{atom}", env}
+    {:ok, atom, env}
   end
 
   # if-else expression
@@ -296,16 +283,16 @@ defmodule Fika.TypeChecker do
     Logger.debug("Inferring an if-else expression")
 
     case infer_if_else_condition(env, condition) do
-      {:ok, "Bool", env} -> infer_if_else_blocks(env, if_block, else_block)
+      {:ok, :Bool, env} -> infer_if_else_blocks(env, if_block, else_block)
       error -> error
     end
   end
 
   defp infer_if_else_condition(env, condition) do
     case infer_exp(env, condition) do
-      {:ok, "Bool", env} ->
+      {:ok, :Bool, env} ->
         Logger.debug("if-else condition has return type: Bool")
-        {:ok, "Bool", env}
+        {:ok, :Bool, env}
 
       {_, inferred_type, _env} ->
         Logger.debug("if-else condition has wrong return type: #{inferred_type}")
@@ -335,7 +322,7 @@ defmodule Fika.TypeChecker do
       case infer_exp(env, v) do
         {:ok, type, env} ->
           {:identifier, _, key} = k
-          {:cont, {:ok, ["#{key}:#{type}" | acc], env}}
+          {:cont, {:ok, [{key, type} | acc], env}}
 
         error ->
           {:halt, error}
@@ -353,6 +340,13 @@ defmodule Fika.TypeChecker do
           {:halt, error}
       end
     end)
+    |> case do
+      {:ok, reversed_exp_types, env} ->
+        {:ok, Enum.reverse(reversed_exp_types), env}
+
+      error ->
+        error
+    end
   end
 
   def infer_args(env, exp, module) do
@@ -377,12 +371,12 @@ defmodule Fika.TypeChecker do
   end
 
   defp infer_list_exps(env, []) do
-    {:ok, "List(Nothing)", env}
+    {:ok, %T.List{}, env}
   end
 
   defp infer_list_exps(env, [exp]) do
     case infer_exp(env, exp) do
-      {:ok, type, env} -> {:ok, "List(#{type})", env}
+      {:ok, type, env} -> {:ok, %T.List{type: type}, env}
       error -> error
     end
   end
@@ -390,7 +384,7 @@ defmodule Fika.TypeChecker do
   defp infer_list_exps(env, [exp | rest]) do
     {:ok, type, env} = infer_exp(env, exp)
 
-    Enum.reduce_while(rest, {:ok, "List(#{type})", env}, fn exp, {:ok, acc_type, acc_env} ->
+    Enum.reduce_while(rest, {:ok, %T.List{type: type}, env}, fn exp, {:ok, acc_type, acc_env} ->
       case infer_exp(acc_env, exp) do
         {:ok, ^type, env} ->
           acc = {:ok, acc_type, env}
@@ -424,17 +418,24 @@ defmodule Fika.TypeChecker do
   end
 
   defp do_infer_args_without_name(env, args) do
-    Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, type_acc, env} ->
+    Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, acc, env} ->
       case infer_exp(env, arg) do
         {:ok, type, env} ->
           Logger.debug("Argument is type: #{type}")
-          {:cont, {:ok, type_acc ++ [type], env}}
+          {:cont, {:ok, [type | acc], env}}
 
         error ->
           Logger.debug("Argument cannot be inferred")
           {:halt, error}
       end
     end)
+    |> case do
+      {:ok, reversed_types, env} ->
+        {:ok, Enum.reverse(reversed_types), env}
+
+      error ->
+        error
+    end
   end
 
   defp get_type_by_signature(env, signature) do
@@ -480,7 +481,8 @@ defmodule Fika.TypeChecker do
   end
 
   defp get_signature(module, name, arg_types) do
-    "#{module}.#{name}(#{Enum.join(arg_types, ",")})"
+    arg_types_str = T.Helper.join_list(arg_types)
+    "#{module}.#{name}(#{arg_types_str})"
   end
 
   defp check_by_signature(env, signature) do
@@ -496,16 +498,6 @@ defmodule Fika.TypeChecker do
       check(function, env)
     else
       {:error, "Undefined function: #{signature} in module #{module}"}
-    end
-  end
-
-  defp to_str(result) do
-    case result do
-      {:ok, type, env} ->
-        {:ok, to_string(type), env}
-
-      error ->
-        error
     end
   end
 end

@@ -1,6 +1,8 @@
 defmodule Fika.Parser.Helper do
   import NimbleParsec
 
+  alias Fika.Types, as: T
+
   def to_ast(c, kind) do
     c
     |> line()
@@ -50,27 +52,37 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[], line}, :return_type) do
-    {:type, line, "Nothing"}
+    {:type, line, :Nothing}
   end
 
   def do_to_ast({[type], _line}, :return_type) do
     type
   end
 
-  def do_to_ast({[name], _line}, :simple_type) do
-    name
+  def do_to_ast({[{_, _, inner_type}], _line}, :list_type) when is_struct(inner_type) do
+    %T.List{type: inner_type}
   end
 
-  def do_to_ast({types, line}, :type) do
-    type =
-      Enum.reduce(types, "", fn
-        {:atom, _l, value}, acc ->
-          acc <> ":#{value}"
+  def do_to_ast({[inner_type], _line}, :list_type) do
+    %T.List{type: inner_type}
+  end
 
-        type, acc ->
-          acc <> type
-      end)
+  def do_to_ast({[{:atom, _, atom}], _line}, :atom_type) do
+    atom
+  end
 
+  def do_to_ast({types, _line}, :function_type) do
+    arg_types = types |> Keyword.take([:arg_type]) |> Keyword.values()
+    return_type = Keyword.get(types, :return_type)
+
+    %T.FunctionRef{arg_types: arg_types, return_type: return_type}
+  end
+
+  def do_to_ast({[{_, _, type}], line}, :type) when is_struct(type) do
+    {:type, line, type}
+  end
+
+  def do_to_ast({[type], line}, :type) do
     {:type, line, type}
   end
 
@@ -162,5 +174,11 @@ defmodule Fika.Parser.Helper do
 
   defp value_from_identifier({:identifier, _line, value}) do
     value
+  end
+
+  def to_atom([value]), do: String.to_atom(value)
+
+  def tag(value, tag) do
+    {tag, value}
   end
 end
