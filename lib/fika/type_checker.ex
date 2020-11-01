@@ -301,12 +301,12 @@ defmodule Fika.TypeChecker do
   end
 
   defp infer_if_else_blocks(env, if_block, else_block) do
-    with {:ok, if_type_val, env} <- infer_block(env, if_block),
-         {:ok, else_type_val, _} <- infer_block(env, else_block) do
+    with {:ok, if_type_val, if_env} <- infer_block(env, if_block),
+         {:ok, else_type_val, else_env} <- infer_block(if_env, else_block) do
       if if_type_val == else_type_val do
-        {:ok, if_type_val, env}
+        {:ok, if_type_val, else_env}
       else
-        {:ok, T.Union.new([if_type_val, else_type_val]), env}
+        {:ok, T.Union.new([if_type_val, else_type_val]), else_env}
       end
     end
   end
