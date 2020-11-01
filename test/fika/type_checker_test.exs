@@ -132,13 +132,14 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:module, _, [foo, _bar]} = ast = Fika.Parser.parse_module(str, "test")
+    {:module, _, [foo, bar]} = ast = Fika.Parser.parse_module(str, "test")
 
     env =
       Env.init()
       |> Env.init_module_env("test", ast)
 
     assert {:ok, :Int, env} = TypeChecker.infer(foo, env)
+    assert {:ok, :Int, env} = TypeChecker.infer(bar, env)
 
     assert Env.get_function_type(env, "test.foo(Int)") == :Int
     assert Env.get_function_type(env, "test.bar(Int)") == :Int

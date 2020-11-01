@@ -30,7 +30,6 @@ defmodule Fika.Parser.FunctionDef do
       |> concat(allow_space)
       |> concat(arg)
     )
-    |> map({IO, :inspect, []})
 
   arg_parens =
     choice([
