@@ -72,11 +72,11 @@ defmodule Fika.Parser.Types do
     |> label("map type")
 
   tuple_type =
-    string("{")
+    ignore(string("{"))
     |> concat(type_args)
-    |> string("}")
-    |> reduce({Enum, :join, []})
+    |> ignore(string("}"))
     |> label("tuple type")
+    |> Helper.to_ast(:tuple_type)
 
   list_type =
     ignore(string("List("))
@@ -105,7 +105,7 @@ defmodule Fika.Parser.Types do
     |> label("nothing")
     |> reduce({Helper, :to_atom, []})
 
-  type =
+  base_type =
     choice([
       string_type,
       int_type,
@@ -118,6 +118,20 @@ defmodule Fika.Parser.Types do
       map_type,
       tuple_type
     ])
+
+  union_type =
+    base_type
+    |> times(
+      allow_space
+      |> ignore(string("|"))
+      |> concat(allow_space)
+      |> concat(base_type),
+      min: 1
+    )
+    |> label("union type")
+    |> Helper.to_ast(:union_type)
+
+  type = choice([union_type, base_type])
 
   parse_type =
     type

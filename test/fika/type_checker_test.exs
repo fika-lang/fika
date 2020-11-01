@@ -439,7 +439,7 @@ defmodule Fika.TypeCheckerTest do
              } = TypeChecker.infer_exp(env, ast)
     end
 
-    test "completes when if and else blocks have same return type" do
+    test "completes when if and else blocks have same return types" do
       str = """
       if true do
         "done"
@@ -454,7 +454,7 @@ defmodule Fika.TypeCheckerTest do
       assert {:ok, :String, _env} = TypeChecker.infer_exp(env, ast)
     end
 
-    test "error when if and else blocks have different return types" do
+    test "completes when if and else blocks have different return types" do
       str = """
       if false do
         "done"
@@ -466,10 +466,8 @@ defmodule Fika.TypeCheckerTest do
       ast = TestParser.expression!(str)
       env = Env.init_module_env(Env.init(), "test", ast)
 
-      assert {
-               :error,
-               "Expected if and else blocks to have same return type. Got String and Int"
-             } = TypeChecker.infer_exp(env, ast)
+      types = MapSet.new([:String, :Int])
+      assert {:ok, %T.Union{types: ^types}, _env} = TypeChecker.infer_exp(env, ast)
     end
 
     test "with multiple expressions in blocks" do
@@ -506,6 +504,50 @@ defmodule Fika.TypeCheckerTest do
         |> Env.add_function_type("test2.bar(String, Int)", :Bool)
 
       assert {:ok, :Bool, _} = TypeChecker.infer(function, env)
+    end
+
+    test "when function returns is expected to return an union type and has if-else clause" do
+      str = """
+      fn foo(x: String, y: Int) : :ok | :error do
+        f = &test2.bar(String, Int)
+        if f.(x, y) do
+          :ok
+        else
+          :error
+        end
+      end
+      """
+
+      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+
+      env =
+        Env.init()
+        |> Env.init_module_env("test", ast)
+        |> Env.add_function_type("test2.bar(String, Int)", :Bool)
+
+      types = MapSet.new([:ok, :error])
+      assert {:ok, %T.Union{types: ^types}, _} = TypeChecker.infer(function, env)
+    end
+
+    test "when function accepts union types and calls a function ref" do
+      str = """
+      fn foo(x: String, y: Int) : :ok | :error do
+        f = &test2.bar(String, Int)
+        f.(x, y)
+      end
+      """
+
+      {:module, _, [function]} = ast = Fika.Parser.parse_module(str, "test1")
+
+      types = MapSet.new([:error, :ok])
+
+      env =
+        Env.init()
+        |> Env.init_module_env("test", ast)
+        |> Env.add_function_type("test2.bar(String, Int)", %T.Union{types: types})
+
+      assert {:ok, %T.Union{types: ^types}, _env} = TypeChecker.infer(function, env)
+      assert {:ok, %T.Union{types: ^types}, _env} = TypeChecker.check(function, env)
     end
 
     test "identifier is not a reference" do

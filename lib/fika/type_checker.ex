@@ -38,8 +38,8 @@ defmodule Fika.TypeChecker do
       {:ok, ^expected_type, _env} = result ->
         result
 
-      {:ok, other_type, _} ->
-        {:error, "Expected type: #{expected_type}, got: #{other_type}"}
+      {:ok, inferred_type, _env} ->
+        {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
 
       error ->
         error
@@ -301,19 +301,13 @@ defmodule Fika.TypeChecker do
   end
 
   defp infer_if_else_blocks(env, if_block, else_block) do
-    {_, if_type_val, env} = infer_block(env, if_block)
-    {_, else_type_val, _} = type = infer_block(env, else_block)
-
-    unless if_type_val == else_type_val do
-      Logger.debug("if and else block have different types")
-
-      error =
-        "Expected if and else blocks to have same return type. " <>
-          "Got #{if_type_val} and #{else_type_val}"
-
-      {:error, error}
-    else
-      type
+    with {:ok, if_type_val, if_env} <- infer_block(env, if_block),
+         {:ok, else_type_val, else_env} <- infer_block(if_env, else_block) do
+      if if_type_val == else_type_val do
+        {:ok, if_type_val, else_env}
+      else
+        {:ok, T.Union.new([if_type_val, else_type_val]), else_env}
+      end
     end
   end
 
