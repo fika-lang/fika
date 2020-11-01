@@ -607,7 +607,7 @@ defmodule Fika.ParserTest do
       assert result == [
                {:type, {1, 0, 10},
                 %T.FunctionRef{
-                  arg_types: %T.ArgList{value: []},
+                  arg_types: [],
                   return_type: :Int
                 }}
              ]
@@ -621,7 +621,7 @@ defmodule Fika.ParserTest do
       assert result == [
                {:type, {1, 0, 19},
                 %T.FunctionRef{
-                  arg_types: %T.ArgList{value: [:Int, :Int]},
+                  arg_types: [:Int, :Int],
                   return_type: :Int
                 }}
              ]

@@ -1,10 +1,12 @@
 defmodule Fika.Types.Tuple do
-  defstruct elements: %Fika.Types.ArgList{}
+  defstruct elements: []
 
-  defimpl String.Chars, for: Fika.Types.Tuple do
-    @spec to_string(%{elements: any}) :: <<_::16, _::_*8>>
+  alias Fika.Types, as: T
+
+  defimpl String.Chars, for: T.Tuple do
     def to_string(%{elements: elements}) do
-      "{#{elements}}"
+      elements_str = T.Helper.join_list(elements)
+      "{#{elements_str}}"
     end
   end
 end

@@ -122,8 +122,8 @@ defmodule Fika.TypeChecker do
           {:ok, other_arg_types, _env} ->
             error =
               "Expected function reference to be called with" <>
-                " arguments (#{arg_types}), but it was called " <>
-                "with arguments (#{other_arg_types})"
+                " arguments (#{T.Helper.join_list(arg_types)}), but it was called " <>
+                "with arguments (#{T.Helper.join_list(other_arg_types)})"
 
             {:error, error}
         end
@@ -164,7 +164,7 @@ defmodule Fika.TypeChecker do
   def infer_exp(env, {:tuple, _, exps}) do
     case do_infer_tuple_exps(exps, env) do
       {:ok, exp_types, env} ->
-        {:ok, %T.Tuple{elements: %T.ArgList{value: exp_types}}, env}
+        {:ok, %T.Tuple{elements: exp_types}, env}
 
       error ->
         error
@@ -212,7 +212,7 @@ defmodule Fika.TypeChecker do
 
     case result do
       {:ok, return_type, env} ->
-        type = %T.FunctionRef{return_type: return_type, arg_types: %T.ArgList{value: arg_types}}
+        type = %T.FunctionRef{return_type: return_type, arg_types: arg_types}
         {:ok, type, env}
 
       error ->
@@ -366,17 +366,24 @@ defmodule Fika.TypeChecker do
   end
 
   defp do_infer_args_without_name(env, args) do
-    Enum.reduce_while(args, {:ok, %T.ArgList{}, env}, fn arg, {:ok, acc, env} ->
+    Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, acc, env} ->
       case infer_exp(env, arg) do
         {:ok, type, env} ->
           Logger.debug("Argument is type: #{type}")
-          {:cont, {:ok, %{acc | value: acc.value ++ [type]}, env}}
+          {:cont, {:ok, [type | acc], env}}
 
         error ->
           Logger.debug("Argument cannot be inferred")
           {:halt, error}
       end
     end)
+    |> case do
+      {:ok, reversed_types, env} ->
+        {:ok, Enum.reverse(reversed_types), env}
+
+      error ->
+        error
+    end
   end
 
   defp get_type_by_signature(env, signature) do
@@ -422,8 +429,7 @@ defmodule Fika.TypeChecker do
   end
 
   defp get_signature(module, name, arg_types) do
-    # We use T.ArgList here just because it makes the conversion to string easier and uniform
-    arg_types_str = to_string(%T.ArgList{value: arg_types})
+    arg_types_str = T.Helper.join_list(arg_types)
     "#{module}.#{name}(#{arg_types_str})"
   end
 

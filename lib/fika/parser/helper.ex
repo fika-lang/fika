@@ -75,7 +75,7 @@ defmodule Fika.Parser.Helper do
     arg_types = types |> Keyword.take([:arg_type]) |> Keyword.values()
     return_type = Keyword.get(types, :return_type)
 
-    %T.FunctionRef{arg_types: %T.ArgList{value: arg_types}, return_type: return_type}
+    %T.FunctionRef{arg_types: arg_types, return_type: return_type}
   end
 
   def do_to_ast({[{_, _, type}], line}, :type) when is_struct(type) do
