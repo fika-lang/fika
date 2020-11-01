@@ -67,6 +67,10 @@ defmodule Fika.Parser.Helper do
     %T.List{type: inner_type}
   end
 
+  def do_to_ast({inner_types, _line}, :tuple_type) do
+    %T.Tuple{elements: inner_types}
+  end
+
   def do_to_ast({[{:atom, _, atom}], _line}, :atom_type) do
     atom
   end
@@ -76,6 +80,10 @@ defmodule Fika.Parser.Helper do
     return_type = Keyword.get(types, :return_type)
 
     %T.FunctionRef{arg_types: arg_types, return_type: return_type}
+  end
+
+  def do_to_ast({types, _line}, :union_type) do
+    %T.Union{types: types}
   end
 
   def do_to_ast({[{_, _, type}], line}, :type) when is_struct(type) do

@@ -501,6 +501,43 @@ defmodule Fika.ParserTest do
                  ]}}
              ]
     end
+
+    test "with union types" do
+      code = """
+      fn foo(a: Int | Float) : :ok | {:error, String} do
+        if true do
+          :ok
+        else
+          {:error, "not ok"}
+        end
+      end
+      """
+
+      assert {:ok,
+              [
+                {:function, [position: {7, 108, 111}],
+                 {:foo,
+                  [
+                    {{:identifier, {1, 0, 8}, :a},
+                     {:type, {1, 0, 21}, %T.Union{types: [:Int, :Float]}}}
+                  ],
+                  {:type, {1, 0, 47},
+                   %T.Union{
+                     types: [
+                       :ok,
+                       %T.Tuple{elements: [:error, :String]}
+                     ]
+                   }},
+                  [
+                    {{:if, {6, 102, 107}}, {:boolean, {2, 51, 60}, true},
+                     [{:atom, {3, 64, 71}, :ok}],
+                     [
+                       {:tuple, {5, 79, 101},
+                        [{:atom, {5, 79, 90}, :error}, {:string, {5, 79, 100}, ["not ok"]}]}
+                     ]}
+                  ]}}
+              ], "\n", %{}, {7, 108}, 111} = TestParser.function_def(code)
+    end
   end
 
   describe "if-else expression" do
