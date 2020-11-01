@@ -35,8 +35,8 @@ defmodule Fika.TypeChecker do
     {:type, _line, expected_type} = return_type
 
     case infer(function, env) do
-      {:ok, ^expected_type, _env} ->
-        {:ok, expected_type, env}
+      {:ok, ^expected_type, _env} = result ->
+        result
 
       {:ok, inferred_type, _env} ->
         {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
