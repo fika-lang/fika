@@ -506,7 +506,7 @@ defmodule Fika.TypeCheckerTest do
       assert {:ok, :Bool, _} = TypeChecker.infer(function, env)
     end
 
-    test "when function accepts union types and has if-else clause" do
+    test "when function returns is expected to return an union type and has if-else clause" do
       str = """
       fn foo(x: String, y: Int) : :ok | :error do
         f = &test2.bar(String, Int)
