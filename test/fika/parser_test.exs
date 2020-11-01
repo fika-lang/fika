@@ -77,26 +77,26 @@ defmodule Fika.ParserTest do
     end
 
     test "arithmetic binary * and / have less precedence than unary -" do
-      assert {:ok, {-2, "Int", _}} = TE.eval("1 * -2")
-      assert {:ok, {2.0, "Float", _}} = TE.eval("-10 / -5")
+      assert {:ok, {-2, :Int, _}} = TE.eval("1 * -2")
+      assert {:ok, {2.0, :Float, _}} = TE.eval("-10 / -5")
     end
 
     test "arithmetic binary + and - have less precedence than * and /" do
-      assert {:ok, {12.5, "Float", _}} = TE.eval("1 / 2 + 3 * 4")
-      assert {:ok, {3.0, "Float", _}} = TE.eval("1 * 5 - 4 / 2")
+      assert {:ok, {12.5, :Float, _}} = TE.eval("1 / 2 + 3 * 4")
+      assert {:ok, {3.0, :Float, _}} = TE.eval("1 * 5 - 4 / 2")
     end
 
     test "comparison operators <, >, <= and >= have less precedence than arithmetic + and -" do
-      assert {:ok, {false, "Bool", _}} = TE.eval("1 + 2 < 4 - 1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("1 + 2 <= 4 - 1")
-      assert {:ok, {false, "Bool", _}} = TE.eval("5 - 2 > 2 + 1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("5 - 2 >= 2 + 1")
+      assert {:ok, {false, :Bool, _}} = TE.eval("1 + 2 < 4 - 1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("1 + 2 <= 4 - 1")
+      assert {:ok, {false, :Bool, _}} = TE.eval("5 - 2 > 2 + 1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("5 - 2 >= 2 + 1")
     end
 
     # TODO: Test using evaluation instead of AST as soon as == and != support booleans.
     #   Replace the content of this test with something like:
-    #     assert {:ok, {true, "Bool", _}} = TE.eval("1 < 1 == 2 > 2")
-    #     assert {:ok, {true, "Bool", _}} = TE.eval("1 <= 1 != 2 >= 3")
+    #     assert {:ok, {true, :Bool, _}} = TE.eval("1 < 1 == 2 > 2")
+    #     assert {:ok, {true, :Bool, _}} = TE.eval("1 <= 1 != 2 >= 3")
     test "comparison operators == and != have less precedence than <, >, <=, >=" do
       # Just for now, we test the parser for precedence
       assert {
@@ -124,50 +124,50 @@ defmodule Fika.ParserTest do
              } == TestParser.expression!("1 <= 1 != 2 >= 3")
 
       # Then we test == and != actually work
-      assert {:ok, {true, "Bool", _}} = TE.eval("1 == 1")
-      assert {:ok, {false, "Bool", _}} = TE.eval("1 != 1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("1 == 1")
+      assert {:ok, {false, :Bool, _}} = TE.eval("1 != 1")
     end
 
     test "boolean & has less precedence than == and !=" do
-      assert {:ok, {true, "Bool", _}} = TE.eval("1 == 1 & 1 != 2")
-      assert {:ok, {false, "Bool", _}} = TE.eval("2 == 1 & 1 != 2")
+      assert {:ok, {true, :Bool, _}} = TE.eval("1 == 1 & 1 != 2")
+      assert {:ok, {false, :Bool, _}} = TE.eval("2 == 1 & 1 != 2")
     end
 
     test "boolean | has less precedence than &" do
-      assert {:ok, {true, "Bool", _}} = TE.eval("true | true & false")
-      assert {:ok, {true, "Bool", _}} = TE.eval("false & :true | true")
+      assert {:ok, {true, :Bool, _}} = TE.eval("true | true & false")
+      assert {:ok, {true, :Bool, _}} = TE.eval("false & :true | true")
     end
 
     test "expressions in parenthesis have higher precedence than anything else" do
-      assert {:ok, {1, "Int", _}} = TE.eval("-(-1)")
-      assert {:ok, {6, "Int", _}} = TE.eval("(3 - 1) * (1 + 2)")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2 >= (1 + 1)")
-      assert {:ok, {true, "Bool", _}} = TE.eval("true & (false | true)")
+      assert {:ok, {1, :Int, _}} = TE.eval("-(-1)")
+      assert {:ok, {6, :Int, _}} = TE.eval("(3 - 1) * (1 + 2)")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2 >= (1 + 1)")
+      assert {:ok, {true, :Bool, _}} = TE.eval("true & (false | true)")
     end
   end
 
   describe "operators with spaces" do
     # Unary operators' operand doesn't necessarily have to reside on the same line of the operator
     test "both vertical and horizontal space allowed between unary operators and their operand" do
-      assert {:ok, {false, "Bool", _}} = TE.eval("!#{TP.space()}true")
-      assert {:ok, {-1, "Int", _}} = TE.eval("-#{TP.space()}1")
+      assert {:ok, {false, :Bool, _}} = TE.eval("!#{TP.space()}true")
+      assert {:ok, {-1, :Int, _}} = TE.eval("-#{TP.space()}1")
     end
 
     # Horizontal space allowed between first operand and binary operator
     # Both vertical and horizontal space allowed between binary operator and second operand
     test "allowed spaces between binary operators and their operands" do
-      assert {:ok, {12, "Int", _}} = TE.eval("3#{TP.h_space()}*#{TP.space()}4")
-      assert {:ok, {2.0, "Float", _}} = TE.eval("4#{TP.h_space()}/#{TP.space()}2")
-      assert {:ok, {7, "Int", _}} = TE.eval("3#{TP.h_space()}+#{TP.space()}4")
-      assert {:ok, {1, "Int", _}} = TE.eval("3#{TP.h_space()}-#{TP.space()}2")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}<#{TP.space()}3")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}<=#{TP.space()}3")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}>#{TP.space()}1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}>=#{TP.space()}1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}==#{TP.space()}2")
-      assert {:ok, {true, "Bool", _}} = TE.eval("2#{TP.h_space()}!=#{TP.space()}1")
-      assert {:ok, {true, "Bool", _}} = TE.eval("true#{TP.h_space()}&#{TP.space()}true")
-      assert {:ok, {true, "Bool", _}} = TE.eval("false#{TP.h_space()}|#{TP.space()}true")
+      assert {:ok, {12, :Int, _}} = TE.eval("3#{TP.h_space()}*#{TP.space()}4")
+      assert {:ok, {2.0, :Float, _}} = TE.eval("4#{TP.h_space()}/#{TP.space()}2")
+      assert {:ok, {7, :Int, _}} = TE.eval("3#{TP.h_space()}+#{TP.space()}4")
+      assert {:ok, {1, :Int, _}} = TE.eval("3#{TP.h_space()}-#{TP.space()}2")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}<#{TP.space()}3")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}<=#{TP.space()}3")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}>#{TP.space()}1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}>=#{TP.space()}1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}==#{TP.space()}2")
+      assert {:ok, {true, :Bool, _}} = TE.eval("2#{TP.h_space()}!=#{TP.space()}1")
+      assert {:ok, {true, :Bool, _}} = TE.eval("true#{TP.h_space()}&#{TP.space()}true")
+      assert {:ok, {true, :Bool, _}} = TE.eval("false#{TP.h_space()}|#{TP.space()}true")
     end
 
     # Vertical space forbidden between first operand and binary operator
@@ -202,7 +202,7 @@ defmodule Fika.ParserTest do
       assert {
                :function,
                [position: {4, 20, 23}],
-               {:foo, [], {:type, {1, 0, 6}, "Nothing"},
+               {:foo, [], {:type, {1, 0, 6}, :Nothing},
                 [
                   {:identifier, {2, 10, 13}, :x},
                   {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
@@ -987,7 +987,7 @@ defmodule Fika.ParserTest do
 
       assert result == [
                {:function, [position: {3, 22, 25}],
-                {:foo, [], {:type, {1, 0, 6}, :Nothing}, [{:string, {2, 10, 21}, "foo#bar"}]}}
+                {:foo, [], {:type, {1, 0, 6}, :Nothing}, [{:string, {2, 10, 21}, ["foo#bar"]}]}}
              ]
     end
   end

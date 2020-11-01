@@ -30,12 +30,12 @@ defmodule Fika.Env do
         "kernel.&(Bool, Bool)" => :Bool,
         "kernel.!(Bool)" => :Bool,
         "kernel.-(Int)" => :Int,
-        "kernel.<(Int,Int)" => :Bool,
-        "kernel.>(Int,Int)" => :Bool,
-        "kernel.<=(Int,Int)" => :Bool,
-        "kernel.>=(Int,Int)" => :Bool,
-        "kernel.==(Int,Int)" => :Bool,
-        "kernel.!=(Int,Int)" => :Bool
+        "kernel.<(Int, Int)" => :Bool,
+        "kernel.>(Int, Int)" => :Bool,
+        "kernel.<=(Int, Int)" => :Bool,
+        "kernel.>=(Int, Int)" => :Bool,
+        "kernel.==(Int, Int)" => :Bool,
+        "kernel.!=(Int, Int)" => :Bool
       }
     }
   end
