@@ -105,6 +105,11 @@ defmodule Fika.Parser.Types do
     |> label("nothing")
     |> reduce({Helper, :to_atom, []})
 
+  bool_type =
+    string("Bool")
+    |> label("boolean")
+    |> reduce({Helper, :to_atom, []})
+
   base_type =
     choice([
       string_type,
@@ -112,6 +117,7 @@ defmodule Fika.Parser.Types do
       float_type,
       nothing_type,
       atom_type,
+      bool_type,
       function_type,
       list_type,
       record_type,
