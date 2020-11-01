@@ -9,6 +9,7 @@ defmodule Fika.Types.Union do
   end
 
   @spec flatten_types(types :: Enumerable.t()) :: MapSet.t()
+  @doc false
   def flatten_types(types) do
     types
     |> Enum.flat_map(fn

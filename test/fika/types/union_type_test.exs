@@ -8,16 +8,18 @@ defmodule Fika.Types.UnionTypeTest do
       expected = MapSet.new([:a, :b, :c])
       assert %Union{types: expected} == Union.new([:a, :b, :c])
     end
+  end
 
+  describe "flatten_types/1" do
     test "handles a list which contains nested Unions" do
       expected = MapSet.new([:a, :b, :c, :d])
 
-      assert %Union{types: expected} == Union.new([%Union{types: [:a, :b]}, :c, :d])
-      assert %Union{types: expected} == Union.new([:a, %Union{types: [:b, :c]}, :d])
-      assert %Union{types: expected} == Union.new([:a, :b, %Union{types: [:c, :d]}])
+      assert expected == Union.flatten_types([%Union{types: [:a, :b]}, :c, :d])
+      assert expected == Union.flatten_types([:a, %Union{types: [:b, :c]}, :d])
+      assert expected == Union.flatten_types([:a, :b, %Union{types: [:c, :d]}])
 
-      assert %Union{types: expected} ==
-               Union.new([
+      assert expected ==
+               Union.flatten_types([
                  %Union{
                    types: [
                      %Union{types: [:a, :b]},
