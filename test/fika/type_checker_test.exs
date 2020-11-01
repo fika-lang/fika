@@ -273,8 +273,8 @@ defmodule Fika.TypeCheckerTest do
               %T.Tuple{
                 elements: %T.ArgList{
                   value: [
-                    %T.Tuple{elements: %T.ArgList{value: [:Bool, :String]}},
-                    %T.Tuple{elements: %T.ArgList{value: [:Float, :Int]}}
+                    %T.Tuple{elements: %T.ArgList{value: [:Int, :Float]}},
+                    %T.Tuple{elements: %T.ArgList{value: [:String, :Bool]}}
                   ]
                 }
               }, _env} = TypeChecker.infer_exp(Env.init(), ast)

@@ -288,6 +288,13 @@ defmodule Fika.TypeChecker do
           {:halt, error}
       end
     end)
+    |> case do
+      {:ok, reversed_exp_types, env} ->
+        {:ok, Enum.reverse(reversed_exp_types), env}
+
+      error ->
+        error
+    end
   end
 
   def infer_args(env, exp, module) do
