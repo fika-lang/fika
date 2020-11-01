@@ -105,7 +105,7 @@ defmodule Fika.Parser.Types do
     |> label("nothing")
     |> reduce({Helper, :to_atom, []})
 
-  type =
+  base_type =
     choice([
       string_type,
       int_type,
@@ -118,6 +118,18 @@ defmodule Fika.Parser.Types do
       map_type,
       tuple_type
     ])
+
+  union_type =
+    base_type
+    |> times(
+      allow_space
+      |> ignore(string("|"))
+      |> concat(allow_space)
+      |> concat(base_type),
+      min: 1
+    )
+
+  type = choice([union_type, base_type])
 
   parse_type =
     type
