@@ -76,10 +76,10 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[key, value], _line}, :record_field) do
-    [{String.to_atom(key), value}]
+    {String.to_atom(key), value}
   end
 
-  def do_to_ast({[fields], _line}, :record_type) do
+  def do_to_ast({fields, _line}, :record_type) do
     %T.Record{fields: fields}
   end
 

@@ -31,7 +31,7 @@ defmodule Fika.Parser.Types do
     |> ignore(string(")"))
     |> Helper.to_ast(:function_type)
 
-  type_key_value =
+  record_field =
     allow_space
     |> concat(identifier_str)
     |> concat(allow_space)
@@ -41,19 +41,18 @@ defmodule Fika.Parser.Types do
     |> label("key value pair")
     |> Helper.to_ast(:record_field)
 
-  type_key_values =
-    type_key_value
+  record_fields =
+    record_field
     |> repeat(
       allow_space
       |> ignore(string(","))
       |> concat(allow_space)
-      |> concat(type_key_value)
+      |> concat(record_field)
     )
-    |> reduce({Enum, :concat, []})
 
   record_type =
     ignore(string("{"))
-    |> concat(type_key_values)
+    |> concat(record_fields)
     |> ignore(string("}"))
     |> label("record type")
     |> Helper.to_ast(:record_type)
