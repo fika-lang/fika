@@ -71,6 +71,18 @@ defmodule Fika.Parser.Helper do
     %T.Tuple{elements: inner_types}
   end
 
+  def do_to_ast({[key_type, value_type], _line}, :map_type) do
+    %T.Map{key_type: key_type, value_type: value_type}
+  end
+
+  def do_to_ast({[key, value], _line}, :record_field) do
+    {String.to_atom(key), value}
+  end
+
+  def do_to_ast({fields, _line}, :record_type) do
+    %T.Record{fields: fields}
+  end
+
   def do_to_ast({[{:atom, _, atom}], _line}, :atom_type) do
     atom
   end

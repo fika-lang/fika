@@ -88,3 +88,12 @@ fn max(a: Int, b: Int) : Int do
     b
   end
 end
+
+# Union types
+fn interval(start: Int, finish: Int) : {:error, String} | {:ok, Int} do
+  if start <= finish do
+    {:ok, finish - start}
+  else
+    {:error, "Interval cannot end before it's started"}
+  end
+end

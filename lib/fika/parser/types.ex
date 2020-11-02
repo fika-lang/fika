@@ -31,45 +31,43 @@ defmodule Fika.Parser.Types do
     |> ignore(string(")"))
     |> Helper.to_ast(:function_type)
 
-  type_key_value =
+  record_field =
     allow_space
     |> concat(identifier_str)
     |> concat(allow_space)
-    |> string(":")
+    |> ignore(string(":"))
     |> concat(allow_space)
     |> parsec(:type)
     |> label("key value pair")
-    |> reduce({Enum, :join, []})
+    |> Helper.to_ast(:record_field)
 
-  type_key_values =
-    type_key_value
+  record_fields =
+    record_field
     |> repeat(
       allow_space
       |> ignore(string(","))
       |> concat(allow_space)
-      |> concat(type_key_value)
+      |> concat(record_field)
     )
-    |> reduce({Enum, :join, [","]})
 
   record_type =
-    string("{")
-    |> concat(type_key_values)
-    |> string("}")
-    |> reduce({Enum, :join, []})
+    ignore(string("{"))
+    |> concat(record_fields)
+    |> ignore(string("}"))
     |> label("record type")
+    |> Helper.to_ast(:record_type)
 
-  # To parse functions with map return type
   map_type =
-    string("Map")
-    |> string("(")
+    ignore(string("Map("))
     |> parsec(:type)
     |> concat(allow_space)
-    |> string(",")
+    |> ignore(string(","))
     |> concat(allow_space)
     |> parsec(:type)
     |> concat(allow_space)
-    |> string(")")
+    |> ignore(string(")"))
     |> label("map type")
+    |> Helper.to_ast(:map_type)
 
   tuple_type =
     ignore(string("{"))
@@ -105,6 +103,11 @@ defmodule Fika.Parser.Types do
     |> label("nothing")
     |> reduce({Helper, :to_atom, []})
 
+  bool_type =
+    string("Bool")
+    |> label("boolean")
+    |> reduce({Helper, :to_atom, []})
+
   base_type =
     choice([
       string_type,
@@ -112,6 +115,7 @@ defmodule Fika.Parser.Types do
       float_type,
       nothing_type,
       atom_type,
+      bool_type,
       function_type,
       list_type,
       record_type,
