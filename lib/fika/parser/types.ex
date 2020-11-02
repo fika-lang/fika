@@ -35,11 +35,11 @@ defmodule Fika.Parser.Types do
     allow_space
     |> concat(identifier_str)
     |> concat(allow_space)
-    |> string(":")
+    |> ignore(string(":"))
     |> concat(allow_space)
     |> parsec(:type)
     |> label("key value pair")
-    |> reduce({Enum, :join, []})
+    |> Helper.to_ast(:record_field)
 
   type_key_values =
     type_key_value
@@ -49,27 +49,26 @@ defmodule Fika.Parser.Types do
       |> concat(allow_space)
       |> concat(type_key_value)
     )
-    |> reduce({Enum, :join, [","]})
+    |> reduce({Enum, :concat, []})
 
   record_type =
-    string("{")
+    ignore(string("{"))
     |> concat(type_key_values)
-    |> string("}")
-    |> reduce({Enum, :join, []})
+    |> ignore(string("}"))
     |> label("record type")
+    |> Helper.to_ast(:record_type)
 
-  # To parse functions with map return type
   map_type =
-    string("Map")
-    |> string("(")
+    ignore(string("Map("))
     |> parsec(:type)
     |> concat(allow_space)
-    |> string(",")
+    |> ignore(string(","))
     |> concat(allow_space)
     |> parsec(:type)
     |> concat(allow_space)
-    |> string(")")
+    |> ignore(string(")"))
     |> label("map type")
+    |> Helper.to_ast(:map_type)
 
   tuple_type =
     ignore(string("{"))

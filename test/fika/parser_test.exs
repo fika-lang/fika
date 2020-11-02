@@ -920,7 +920,8 @@ defmodule Fika.ParserTest do
     test "record type" do
       str = "{foo: Int, bar: String}"
 
-      assert {:type, {1, 0, 23}, "{foo:Int,bar:String}"} == TestParser.type_str!(str)
+      assert {:type, {1, 0, 23}, %Fika.Types.Record{fields: [foo: :Int, bar: :String]}} ==
+               TestParser.type_str!(str)
     end
 
     test "atom type" do
