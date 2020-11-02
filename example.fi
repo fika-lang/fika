@@ -10,6 +10,13 @@ fn hello : String do
   "World"
 end
 
+# Strings support interpolations
+fn hello_interpolation : String do
+  hello = "Hello!"
+  world = "World"
+  "#{hello}, Greetings to the #{world}"
+end
+
 # This function returns a list of integers.
 fn foo : List(Int) do
   [1, 2, 3]
