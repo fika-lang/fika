@@ -1,14 +1,14 @@
 defmodule Fika.ErlTranslate do
-  def translate({:module, module_name, module}, file) do
+  def translate(ast, module_name, file) do
     line = 1
     file = String.to_charlist(file)
 
     module_header = [
       {:attribute, line, :file, {file, line}},
-      {:attribute, line, :module, String.to_atom(module_name)}
+      {:attribute, line, :module, module_name}
     ]
 
-    functions = Map.get(module, :function_defs, [])
+    functions = ast[:function_defs]
     {exports, function_declaration} = to_forms(functions)
 
     module_header ++ exports ++ function_declaration

@@ -6,11 +6,15 @@ defmodule Fika.Application do
   use Application
 
   def start(_type, _args) do
+    children = [
+      Fika.Compiler
+    ]
+
     children =
       if Application.get_env(:fika, :start_cli) do
-        [%{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}}]
+        [%{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}} | children]
       else
-        []
+        children
       end
 
     # See https://hexdocs.pm/elixir/Supervisor.html

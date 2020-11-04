@@ -46,7 +46,7 @@ defmodule Fika.Cli do
     try do
       Logger.debug("Calling :#{module}.#{function}")
       {result, _binding} = Code.eval_string(~s':"#{module}".#{function}')
-      IO.inspect(result)
+      result |> inspect() |> IO.puts()
     rescue
       UndefinedFunctionError ->
         IO.puts(fn_not_found_msg)

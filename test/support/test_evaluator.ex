@@ -1,6 +1,5 @@
 defmodule TestEvaluator do
   alias Fika.{
-    Env,
     TypeChecker,
     ErlTranslate
   }
@@ -58,7 +57,7 @@ defmodule TestEvaluator do
   end
 
   defp check_types(ast, bindings) do
-    env = Env.init_module_env(Env.init(), :tmp, ast)
+    env = TypeChecker.init_env(ast)
 
     env_from_bindings =
       Enum.reduce_while(bindings, {:ok, env}, fn {name, expected_type, value}, {:ok, env} ->
@@ -66,7 +65,7 @@ defmodule TestEvaluator do
 
         case TypeChecker.infer_exp(env, parsed_binding) do
           {:ok, ^expected_type, _env} ->
-            {:cont, {:ok, Env.scope_add(env, name, expected_type)}}
+            {:cont, {:ok, put_in(env, [:scope, name], expected_type)}}
 
           {:ok, other_type, _env} ->
             {:halt, {:error, "Declared binding type: #{expected_type}, got: #{other_type}"}}

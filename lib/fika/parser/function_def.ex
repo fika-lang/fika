@@ -70,7 +70,6 @@ defmodule Fika.Parser.FunctionDef do
     allow_space
     |> concat(function_def)
     |> times(min: 1)
-    |> Helper.to_ast(:function_defs)
 
   defcombinatorp :args, args
   defcombinator :function_def, function_def

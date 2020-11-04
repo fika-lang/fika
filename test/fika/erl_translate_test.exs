@@ -1,5 +1,5 @@
 defmodule Fika.ErlTranslateTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Fika.{
     Parser,
@@ -18,8 +18,8 @@ defmodule Fika.ErlTranslateTest do
     end
     """
 
-    ast = Parser.parse_module(str, "test")
-    result = ErlTranslate.translate(ast, "/tmp/foo")
+    {:ok, ast} = Parser.parse_module(str)
+    result = ErlTranslate.translate(ast, :test, "/tmp/foo")
 
     forms = [
       {:attribute, 1, :file, {'/tmp/foo', 1}},
@@ -47,12 +47,12 @@ defmodule Fika.ErlTranslateTest do
     end
     """
 
-    ast = Parser.parse_module(str, "test_arithmetic")
-    result = ErlTranslate.translate(ast, "/tmp/foo")
+    {:ok, ast} = Parser.parse_module(str)
+    result = ErlTranslate.translate(ast, :test, "/tmp/foo")
 
     forms = [
       {:attribute, 1, :file, {'/tmp/foo', 1}},
-      {:attribute, 1, :module, :test_arithmetic},
+      {:attribute, 1, :module, :test},
       {:attribute, 3, :export, [a: 0]},
       {:function, 3, :a, 0,
        [

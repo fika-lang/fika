@@ -51,10 +51,6 @@ defmodule Fika.Parser.Helper do
     {:function, [position: line], {name, args, type, exps}}
   end
 
-  def do_to_ast({value, _}, :function_defs) do
-    {:function_defs, value}
-  end
-
   def do_to_ast({[], line}, :return_type) do
     {:type, line, :Nothing}
   end
@@ -196,12 +192,8 @@ defmodule Fika.Parser.Helper do
     {:atom, line, value}
   end
 
-  def do_to_ast({[path, module_name], line}, :use_module) do
-    {line, {path, module_name}}
-  end
-
-  def do_to_ast({value, _}, :use_modules) do
-    {:use_modules, value}
+  def do_to_ast({[value], line}, :use_module) do
+    {value, line}
   end
 
   defp value_from_identifier({:identifier, _line, value}) do

@@ -1,9 +1,8 @@
 defmodule Fika.Code do
   alias Fika.{
     Parser,
-    TypeChecker,
+    Compiler.ParallelTypeChecker,
     ErlTranslate,
-    Env
   }
 
   require Logger
@@ -21,9 +20,9 @@ defmodule Fika.Code do
   def load_string(module_str, file) do
     if validate_filename?(file) do
       module_name = file_to_module(file)
-      ast = Parser.parse_module(module_str, module_name)
-      {:ok, _env} = TypeChecker.check_module(ast, Env.init())
-      forms = ErlTranslate.translate(ast, file)
+      ast = Parser.parse_module(module_str)
+      :ok = ParallelTypeChecker.check(module_name, ast[:function_defs])
+      forms = ErlTranslate.translate(ast, module_name, file)
       {:module, module} = result = load_forms(forms, file)
       Logger.debug("Loaded module #{module}")
       result
@@ -42,6 +41,6 @@ defmodule Fika.Code do
   end
 
   defp file_to_module(file) do
-    String.trim_trailing(file, ".fi")
+    String.trim_trailing(file, ".fi") |> String.to_atom()
   end
 end

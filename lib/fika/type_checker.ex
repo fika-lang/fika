@@ -1,34 +1,14 @@
 defmodule Fika.TypeChecker do
-  alias Fika.Env
+  # alias Fika.Env
   alias Fika.Types, as: T
+
+  alias Fika.Compiler
+  alias Fika.Compiler.{
+    ParallelTypeChecker,
+    SequentialTypeChecker
+  }
+
   require Logger
-
-  # Given the AST of a module, this function type checks each of the
-  # function definitions.
-  def check_module({:module, module_name, module} = ast, env) do
-    env = Env.init_module_env(env, module_name, ast)
-    functions = Map.get(module, :function_defs, [])
-
-    Enum.reduce_while(functions, {:ok, env}, fn function, {:ok, env} ->
-      {:function, _line, {name, _args, _type, _exprs}} = function
-      signature = signature(function, module_name)
-
-      if Env.known_function?(env, signature) do
-        Logger.debug("Already checked function: #{signature}. Skipping.")
-        {:cont, {:ok, env}}
-      else
-        case check(function, env) do
-          {:ok, type, env} ->
-            Logger.debug("Function: #{name} checks type: #{type}")
-            {:cont, {:ok, env}}
-
-          error ->
-            Logger.debug("Function: #{name} failed type check")
-            {:halt, error}
-        end
-      end
-    end)
-  end
 
   # Given the AST of a function definition, this function checks if the return
   # type is indeed the type that's inferred from the body of the function.
@@ -36,10 +16,10 @@ defmodule Fika.TypeChecker do
     {:type, _line, expected_type} = return_type
 
     case infer(function, env) do
-      {:ok, ^expected_type, _env} = result ->
+      {:ok, ^expected_type} = result ->
         result
 
-      {:ok, inferred_type, _env} ->
+      {:ok, inferred_type} ->
         {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
 
       error ->
@@ -52,11 +32,18 @@ defmodule Fika.TypeChecker do
   def infer({:function, _line, {name, args, _type, exprs}}, env) do
     Logger.debug("Inferring type of function: #{name}")
 
-    env = add_args_to_scope(env, args)
+    env =
+      env
+      |> Map.put(:scope, %{})
+      |> add_args_to_scope(args)
 
-    env
-    |> infer_block(exprs)
-    |> add_function_type(name, args)
+    case infer_block(env, exprs) do
+      {:ok, type, _env} ->
+        {:ok, type}
+
+      error ->
+        error
+    end
   end
 
   def infer_block(env, []) do
@@ -92,7 +79,7 @@ defmodule Fika.TypeChecker do
 
   # Variables
   def infer_exp(env, {:identifier, _line, name}) do
-    type = Env.scope_get(env, name)
+    type = get_in(env, [:scope, name])
 
     if type do
       Logger.debug("Variable type found from scope: #{name}:#{type}")
@@ -106,9 +93,9 @@ defmodule Fika.TypeChecker do
   # Function calls
   def infer_exp(env, {:call, {name, _line}, args, module}) do
     exp = %{args: args, name: name}
-    module_name = module || Env.current_module(env)
+    # module_name = module || Env.current_module(env)
     Logger.debug("Inferring type of function: #{name}")
-    infer_args(env, exp, module_name)
+    infer_args(env, exp, module)
   end
 
   # Function calls using reference
@@ -142,7 +129,7 @@ defmodule Fika.TypeChecker do
     case infer_exp(env, right) do
       {:ok, type, env} ->
         Logger.debug("Adding variable to scope: #{left}:#{type}")
-        env = Env.scope_add(env, left, type)
+        env = put_in(env, [:scope, left], type)
         {:ok, type, env}
 
       error ->
@@ -241,31 +228,14 @@ defmodule Fika.TypeChecker do
   end
 
   # Function ref
-  def infer_exp(
-        env,
-        {:function_ref, _, {module, function_name, arg_types}}
-      ) do
+  def infer_exp(env, {:function_ref, _, {module, function_name, arg_types}}) do
     Logger.debug("Inferring type of function: #{function_name}")
 
-    module_name = module || Env.current_module(env)
+    signature = get_function_signature(function_name, arg_types)
 
-    signature = get_signature(module_name, function_name, arg_types)
-
-    result =
-      if module_name == Env.current_module(env) && !Env.known_function?(env, signature) do
-        Logger.debug("Checking unknown function #{signature} in module: #{module_name}")
-
-        case check_by_signature(env, signature) do
-          {:ok, _, _} = result -> result
-          error -> error
-        end
-      else
-        get_type_by_signature(env, signature)
-      end
-
-    case result do
-      {:ok, return_type, env} ->
-        type = %T.FunctionRef{return_type: return_type, arg_types: arg_types}
+    case get_type(module, signature, env) do
+      {:ok, type} ->
+        type = %T.FunctionRef{arg_types: arg_types, return_type: type}
         {:ok, type, env}
 
       error ->
@@ -287,6 +257,15 @@ defmodule Fika.TypeChecker do
       {:ok, :Bool, env} -> infer_if_else_blocks(env, if_block, else_block)
       error -> error
     end
+  end
+
+  def function_ast_signature({:function, _line, {name, args, _type, _exprs}}) do
+    arg_types = Enum.map(args, fn {_, {:type, _, type}} -> type end)
+    get_function_signature(name, arg_types)
+  end
+
+  def init_env(ast) do
+    %{ast: ast, scope: %{}}
   end
 
   defp infer_if_else_condition(env, condition) do
@@ -347,17 +326,14 @@ defmodule Fika.TypeChecker do
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->
-        signature = get_signature(module, exp.name, type_acc)
+        signature = get_function_signature(exp.name, type_acc)
 
-        if module == Env.current_module(env) && !Env.known_function?(env, signature) do
-          Logger.debug("Checking unknown function #{signature} in module: #{module}")
+        case get_type(module, signature, env) do
+          {:ok, type} ->
+            {:ok, type, env}
 
-          case check_by_signature(env, signature) do
-            {:ok, _, _} = result -> result
-            error -> error
-          end
-        else
-          get_type_by_signature(env, signature)
+          error ->
+            error
         end
 
       error ->
@@ -433,66 +409,27 @@ defmodule Fika.TypeChecker do
     end
   end
 
-  defp get_type_by_signature(env, signature) do
-    type = Env.get_function_type(env, signature)
-
-    if type do
-      Logger.debug("Type of function signature: #{signature} is: #{type}")
-      {:ok, type, env}
-    else
-      Logger.debug("Type of function signature: #{signature} not found")
-      {:error, "Unknown function: #{signature}"}
-    end
-  end
-
   defp add_args_to_scope(env, args) do
     Enum.reduce(args, env, fn {{:identifier, _, name}, {:type, _, type}}, env ->
       Logger.debug("Adding arg type to scope: #{name}:#{type}")
-      Env.scope_add(env, name, type)
+      put_in(env, [:scope, name], type)
     end)
   end
 
-  defp add_function_type({:ok, type, env}, name, args) do
-    types =
-      Enum.map(args, fn {_, {_, _, type}} ->
-        type
-      end)
-
-    module = Env.current_module(env)
-    signature = get_signature(module, name, types)
-
-    env = Env.add_function_type(env, signature, type)
-
-    {:ok, type, env}
+  defp get_function_signature(function_name, arg_types) do
+    "#{function_name}(#{Enum.join(arg_types, ", ")})"
   end
 
-  defp add_function_type(error, _, _) do
-    error
-  end
-
-  defp signature({:function, _line, {name, args, _type, _exprs}}, module) do
-    arg_types = Enum.map(args, fn {_, {:type, _, type}} -> type end)
-    get_signature(module, name, arg_types)
-  end
-
-  defp get_signature(module, name, arg_types) do
-    arg_types_str = T.Helper.join_list(arg_types)
-    "#{module}.#{name}(#{arg_types_str})"
-  end
-
-  defp check_by_signature(env, signature) do
-    functions = Env.ast_functions(env)
-    module = Env.current_module(env)
-
-    function =
-      Enum.find(functions, fn function ->
-        signature(function, module) == signature
-      end)
-
-    if function do
-      check(function, env)
+  # Local function
+  defp get_type(nil, signature, env) do
+    if pid = env[:type_checker_pid] do
+      ParallelTypeChecker.get_result(pid, signature)
     else
-      {:error, "Undefined function: #{signature} in module #{module}"}
+      SequentialTypeChecker.get_result(signature, env)
     end
+  end
+  # Remote function
+  defp get_type(module, signature, _env) do
+    Compiler.get_result(module, signature)
   end
 end

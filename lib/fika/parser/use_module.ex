@@ -13,19 +13,14 @@ defmodule Fika.Parser.UseModule do
     ascii_string([?a..?z], 1)
     |> ascii_string([?a..?z, ?_, ?0..?9], min: 0)
 
-  module_name =
-    module_str
-    |> reduce({Enum, :join, [""]})
-
   path =
-    module_str
-    |> string("/")
-    |> repeat()
-    |> reduce({Enum, :join, [""]})
+    string("/")
+    |> concat(module_str)
 
   module_path =
-    path
-    |> concat(module_name)
+    module_str
+    |> repeat(path)
+    |> reduce({Enum, :join, [""]})
 
   use_module =
     ignore(string("use"))
@@ -36,8 +31,7 @@ defmodule Fika.Parser.UseModule do
   use_modules =
     allow_space
     |> concat(use_module)
-    |> times(min: 1)
-    |> Helper.to_ast(:use_modules)
+    |> repeat()
 
   defcombinator :use_modules, use_modules
 end
