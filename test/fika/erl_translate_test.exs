@@ -40,10 +40,10 @@ defmodule Fika.ErlTranslateTest do
     assert result == forms
   end
 
-  test "infix arithmetic operators" do
+  test "arithmetic operators" do
     str = """
     fn a do
-      1+2*3/4
+      1+2*-3/4
     end
     """
 
@@ -59,7 +59,8 @@ defmodule Fika.ErlTranslateTest do
          {:clause, 3, [], [],
           [
             {:op, 2, :+, {:integer, 2, 1},
-             {:op, 2, :/, {:op, 2, :*, {:integer, 2, 2}, {:integer, 2, 3}}, {:integer, 2, 4}}}
+             {:op, 2, :/, {:op, 2, :*, {:integer, 2, 2}, {:op, 2, :-, {:integer, 2, 3}}},
+              {:integer, 2, 4}}}
           ]}
        ]}
     ]
@@ -96,6 +97,15 @@ defmodule Fika.ErlTranslateTest do
                 {:map_field_assoc, 1, {:atom, 0, :__record__}, {nil, 0}},
                 {:map_field_assoc, 1, {:atom, 1, :foo}, {:integer, 1, 1}}
               ]}
+  end
+
+  test "map" do
+    str = ~s({"foo" => 1})
+    ast = TestParser.expression!(str)
+    result = ErlTranslate.translate_expression(ast)
+
+    assert result ==
+             {:map, 1, [{:map_field_assoc, 1, {:string, 1, 'foo'}, {:integer, 1, 1}}]}
   end
 
   describe "function reference" do
@@ -164,6 +174,40 @@ defmodule Fika.ErlTranslateTest do
             ]} = result
   end
 
+  describe "string interpolation" do
+    test "replaces with string" do
+      str = ~S"""
+      "#{"Hello"} #{"World"}"
+      """
+
+      ast = TestParser.expression!(str)
+      result = ErlTranslate.translate_expression(ast)
+
+      assert {
+               :bin,
+               1,
+               [
+                 {:bin_element, 1, {:string, 1, 'Hello'}, :default, :default},
+                 {:bin_element, 1, {:string, 1, ' '}, :default, :default},
+                 {:bin_element, 1, {:string, 1, 'World'}, :default, :default}
+               ]
+             } = result
+    end
+
+    test "parses known variable in string interpolation" do
+      str = ~S"""
+      hello = "Hello"
+      "#{hello}"
+      """
+
+      {:ok, [_, interpolation], _, _, _, _} = TestParser.exps(str)
+
+      result = ErlTranslate.translate_expression(interpolation)
+
+      assert {:bin, 2, [{:bin_element, 2, {:var, 2, :hello}, :default, :default}]} = result
+    end
+  end
+
   describe "tuple" do
     test "single element tuple" do
       str = "{1}"
@@ -181,6 +225,24 @@ defmodule Fika.ErlTranslateTest do
                1,
                [{:tuple, 1, [{:integer, 1, 1}]}, {:tuple, 1, [{:integer, 1, 2}]}]
              } = ErlTranslate.translate_expression(ast)
+    end
+  end
+
+  describe "list" do
+    test "single element list" do
+      str = "[1]"
+      ast = TestParser.expression!(str)
+
+      assert {:cons, 1, {:integer, 1, 1}, {nil, 1}} = ErlTranslate.translate_expression(ast)
+    end
+
+    test "list of lists" do
+      str = "[[1], [1, 2]]"
+      ast = TestParser.expression!(str)
+
+      assert {:cons, 1, {:cons, 1, {:integer, 1, 1}, {nil, 1}},
+              {:cons, 1, {:cons, 1, {:integer, 1, 1}, {:cons, 1, {:integer, 1, 2}, {nil, 1}}},
+               {nil, 1}}} = ErlTranslate.translate_expression(ast)
     end
   end
 end

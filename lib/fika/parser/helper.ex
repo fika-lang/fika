@@ -1,6 +1,8 @@
 defmodule Fika.Parser.Helper do
   import NimbleParsec
 
+  alias Fika.Types, as: T
+
   def to_ast(c, kind) do
     c
     |> line()
@@ -26,7 +28,7 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[left, bin_op, right | rest], line}, :exp_bin_op)
-      when bin_op in ["+", "-", "*", "/", "|", "&"] do
+      when bin_op in ["+", "-", "*", "/", "|", "&", "<", ">", "<=", ">=", "==", "!="] do
     new_left = {:call, {String.to_atom(bin_op), line}, [left, right], :kernel}
     do_to_ast({[new_left | rest], line}, :exp_bin_op)
   end
@@ -35,8 +37,9 @@ defmodule Fika.Parser.Helper do
     result
   end
 
-  def do_to_ast({["!", exp], line}, :not) do
-    {:call, {:!, line}, [exp], :kernel}
+  def do_to_ast({[unary_op, exp], line}, :unary_op)
+      when unary_op in ["!", "-"] do
+    {:call, {String.to_atom(unary_op), line}, [exp], :kernel}
   end
 
   def do_to_ast({[name], line}, :identifier) do
@@ -53,27 +56,57 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({[], line}, :return_type) do
-    {:type, line, "Nothing"}
+    {:type, line, :Nothing}
   end
 
   def do_to_ast({[type], _line}, :return_type) do
     type
   end
 
-  def do_to_ast({[name], _line}, :simple_type) do
-    name
+  def do_to_ast({[{_, _, inner_type}], _line}, :list_type) when is_struct(inner_type) do
+    %T.List{type: inner_type}
   end
 
-  def do_to_ast({types, line}, :type) do
-    type =
-      Enum.reduce(types, "", fn
-        {:atom, _l, value}, acc ->
-          acc <> ":#{value}"
+  def do_to_ast({[inner_type], _line}, :list_type) do
+    %T.List{type: inner_type}
+  end
 
-        type, acc ->
-          acc <> type
-      end)
+  def do_to_ast({inner_types, _line}, :tuple_type) do
+    %T.Tuple{elements: inner_types}
+  end
 
+  def do_to_ast({[key_type, value_type], _line}, :map_type) do
+    %T.Map{key_type: key_type, value_type: value_type}
+  end
+
+  def do_to_ast({[key, value], _line}, :record_field) do
+    {String.to_atom(key), value}
+  end
+
+  def do_to_ast({fields, _line}, :record_type) do
+    %T.Record{fields: fields}
+  end
+
+  def do_to_ast({[{:atom, _, atom}], _line}, :atom_type) do
+    atom
+  end
+
+  def do_to_ast({types, _line}, :function_type) do
+    arg_types = types |> Keyword.take([:arg_type]) |> Keyword.values()
+    return_type = Keyword.get(types, :return_type)
+
+    %T.FunctionRef{arg_types: arg_types, return_type: return_type}
+  end
+
+  def do_to_ast({types, _line}, :union_type) do
+    T.Union.new(types)
+  end
+
+  def do_to_ast({[{_, _, type}], line}, :type) when is_struct(type) do
+    {:type, line, type}
+  end
+
+  def do_to_ast({[type], line}, :type) do
     {:type, line, type}
   end
 
@@ -107,7 +140,15 @@ defmodule Fika.Parser.Helper do
   end
 
   def do_to_ast({value, line}, :string) do
-    {:string, line, to_string(value)}
+    str =
+      value
+      |> Enum.chunk_by(&is_tuple/1)
+      |> Enum.flat_map(fn
+        [h | _tail] = interpolations when is_tuple(h) -> interpolations
+        charlist -> [to_string(charlist)]
+      end)
+
+    {:string, line, str}
   end
 
   def do_to_ast({result, line}, :exp_list) do
@@ -116,6 +157,10 @@ defmodule Fika.Parser.Helper do
 
   def do_to_ast({result, line}, :tuple) do
     {:tuple, line, result}
+  end
+
+  def do_to_ast({key_values, line}, :map) do
+    {:map, line, key_values}
   end
 
   def do_to_ast({[k, v], _line}, :key_value) do
@@ -161,5 +206,11 @@ defmodule Fika.Parser.Helper do
 
   defp value_from_identifier({:identifier, _line, value}) do
     value
+  end
+
+  def to_atom([value]), do: String.to_atom(value)
+
+  def tag(value, tag) do
+    {tag, value}
   end
 end

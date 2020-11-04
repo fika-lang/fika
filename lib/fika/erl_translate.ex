@@ -37,8 +37,24 @@ defmodule Fika.ErlTranslate do
   end
 
   defp translate_exp({:call, {bin_op, {line, _, _}}, [arg1, arg2], _module})
-       when bin_op in [:+, :-, :*, :/] do
+       when bin_op in [:+, :-, :*, :/, :<, :>, :>=, :==] do
     {:op, line, bin_op, translate_exp(arg1), translate_exp(arg2)}
+  end
+
+  defp translate_exp({:call, {:<=, {line, _, _}}, [arg1, arg2], _module}) do
+    {:op, line, :"=<", translate_exp(arg1), translate_exp(arg2)}
+  end
+
+  defp translate_exp({:call, {:!=, {line, _, _}}, [arg1, arg2], _module}) do
+    {:op, line, :"/=", translate_exp(arg1), translate_exp(arg2)}
+  end
+
+  defp translate_exp({:call, {:!, {line, _, _}}, [arg], _module}) do
+    {:op, line, :not, translate_exp(arg)}
+  end
+
+  defp translate_exp({:call, {:-, {line, _, _}}, [arg], _module}) do
+    {:op, line, :-, translate_exp(arg)}
   end
 
   defp translate_exp({:call, {:|, {line, _, _}}, [arg1, arg2], _module}) do
@@ -47,10 +63,6 @@ defmodule Fika.ErlTranslate do
 
   defp translate_exp({:call, {:&, {line, _, _}}, [arg1, arg2], _module}) do
     {:op, line, :and, translate_exp(arg1), translate_exp(arg2)}
-  end
-
-  defp translate_exp({:call, {:!, {line, _, _}}, [arg1], _module}) do
-    {:op, line, :not, translate_exp(arg1)}
   end
 
   defp translate_exp({:call, {name, {line, _, _}}, args, nil}) do
@@ -91,8 +103,20 @@ defmodule Fika.ErlTranslate do
     {:var, line, name}
   end
 
-  defp translate_exp({:string, {line, _, _}, value}) do
+  defp translate_exp({:string, {line, _, _}, [value]}) when is_binary(value) do
     {:string, line, String.to_charlist(value)}
+  end
+
+  defp translate_exp({:string, {line, _, _}, str_elements}) do
+    translated_exps =
+      str_elements
+      |> Enum.map(fn
+        value when is_binary(value) -> {:string, line, String.to_charlist(value)}
+        exp -> translate_exp(exp)
+      end)
+      |> Enum.map(&{:bin_element, line, &1, :default, :default})
+
+    {:bin, line, translated_exps}
   end
 
   defp translate_exp({:list, {line, _, _}, value}) do
@@ -112,6 +136,15 @@ defmodule Fika.ErlTranslate do
     k_vs = add_record_meta(k_vs, name, line)
 
     {:map, line, k_vs}
+  end
+
+  defp translate_exp({:map, {line, _, _}, key_values}) do
+    key_values =
+      Enum.map(key_values, fn {{_, {l, _, _}, _} = k, v} ->
+        {:map_field_assoc, l, translate_exp(k), translate_exp(v)}
+      end)
+
+    {:map, line, key_values}
   end
 
   defp translate_exp({:function_ref, {line, _, _}, {module, function, arg_types}}) do

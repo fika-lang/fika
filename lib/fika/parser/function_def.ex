@@ -24,11 +24,11 @@ defmodule Fika.Parser.FunctionDef do
 
   args =
     arg
-    |> optional(
+    |> repeat(
       allow_space
       |> ignore(string(","))
       |> concat(allow_space)
-      |> parsec(:args)
+      |> concat(arg)
     )
 
   arg_parens =
@@ -73,5 +73,6 @@ defmodule Fika.Parser.FunctionDef do
     |> Helper.to_ast(:function_defs)
 
   defcombinatorp :args, args
+  defcombinator :function_def, function_def
   defcombinator :function_defs, function_defs
 end

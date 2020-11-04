@@ -7,97 +7,135 @@ defmodule Fika.Parser.Types do
   identifier_str = parsec({Common, :identifier_str})
   atom = parsec({Common, :atom})
 
+  atom_type = Helper.to_ast(atom, :atom_type)
+
   type_args =
-    optional(
+    parsec(:type)
+    |> optional(
       allow_space
-      |> string(",")
+      |> ignore(string(","))
       |> concat(allow_space)
-      |> parsec(:type)
       |> parsec(:type_args)
     )
 
   function_type =
-    string("Fn")
-    |> string("(")
-    |> optional(parsec(:type) |> concat(type_args))
+    ignore(string("Fn("))
+    |> optional(type_args |> map({Helper, :tag, [:arg_type]}))
     |> concat(allow_space)
-    |> string("->")
+    |> ignore(string("->"))
     |> concat(allow_space)
-    |> parsec(:type)
-    |> string(")")
+    |> concat(
+      parsec(:type)
+      |> map({Helper, :tag, [:return_type]})
+    )
+    |> ignore(string(")"))
+    |> Helper.to_ast(:function_type)
 
-  simple_type =
-    ascii_string([?A..?Z], 1)
-    |> ascii_string([?a..?z, ?A..?Z], min: 0)
-    |> reduce({Enum, :join, [""]})
-    |> Helper.to_ast(:simple_type)
-
-  type_parens =
-    string("(")
-    |> concat(allow_space)
-    |> parsec(:type)
-    |> concat(type_args)
-    |> concat(allow_space)
-    |> string(")")
-
-  type_key_value =
+  record_field =
     allow_space
     |> concat(identifier_str)
     |> concat(allow_space)
-    |> string(":")
+    |> ignore(string(":"))
     |> concat(allow_space)
     |> parsec(:type)
     |> label("key value pair")
-    |> reduce({Enum, :join, []})
+    |> Helper.to_ast(:record_field)
 
-  type_key_values =
-    type_key_value
+  record_fields =
+    record_field
     |> repeat(
       allow_space
       |> ignore(string(","))
       |> concat(allow_space)
-      |> concat(type_key_value)
+      |> concat(record_field)
     )
-    |> reduce({Enum, :join, [","]})
 
   record_type =
-    string("{")
-    |> concat(type_key_values)
-    |> string("}")
-    |> reduce({Enum, :join, []})
+    ignore(string("{"))
+    |> concat(record_fields)
+    |> ignore(string("}"))
     |> label("record type")
+    |> Helper.to_ast(:record_type)
 
-  # To parse functions with tuple return type
-  type_tuple_element =
-    parsec(:type)
-    |> label("tuple element")
-
-  type_tuple_elements =
-    type_tuple_element
-    |> repeat(
-      allow_space
-      |> ignore(string(","))
-      |> concat(allow_space)
-      |> concat(type_tuple_element)
-    )
-    |> reduce({Enum, :join, [","]})
+  map_type =
+    ignore(string("Map("))
+    |> parsec(:type)
+    |> concat(allow_space)
+    |> ignore(string(","))
+    |> concat(allow_space)
+    |> parsec(:type)
+    |> concat(allow_space)
+    |> ignore(string(")"))
+    |> label("map type")
+    |> Helper.to_ast(:map_type)
 
   tuple_type =
-    string("{")
-    |> concat(type_tuple_elements)
-    |> string("}")
-    |> reduce({Enum, :join, []})
+    ignore(string("{"))
+    |> concat(type_args)
+    |> ignore(string("}"))
     |> label("tuple type")
+    |> Helper.to_ast(:tuple_type)
 
-  type =
+  list_type =
+    ignore(string("List("))
+    |> concat(parsec(:type))
+    |> ignore(string(")"))
+    |> label("list type")
+    |> Helper.to_ast(:list_type)
+
+  string_type =
+    string("String")
+    |> label("string")
+    |> reduce({Helper, :to_atom, []})
+
+  int_type =
+    string("Int")
+    |> label("int")
+    |> reduce({Helper, :to_atom, []})
+
+  float_type =
+    string("Float")
+    |> label("float")
+    |> reduce({Helper, :to_atom, []})
+
+  nothing_type =
+    string("Nothing")
+    |> label("nothing")
+    |> reduce({Helper, :to_atom, []})
+
+  bool_type =
+    string("Bool")
+    |> label("boolean")
+    |> reduce({Helper, :to_atom, []})
+
+  base_type =
     choice([
+      string_type,
+      int_type,
+      float_type,
+      nothing_type,
+      atom_type,
+      bool_type,
       function_type,
-      simple_type
-      |> optional(type_parens),
-      atom,
+      list_type,
       record_type,
+      map_type,
       tuple_type
     ])
+
+  union_type =
+    base_type
+    |> times(
+      allow_space
+      |> ignore(string("|"))
+      |> concat(allow_space)
+      |> concat(base_type),
+      min: 1
+    )
+    |> label("union type")
+    |> Helper.to_ast(:union_type)
+
+  type = choice([union_type, base_type])
 
   parse_type =
     type
