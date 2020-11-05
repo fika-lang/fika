@@ -143,6 +143,7 @@ defmodule Fika.CodeServer do
   defp insert_ok(signature_map) do
     Enum.map(signature_map, fn {k, v} ->
       {k, {:ok, v}}
-    end) |> Map.new()
+    end)
+    |> Map.new()
   end
 end

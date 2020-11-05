@@ -270,8 +270,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %T.Tuple{elements: [:Int, :Int, :Int]}, _env} =
-               TypeChecker.infer_exp(%{}, ast)
+      assert {:ok, %T.Tuple{elements: [:Int, :Int, :Int]}, _env} = TypeChecker.infer_exp(%{}, ast)
     end
 
     test "tuple of integers and floats" do
@@ -288,8 +287,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %T.Tuple{elements: [:Float, :Float]}, _env} =
-               TypeChecker.infer_exp(%{}, ast)
+      assert {:ok, %T.Tuple{elements: [:Float, :Float]}, _env} = TypeChecker.infer_exp(%{}, ast)
     end
 
     test "tuple of strings" do
@@ -297,8 +295,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %T.Tuple{elements: [:String, :String]}, _env} =
-               TypeChecker.infer_exp(%{}, ast)
+      assert {:ok, %T.Tuple{elements: [:String, :String]}, _env} = TypeChecker.infer_exp(%{}, ast)
     end
 
     test "tuple of tuple of mixed types" do

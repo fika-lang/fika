@@ -146,10 +146,10 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   end
 
   defp maybe_finish(state) do
-     if map_size(state.unchecked_functions) == 0 do
-       Logger.debug("No more unchecked_functions in #{state.module_name}.")
-       send(self(), :finish)
-     end
+    if map_size(state.unchecked_functions) == 0 do
+      Logger.debug("No more unchecked_functions in #{state.module_name}.")
+      send(self(), :finish)
+    end
 
     state
   end

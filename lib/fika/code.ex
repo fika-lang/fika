@@ -2,7 +2,7 @@ defmodule Fika.Code do
   alias Fika.Compiler.{
     Parser,
     TypeChecker.ParallelTypeChecker,
-    ErlTranslate,
+    ErlTranslate
   }
 
   require Logger
