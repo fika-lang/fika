@@ -53,7 +53,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
 
     Enum.each(state.unchecked_functions, fn {signature, function} ->
       Task.start_link(fn ->
-        result = TypeChecker.check(function, pid)
+        result = TypeChecker.check(function, %{type_checker_pid: pid})
         __MODULE__.post_result(pid, signature, result)
       end)
     end)

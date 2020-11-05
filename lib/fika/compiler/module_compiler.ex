@@ -8,6 +8,7 @@ defmodule Fika.Compiler.ModuleCompiler do
     CodeServer
   }
 
+  # Returns {:ok, module_name, file, binary} | {:error, message}
   def compile(module_name, manager_pid \\ nil) do
     Logger.debug("Compiling #{module_name}")
     state = init(module_name, manager_pid)
@@ -75,7 +76,7 @@ defmodule Fika.Compiler.ModuleCompiler do
 
       {:error, errors, warnings} ->
         message = """
-        Erlang translate error: #{state.file}
+        Error while compiling Erlang forms: #{state.file}
         Errors: #{inspect(errors)}
         Warnings: #{inspect(warnings)}
         """
