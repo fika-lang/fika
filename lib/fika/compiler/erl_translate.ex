@@ -1,4 +1,4 @@
-defmodule Fika.ErlTranslate do
+defmodule Fika.Compiler.ErlTranslate do
   def translate(ast, module_name, file) do
     line = 1
     file = String.to_charlist(file)

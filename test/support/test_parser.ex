@@ -1,7 +1,7 @@
 defmodule TestParser do
   import NimbleParsec
 
-  alias Fika.Parser.{
+  alias Fika.Compiler.Parser.{
     Common,
     Types,
     Expressions,

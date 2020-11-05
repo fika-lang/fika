@@ -1,12 +1,13 @@
-defmodule Fika.TypeCheckerTest do
+defmodule Fika.Compiler.TypeCheckerTest do
   use ExUnit.Case, async: true
 
   alias Fika.{
-    TypeChecker,
-    Compiler
+    Compiler.TypeChecker,
+    Compiler.Parser,
+    CodeServer
   }
 
-  alias Fika.Types, as: T
+  alias Fika.Compiler.TypeChecker.Types, as: T
 
   test "infer type of integer literals" do
     str = "123"
@@ -80,7 +81,7 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:ok, ast} = Fika.Parser.parse_module(str)
+    {:ok, ast} = Parser.parse_module(str)
 
     [function] = ast[:function_defs]
 
@@ -94,7 +95,7 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:ok, ast} = Fika.Parser.parse_module(str)
+    {:ok, ast} = Parser.parse_module(str)
 
     [function] = ast[:function_defs]
 
@@ -108,7 +109,7 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:ok, ast} = Fika.Parser.parse_module(str)
+    {:ok, ast} = Parser.parse_module(str)
 
     [function] = ast[:function_defs]
 
@@ -126,7 +127,7 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:ok, ast} = Fika.Parser.parse_module(str)
+    {:ok, ast} = Parser.parse_module(str)
     [foo, _bar] = ast[:function_defs]
 
     env = TypeChecker.init_env(ast)
@@ -143,12 +144,12 @@ defmodule Fika.TypeCheckerTest do
     end
     """
 
-    {:ok, ast} = Fika.Parser.parse_module(str)
+    {:ok, ast} = Parser.parse_module(str)
 
-    Compiler.post_result(:test2, "div(Float, Int)", {:ok, :Float})
-    Compiler.post_result(:test2, "div(Int, Float)", {:ok, :Float})
-    Compiler.post_result(:test2, "add(Int, Float)", {:ok, :Float})
-    Compiler.post_result(:test2, "add(Int, Int)", {:ok, :Int})
+    CodeServer.set_type(:test2, "div(Float, Int)", {:ok, :Float})
+    CodeServer.set_type(:test2, "div(Int, Float)", {:ok, :Float})
+    CodeServer.set_type(:test2, "add(Int, Float)", {:ok, :Float})
+    CodeServer.set_type(:test2, "add(Int, Int)", {:ok, :Int})
 
     [function] = ast[:function_defs]
 
@@ -366,7 +367,7 @@ defmodule Fika.TypeCheckerTest do
       str = "&bar.sum(Int, Int)"
       ast = TestParser.expression!(str)
 
-      Compiler.post_result(:bar, "sum(Int, Int)", {:ok, :Int})
+      CodeServer.set_type(:bar, "sum(Int, Int)", {:ok, :Int})
 
       assert {:ok,
               %T.FunctionRef{
@@ -379,7 +380,7 @@ defmodule Fika.TypeCheckerTest do
       str = "&bar.sum"
       ast = TestParser.expression!(str)
 
-      Compiler.post_result(:bar, "sum()", {:ok, :Int})
+      CodeServer.set_type(:bar, "sum()", {:ok, :Int})
 
       assert {:ok, %T.FunctionRef{arg_types: [], return_type: :Int}, _} =
                TypeChecker.infer_exp(%{}, ast)
@@ -474,9 +475,9 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      {:ok, ast} = Fika.Parser.parse_module(str)
+      {:ok, ast} = Parser.parse_module(str)
 
-      Compiler.post_result(:test2, "bar(String, Int)", {:ok, :Bool})
+      CodeServer.set_type(:test2, "bar(String, Int)", {:ok, :Bool})
 
       [function] = ast[:function_defs]
 
@@ -495,9 +496,9 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      {:ok, ast} = Fika.Parser.parse_module(str)
-      Compiler.reset()
-      Compiler.post_result(:test2, "bar(String, Int)", {:ok, :Bool})
+      {:ok, ast} = Parser.parse_module(str)
+      CodeServer.reset()
+      CodeServer.set_type(:test2, "bar(String, Int)", {:ok, :Bool})
       types = MapSet.new([:ok, :error])
       [function] = ast[:function_defs]
 
@@ -512,13 +513,13 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      {:ok, ast} = Fika.Parser.parse_module(str)
+      {:ok, ast} = Parser.parse_module(str)
       [function] = ast[:function_defs]
       env = TypeChecker.init_env(ast)
 
       types = MapSet.new([:error, :ok])
-      Compiler.reset()
-      Compiler.post_result(:test2, "bar(String, Int)", {:ok, %T.Union{types: types}})
+      CodeServer.reset()
+      CodeServer.set_type(:test2, "bar(String, Int)", {:ok, %T.Union{types: types}})
 
       assert {:ok, %T.Union{types: ^types}} = TypeChecker.infer(function, env)
       assert {:ok, %T.Union{types: ^types}} = TypeChecker.check(function, env)
@@ -532,7 +533,7 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      {:ok, ast} = Fika.Parser.parse_module(str)
+      {:ok, ast} = Parser.parse_module(str)
 
       [function] = ast[:function_defs]
 
@@ -548,10 +549,10 @@ defmodule Fika.TypeCheckerTest do
       end
       """
 
-      {:ok, ast} = Fika.Parser.parse_module(str)
+      {:ok, ast} = Parser.parse_module(str)
       [function] = ast[:function_defs]
-      Compiler.reset()
-      Compiler.post_result(:test2, "bar(String, Int)", {:ok, :Bool})
+      CodeServer.reset()
+      CodeServer.set_type(:test2, "bar(String, Int)", {:ok, :Bool})
 
       error =
         "Expected function reference to be called with arguments (String, Int), but it was called with arguments (Int)"

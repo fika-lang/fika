@@ -1,7 +1,7 @@
-defmodule Fika.ParserTest do
+defmodule Fika.Compiler.ParserTest do
   use ExUnit.Case, async: true
 
-  alias Fika.Types, as: T
+  alias Fika.Compiler.TypeChecker.Types, as: T
 
   test "integer" do
     str = """

@@ -1,9 +1,9 @@
-defmodule Fika.TypeChecker do
+defmodule Fika.Compiler.TypeChecker do
   # alias Fika.Env
-  alias Fika.Types, as: T
+  alias Fika.Compiler.TypeChecker.Types, as: T
 
-  alias Fika.Compiler
-  alias Fika.Compiler.{
+  alias Fika.CodeServer
+  alias Fika.Compiler.TypeChecker.{
     ParallelTypeChecker,
     SequentialTypeChecker
   }
@@ -430,6 +430,6 @@ defmodule Fika.TypeChecker do
   end
   # Remote function
   defp get_type(module, signature, _env) do
-    Compiler.get_result(module, signature)
+    CodeServer.get_type(module, signature)
   end
 end

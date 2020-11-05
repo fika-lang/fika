@@ -1,7 +1,5 @@
-defmodule Fika.Compiler.SequentialTypeChecker do
-  alias Fika.{
-    TypeChecker
-  }
+defmodule Fika.Compiler.TypeChecker.SequentialTypeChecker do
+  alias Fika.Compiler.TypeChecker
 
   def get_result(signature, env) do
     if function = find_by_signature(env.ast[:function_defs], signature) do

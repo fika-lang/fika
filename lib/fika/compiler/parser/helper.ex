@@ -1,14 +1,14 @@
-defmodule Fika.Parser.Helper do
+defmodule Fika.Compiler.Parser.Helper do
   import NimbleParsec
 
-  alias Fika.Types, as: T
+  alias Fika.Compiler.TypeChecker.Types, as: T
 
   def to_ast(c, kind) do
     c
     |> line()
     |> byte_offset()
-    |> map({Fika.Parser.Helper, :put_line_offset, []})
-    |> map({Fika.Parser.Helper, :do_to_ast, [kind]})
+    |> map({Fika.Compiler.Parser.Helper, :put_line_offset, []})
+    |> map({Fika.Compiler.Parser.Helper, :do_to_ast, [kind]})
   end
 
   def put_line_offset({[{result, {line, line_start_offset}}], string_offset}) do

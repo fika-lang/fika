@@ -2,10 +2,10 @@ defmodule Fika.Compiler.ModuleCompiler do
   require Logger
 
   alias Fika.{
-    Parser,
-    Compiler,
-    Compiler.ParallelTypeChecker,
-    ErlTranslate
+    Compiler.Parser,
+    Compiler.TypeChecker.ParallelTypeChecker,
+    Compiler.ErlTranslate,
+    CodeServer
   }
 
   def compile(module_name, manager_pid \\ nil) do
@@ -70,7 +70,7 @@ defmodule Fika.Compiler.ModuleCompiler do
   defp compile_forms(forms, state) do
     case :compile.forms(forms) do
       {:ok, _, binary} ->
-        Compiler.store_binary(state.module_name, state.file, binary)
+        CodeServer.put_binary(state.module_name, state.file, binary)
         {:ok, state.module_name, state.file, binary}
 
       {:error, errors, warnings} ->

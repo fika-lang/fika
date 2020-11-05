@@ -1,5 +1,5 @@
 defmodule TestEvaluator do
-  alias Fika.{
+  alias Fika.Compiler.{
     TypeChecker,
     ErlTranslate
   }

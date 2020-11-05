@@ -1,7 +1,7 @@
-defmodule Fika.Parser.LiteralExps do
+defmodule Fika.Compiler.Parser.LiteralExps do
   import NimbleParsec
 
-  alias Fika.Parser.{Common, Helper, Types, Expressions}
+  alias Fika.Compiler.Parser.{Common, Helper, Types, Expressions}
 
   allow_space = parsec({Common, :allow_space})
   identifier = parsec({Common, :identifier})

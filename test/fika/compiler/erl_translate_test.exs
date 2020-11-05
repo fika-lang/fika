@@ -1,7 +1,7 @@
-defmodule Fika.ErlTranslateTest do
+defmodule Fika.Compiler.ErlTranslateTest do
   use ExUnit.Case, async: true
 
-  alias Fika.{
+  alias Fika.Compiler.{
     Parser,
     ErlTranslate
   }

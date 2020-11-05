@@ -1,7 +1,7 @@
 defmodule Fika.Code do
-  alias Fika.{
+  alias Fika.Compiler.{
     Parser,
-    Compiler.ParallelTypeChecker,
+    TypeChecker.ParallelTypeChecker,
     ErlTranslate,
   }
 

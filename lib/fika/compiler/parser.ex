@@ -1,7 +1,7 @@
-defmodule Fika.Parser do
+defmodule Fika.Compiler.Parser do
   import NimbleParsec
 
-  alias Fika.Parser.{
+  alias Fika.Compiler.Parser.{
     Common,
     FunctionDef,
     UseModule

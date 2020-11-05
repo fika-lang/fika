@@ -1,11 +1,11 @@
-defmodule Fika.Compiler.ParallelTypeChecker do
+defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   use GenServer
 
   require Logger
 
   alias Fika.{
-    TypeChecker,
-    Compiler
+    Compiler.TypeChecker,
+    CodeServer
   }
 
   def check(module_name, function_asts) do
@@ -54,7 +54,7 @@ defmodule Fika.Compiler.ParallelTypeChecker do
     Enum.each(state.unchecked_functions, fn {signature, function} ->
       Task.start_link(fn ->
         result = TypeChecker.check(function, pid)
-        Fika.Compiler.ParallelTypeChecker.post_result(pid, signature, result)
+        __MODULE__.post_result(pid, signature, result)
       end)
     end)
 
@@ -91,7 +91,7 @@ defmodule Fika.Compiler.ParallelTypeChecker do
       |> maybe_finish()
 
     # TODO: when we have private functions, do this conditionally.
-    Compiler.post_result(state.module_name, signature, result)
+    CodeServer.set_type(state.module_name, signature, result)
 
     {:noreply, state}
   end

@@ -1,4 +1,4 @@
-defmodule Fika.Compiler do
+defmodule Fika.CodeServer do
   use GenServer
 
   require Logger
@@ -9,16 +9,16 @@ defmodule Fika.Compiler do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
 
-  def get_result(module, signature) do
+  def get_type(module, signature) do
     GenServer.call(__MODULE__, {:get_result, module, signature})
   end
 
-  def post_result(module, signature, result) do
-    GenServer.cast(__MODULE__, {:post_result, module, signature, result})
+  def set_type(module, signature, result) do
+    GenServer.cast(__MODULE__, {:set_type, module, signature, result})
   end
 
-  def store_binary(module, file, binary) do
-    GenServer.cast(__MODULE__, {:store_binary, module, file, binary})
+  def put_binary(module, file, binary) do
+    GenServer.cast(__MODULE__, {:put_binary, module, file, binary})
   end
 
   def reset do
@@ -37,7 +37,7 @@ defmodule Fika.Compiler do
     {:ok, state}
   end
 
-  def handle_cast({:post_result, module, signature, result}, state) do
+  def handle_cast({:set_type, module, signature, result}, state) do
     Logger.debug(
       "Setting result of public function: #{module}.#{signature} as #{inspect(result)}"
     )
@@ -50,7 +50,7 @@ defmodule Fika.Compiler do
     {:noreply, state}
   end
 
-  def handle_cast({:store_binary, module, file, binary}, state) do
+  def handle_cast({:put_binary, module, file, binary}, state) do
     Logger.debug("Storing binary for #{module}")
     state = %{state | binaries: [{module, file, binary} | state.binaries]}
     {:noreply, state}
