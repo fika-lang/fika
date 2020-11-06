@@ -18,5 +18,7 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     File.write!(temp_file, str)
 
     {:ok, ^module, ^temp_file, _binary} = ModuleCompiler.compile(module)
+
+    File.rm!(temp_file)
   end
 end
