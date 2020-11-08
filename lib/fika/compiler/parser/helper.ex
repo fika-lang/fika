@@ -7,8 +7,22 @@ defmodule Fika.Compiler.Parser.Helper do
     c
     |> line()
     |> byte_offset()
-    |> map({Fika.Compiler.Parser.Helper, :put_line_offset, []})
-    |> map({Fika.Compiler.Parser.Helper, :do_to_ast, [kind]})
+    |> map({__MODULE__, :put_line_offset, []})
+    |> post_traverse({__MODULE__, :do_to_ast_with_context, [kind]})
+  end
+
+  def do_to_ast_with_context(_, [result], context, _, _, kind) do
+    if kind in [:remote_function_call, :function_ref] do
+      case do_to_ast(result, context, kind) do
+        {:error, _} = error ->
+          error
+
+        result ->
+          {[result], context}
+      end
+    else
+      {[do_to_ast(result, kind)], context}
+    end
   end
 
   def put_line_offset({[{result, {line, line_start_offset}}], string_offset}) do
@@ -115,12 +129,6 @@ defmodule Fika.Compiler.Parser.Helper do
     {:call, {name, line}, args, nil}
   end
 
-  def do_to_ast({[module_alias, name, args], line}, :remote_function_call) do
-    {:identifier, _, module_alias} = module_alias
-    {:identifier, _, name} = name
-    {:call, {name, line}, args, module_alias}
-  end
-
   def do_to_ast({val, line}, :function_ref_call) do
     case val do
       [exp, args] ->
@@ -173,17 +181,6 @@ defmodule Fika.Compiler.Parser.Helper do
     {:record, line, name, key_values}
   end
 
-  def do_to_ast({ast, line}, :function_ref) do
-    case ast do
-      [[], function, arg_types] ->
-        {:function_ref, line, {nil, value_from_identifier(function), arg_types}}
-
-      [[module], function, arg_types] ->
-        {:function_ref, line,
-         {value_from_identifier(module), value_from_identifier(function), arg_types}}
-    end
-  end
-
   def do_to_ast({[{:identifier, line, value}], line}, :atom) when value in [true, false] do
     {:boolean, line, value}
   end
@@ -196,6 +193,31 @@ defmodule Fika.Compiler.Parser.Helper do
     {value, line}
   end
 
+  def do_to_ast({ast, line}, context, :function_ref) do
+    case ast do
+      [[], function, arg_types] ->
+        {:function_ref, line, {nil, value_from_identifier(function), arg_types}}
+
+      [[module], function, arg_types] ->
+        if module = expand_module(module, context) do
+          {:function_ref, line,
+           {value_from_identifier(module), value_from_identifier(function), arg_types}}
+        else
+          {:error, "Unknown module #{module}"}
+        end
+    end
+  end
+
+  def do_to_ast({[module_alias, name, args], line}, context, :remote_function_call) do
+    if module = expand_module(module_alias, context) do
+      {:identifier, _, module} = module
+      {:identifier, _, name} = name
+      {:call, {name, line}, args, module}
+    else
+      {:error, "Unknown module #{module_alias}"}
+    end
+  end
+
   defp value_from_identifier({:identifier, _line, value}) do
     value
   end
@@ -204,5 +226,16 @@ defmodule Fika.Compiler.Parser.Helper do
 
   def tag(value, tag) do
     {tag, value}
+  end
+
+  defp expand_module({:identifier, line, module}, context) do
+    module =
+      if module == :kernel do
+        :kernel
+      else
+        context[module]
+      end
+
+    {:identifier, line, module}
   end
 end

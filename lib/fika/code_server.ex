@@ -9,8 +9,12 @@ defmodule Fika.CodeServer do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
 
+  def compile_module(module) do
+    GenServer.call(__MODULE__, {:compile_module, module})
+  end
+
   def get_type(module, signature) do
-    GenServer.call(__MODULE__, {:get_result, module, signature})
+    GenServer.call(__MODULE__, {:get_type, module, signature})
   end
 
   def set_type(module, signature, result) do
@@ -19,6 +23,10 @@ defmodule Fika.CodeServer do
 
   def put_binary(module, file, binary) do
     GenServer.cast(__MODULE__, {:put_binary, module, file, binary})
+  end
+
+  def put_result(module, result) do
+    GenServer.cast(__MODULE__, {:put_result, module, result})
   end
 
   def reset do
@@ -32,21 +40,39 @@ defmodule Fika.CodeServer do
   def init(_) do
     state = init_state()
 
-    Logger.debug("Initializing Compiler")
+    Logger.debug("Initializing CodeServer")
 
     {:ok, state}
   end
 
   def handle_cast({:set_type, module, signature, result}, state) do
     Logger.debug(
-      "Setting result of public function: #{module}.#{signature} as #{inspect(result)}"
+      "Setting typecheck result of public function: #{module}.#{signature} as #{inspect(result)}"
     )
 
     state =
       state
-      |> set_result(module, signature, result)
+      |> set_type(module, signature, result)
       |> notify_waiting_type_checks(module, signature, result)
 
+    {:noreply, state}
+  end
+
+  def handle_cast({:put_result, module, :error}, state) do
+    Logger.debug("Compilation failed for #{module}")
+    state = put_in(state, [:compile_result, module], :error)
+    maybe_reply_with_result(state.compile_result, state.parent_pid)
+    {:noreply, state}
+  end
+
+  def handle_cast({:put_result, module, {file, binary}}, state) do
+    Logger.debug("Storing binary for #{module}")
+    state =
+      state
+      |> Map.put(:binaries, [{module, file, binary} | state.binaries])
+      |> put_in([:compile_result, module], :ok)
+
+    maybe_reply_with_result(state.compile_result, state.parent_pid)
     {:noreply, state}
   end
 
@@ -60,7 +86,7 @@ defmodule Fika.CodeServer do
     {:reply, :ok, init_state()}
   end
 
-  def handle_call({:get_result, module, signature}, from, state) do
+  def handle_call({:get_type, module, signature}, from, state) do
     state =
       if result = get_in(state, [:public_functions, module, signature]) do
         GenServer.reply(from, result)
@@ -74,6 +100,15 @@ defmodule Fika.CodeServer do
     {:noreply, state}
   end
 
+  def handle_call({:compile_module, module}, from, state) do
+    state =
+      state
+      |> start_module_compile(module)
+      |> Map.put(:parent_pid, from)
+
+    {:noreply, state}
+  end
+
   def handle_call(:load, _from, state) do
     result =
       Enum.map(state.binaries, fn {module, file, binary} ->
@@ -83,10 +118,10 @@ defmodule Fika.CodeServer do
         end
       end)
 
-    {:reply, result, state}
+    {:reply, result, reset_binaries(state)}
   end
 
-  defp set_result(state, module, signature, result) do
+  defp set_type(state, module, signature, result) do
     update_in(state, [:public_functions, module], fn
       nil -> %{signature => result}
       signatures -> Map.put(signatures, signature, result)
@@ -106,11 +141,10 @@ defmodule Fika.CodeServer do
   end
 
   defp maybe_compile(state, module) do
-    update_in(state, [:public_functions, module], fn
+    state
+    |> start_module_compile(module)
+    |> update_in([:public_functions, module], fn
       nil ->
-        Task.start(fn ->
-          ModuleCompiler.compile(module)
-        end)
 
         %{}
 
@@ -130,8 +164,14 @@ defmodule Fika.CodeServer do
     %{
       public_functions: default_functions(),
       waiting: %{},
+      compile_result: %{},
+      parent_pid: nil,
       binaries: []
     }
+  end
+
+  defp reset_binaries(state) do
+    Map.put(state, :binaries, [])
   end
 
   defp default_functions do
@@ -145,5 +185,26 @@ defmodule Fika.CodeServer do
       {k, {:ok, v}}
     end)
     |> Map.new()
+  end
+
+  defp start_module_compile(state, module) do
+    Task.start(fn ->
+      ModuleCompiler.compile(module)
+    end)
+
+    put_in(state, [:compile_result, module], nil)
+  end
+
+  defp maybe_reply_with_result(compile_result, parent_pid) do
+    result =
+      Enum.reduce_while(compile_result, {:ok, []}, fn
+        {_module, nil}, _ -> {:halt, nil}
+        {module, :ok}, {status, results} -> {:cont, {status, [{module, :ok} | results]}}
+        {module, :error}, {_, results} -> {:cont, {:error, [{module, :error} | results]}}
+      end)
+
+    if result && parent_pid do
+      GenServer.reply(parent_pid, result)
+    end
   end
 end

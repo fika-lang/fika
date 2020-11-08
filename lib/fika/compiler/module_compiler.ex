@@ -9,9 +9,9 @@ defmodule Fika.Compiler.ModuleCompiler do
   }
 
   # Returns {:ok, module_name, file, binary} | {:error, message}
-  def compile(module_name, manager_pid \\ nil) do
+  def compile(module_name) do
     Logger.debug("Compiling #{module_name}")
-    state = init(module_name, manager_pid)
+    state = init(module_name)
 
     with {:ok, str} <- read_file(state.file),
          {:ok, state} <- parse(str, state),
@@ -21,12 +21,10 @@ defmodule Fika.Compiler.ModuleCompiler do
     end
   end
 
-  defp init(module_atom, manager_pid) do
+  defp init(module_atom) do
     %{
       # Full name of the current module as atom
       module_name: module_atom,
-      # PID of manager process
-      manager_pid: manager_pid,
       # Path of module file
       file: "#{module_atom}.fi",
       # AST which will be created by parser
@@ -71,10 +69,11 @@ defmodule Fika.Compiler.ModuleCompiler do
   defp compile_forms(forms, state) do
     case :compile.forms(forms) do
       {:ok, _, binary} ->
-        CodeServer.put_binary(state.module_name, state.file, binary)
+        CodeServer.put_result(state.module_name, {state.file, binary})
         {:ok, state.module_name, state.file, binary}
 
       {:error, errors, warnings} ->
+        CodeServer.put_result(state.module_name, :error)
         message = """
         Error while compiling Erlang forms: #{state.file}
         Errors: #{inspect(errors)}
