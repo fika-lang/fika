@@ -74,6 +74,7 @@ defmodule Fika.Compiler.ModuleCompiler do
 
       {:error, errors, warnings} ->
         CodeServer.put_result(state.module_name, :error)
+
         message = """
         Error while compiling Erlang forms: #{state.file}
         Errors: #{inspect(errors)}

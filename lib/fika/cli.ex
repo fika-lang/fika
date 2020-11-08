@@ -14,12 +14,12 @@ defmodule Fika.Cli do
       fika start <directory>
         Starts the router.fi file inside <directory>.
 
-      fika exec [<filename> [--function <function_call>]]
-        Executes the function call <function_call> inside the module defined in <filename>.
+      fika exec [<module> [--function <function_call>]]
+        Executes the function call <function_call> inside the module <module>.
 
         Options:
-          <filename>: defines the file to be compiled. Defaults to 'main.fi'
-          -f | --function: chooses the function call to be run. Defaults to 'start()'
+          <module>: The module which defines the called function. Defaults to 'main'.
+          -f | --function: The function call that should be executed. Defaults to 'start()'.
     """)
   end
 
@@ -31,21 +31,18 @@ defmodule Fika.Cli do
 
     {opts, rest} = OptionParser.parse!(rest, options)
 
-    main_file = List.first(rest) || "main.fi"
+    main_module = List.first(rest) || "main"
+    module = String.to_atom(main_module)
     function = opts[:function] || "start()"
 
-    unless File.exists?(main_file) do
-      IO.puts("File #{main_file} not found.")
-      System.halt(1)
-    end
-
-    {:module, module} = Fika.Code.load_file(main_file)
+    {:ok, _} = Fika.Code.load_module(main_module)
 
     fn_not_found_msg = "Function #{function} not found."
 
     try do
       Logger.debug("Calling :#{module}.#{function}")
       {result, _binding} = Code.eval_string(~s':"#{module}".#{function}')
+      # TODO: This currently prints terms in Elixir. We should print Fika terms.
       result |> inspect() |> IO.puts()
     rescue
       UndefinedFunctionError ->

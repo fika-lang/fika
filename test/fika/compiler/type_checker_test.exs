@@ -137,6 +137,8 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
   test "infer function with variable assignments which get used in function calls" do
     str = """
+    use test2
+
     fn foo(a:Int, b:Float) : Float do
       x = 123
       y = 456
@@ -361,8 +363,12 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
   describe "function reference" do
     test "with args" do
-      str = "&bar.sum(Int, Int)"
-      ast = TestParser.expression!(str)
+      str = """
+      use bar
+      &bar.sum(Int, Int)
+      """
+
+      {:ok, [_, ast], _, _, _, _} = TestParser.exp_with_expanded_modules(str)
 
       CodeServer.set_type(:bar, "sum(Int, Int)", {:ok, :Int})
 
@@ -374,8 +380,12 @@ defmodule Fika.Compiler.TypeCheckerTest do
     end
 
     test "without args" do
-      str = "&bar.sum"
-      ast = TestParser.expression!(str)
+      str = """
+      use bar
+      &bar.sum
+      """
+
+      {:ok, [_, ast], _, _, _, _} = TestParser.exp_with_expanded_modules(str)
 
       CodeServer.set_type(:bar, "sum()", {:ok, :Int})
 
@@ -466,6 +476,8 @@ defmodule Fika.Compiler.TypeCheckerTest do
   describe "function calls using reference" do
     test "valid reference" do
       str = """
+      use test2
+
       fn foo do
         x = &test2.bar(String, Int)
         x.("hello", 123)
@@ -483,6 +495,8 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
     test "when function returns is expected to return an union type and has if-else clause" do
       str = """
+      use test2
+
       fn foo(x: String, y: Int) : :ok | :error do
         f = &test2.bar(String, Int)
         if f.(x, y) do
@@ -504,6 +518,8 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
     test "when function accepts union types and calls a function ref" do
       str = """
+      use test2
+
       fn foo(x: String, y: Int) : :ok | :error do
         f = &test2.bar(String, Int)
         f.(x, y)
@@ -540,6 +556,8 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
     test "function ref when given wrong types" do
       str = """
+      use test2
+
       fn foo do
         x = &test2.bar(String, Int)
         x.(123)

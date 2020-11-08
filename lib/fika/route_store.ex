@@ -14,7 +14,7 @@ defmodule Fika.RouteStore do
   end
 
   def load_routes do
-    Fika.Code.load_file("router.fi")
+    Fika.Code.load_module("router")
 
     if function_exported?(:router, :routes, 0) do
       routes = :router.routes()

@@ -203,17 +203,31 @@ defmodule Fika.Compiler.ParserTest do
       assert {:call, {:my_func, {1, 0, 15}}, args, nil} == TestParser.expression!(str)
     end
 
-    test "remote function call with args" do
+    test "cannot parse remote function call when module is unknown" do
       str = """
       my_module.my_func(x, 123)
       """
 
+      assert {:error, "Unknown module my_module", _, _, _, _} = TestParser.expression(str)
+    end
+
+    test "parses remote function call when module is known" do
+      str = """
+      use deps/my_module
+
+      my_module.my_func(x, 123)
+      """
+
       args = [
-        {:identifier, {1, 0, 19}, :x},
-        {:integer, {1, 0, 24}, 123}
+        {:identifier, {3, 20, 39}, :x},
+        {:integer, {3, 20, 44}, 123}
       ]
 
-      assert {:call, {:my_func, {1, 0, 25}}, args, :my_module} == TestParser.expression!(str)
+      assert {:ok, [_, function_call], _, context, _, _} =
+               TestParser.exp_with_expanded_modules(str)
+
+      assert function_call == {:call, {:my_func, {3, 20, 45}}, args, :"deps/my_module"}
+      assert context == %{my_module: :"deps/my_module"}
     end
 
     test "function calls with another function call as arg" do
@@ -599,16 +613,16 @@ defmodule Fika.Compiler.ParserTest do
               ]} == TestParser.expression!(str)
 
       str = """
-      {&foo.bar => jar(true)}
+      {&bar => jar(true)}
       """
 
       assert {
                :map,
-               {1, 0, 23},
+               {1, 0, 19},
                [
                  {
-                   {:function_ref, {1, 0, 9}, {:foo, :bar, []}},
-                   {:call, {:jar, {1, 0, 22}}, [{:boolean, {1, 0, 21}, true}], nil}
+                   {:function_ref, {1, 0, 5}, {nil, :bar, []}},
+                   {:call, {:jar, {1, 0, 18}}, [{:boolean, {1, 0, 17}, true}], nil}
                  }
                ]
              } == TestParser.expression!(str)
@@ -737,20 +751,34 @@ defmodule Fika.Compiler.ParserTest do
       assert {:function_ref, {1, 0, 4}, {nil, :foo, []}} == TestParser.expression!(str)
     end
 
-    test "parses a remote function ref with no args" do
+    test "cannot parse a remote function ref with unknown module" do
       str = """
       &foo.bar
       """
 
-      assert {:function_ref, {1, 0, 8}, {:foo, :bar, []}} == TestParser.expression!(str)
+      assert {:error, _, _, _, _, _} = TestParser.expression(str)
+    end
+
+    test "parses a remote function ref with no args when module is known" do
+      str = """
+      use deps/foo
+
+      &foo.bar
+      """
+
+      assert {:ok, [_, function_ref], _, context, _, _} =
+               TestParser.exp_with_expanded_modules(str)
+
+      assert function_ref == {:function_ref, {3, 14, 22}, {:"deps/foo", :bar, []}}
+      assert context == %{foo: :"deps/foo"}
     end
 
     test "parses a function ref with arg types" do
       str = """
-      &foo.bar(Int, Int)
+      &bar(Int, Int)
       """
 
-      assert {:function_ref, {1, 0, 18}, {:foo, :bar, [:Int, :Int]}} ==
+      assert {:function_ref, {1, 0, 14}, {nil, :bar, [:Int, :Int]}} ==
                TestParser.expression!(str)
     end
   end

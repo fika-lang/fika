@@ -198,12 +198,12 @@ defmodule Fika.Compiler.Parser.Helper do
       [[], function, arg_types] ->
         {:function_ref, line, {nil, value_from_identifier(function), arg_types}}
 
-      [[module], function, arg_types] ->
-        if module = expand_module(module, context) do
+      [[module_alias], function, arg_types] ->
+        if module = expand_module(module_alias, context) do
           {:function_ref, line,
            {value_from_identifier(module), value_from_identifier(function), arg_types}}
         else
-          {:error, "Unknown module #{module}"}
+          {:error, "Unknown module #{value_from_identifier(module_alias)}"}
         end
     end
   end
@@ -214,7 +214,7 @@ defmodule Fika.Compiler.Parser.Helper do
       {:identifier, _, name} = name
       {:call, {name, line}, args, module}
     else
-      {:error, "Unknown module #{module_alias}"}
+      {:error, "Unknown module #{value_from_identifier(module_alias)}"}
     end
   end
 
@@ -236,6 +236,6 @@ defmodule Fika.Compiler.Parser.Helper do
         context[module]
       end
 
-    {:identifier, line, module}
+    module && {:identifier, line, module}
   end
 end

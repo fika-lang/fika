@@ -33,6 +33,9 @@ defmodule Fika.CodeServer do
     GenServer.call(__MODULE__, :reset)
   end
 
+  # Loads the accumulated binaries which were collected as a result of
+  # parallel ModuleCompiler.compile.
+  # Returns the list [{:ok, <module>}, {:error, <module>, <reason>}, ...]
   def load do
     GenServer.call(__MODULE__, :load)
   end
@@ -67,6 +70,7 @@ defmodule Fika.CodeServer do
 
   def handle_cast({:put_result, module, {file, binary}}, state) do
     Logger.debug("Storing binary for #{module}")
+
     state =
       state
       |> Map.put(:binaries, [{module, file, binary} | state.binaries])
@@ -114,7 +118,7 @@ defmodule Fika.CodeServer do
       Enum.map(state.binaries, fn {module, file, binary} ->
         case :code.load_binary(module, String.to_charlist(file), binary) do
           {:module, module} -> {:ok, module}
-          {:error, reason} -> {:error, module, reason}
+          {:error, _reason} -> {:error, module}
         end
       end)
 
@@ -145,7 +149,6 @@ defmodule Fika.CodeServer do
     |> start_module_compile(module)
     |> update_in([:public_functions, module], fn
       nil ->
-
         %{}
 
       other ->
@@ -195,12 +198,15 @@ defmodule Fika.CodeServer do
     put_in(state, [:compile_result, module], nil)
   end
 
+  # Goes through the map %{<module_name> => :ok | :error} and returns
+  # {:ok | :error, [module_compile_result]}
+  # module_compile_result is {:ok | :error, <module_name>}
   defp maybe_reply_with_result(compile_result, parent_pid) do
     result =
       Enum.reduce_while(compile_result, {:ok, []}, fn
         {_module, nil}, _ -> {:halt, nil}
-        {module, :ok}, {status, results} -> {:cont, {status, [{module, :ok} | results]}}
-        {module, :error}, {_, results} -> {:cont, {:error, [{module, :error} | results]}}
+        {module, :ok}, {status, results} -> {:cont, {status, [{:ok, module} | results]}}
+        {module, :error}, {_, results} -> {:cont, {:error, [{:error, module} | results]}}
       end)
 
     if result && parent_pid do

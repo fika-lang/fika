@@ -33,5 +33,22 @@ defmodule Fika.Compiler.Parser.UseModule do
     |> concat(use_module)
     |> repeat()
 
-  defcombinator :use_modules, use_modules
+  defcombinator :use_modules, use_modules |> post_traverse(:add_use_modules_context)
+
+  defp add_use_modules_context(_rest, result, _context, _, _) do
+    {result, use_modules_map(result)}
+  end
+
+  defp use_modules_map(use_modules) do
+    Enum.map(use_modules, fn {path, _line} ->
+      module_name =
+        path
+        |> String.split("/")
+        |> List.last()
+        |> String.to_atom()
+
+      {module_name, String.to_atom(path)}
+    end)
+    |> Map.new()
+  end
 end

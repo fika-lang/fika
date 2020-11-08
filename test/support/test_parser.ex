@@ -65,6 +65,13 @@ defmodule TestParser do
 
   defparsec :use_modules, use_modules |> concat(allow_space) |> eos()
 
+  defparsec :exp_with_expanded_modules,
+            use_modules
+            |> concat(allow_space)
+            |> concat(exp)
+            |> concat(allow_space)
+            |> eos()
+
   defp fetch_function_def({:function_defs, [function_def]}) do
     function_def
   end
