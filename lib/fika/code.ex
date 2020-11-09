@@ -1,5 +1,5 @@
 defmodule Fika.Code do
-  alias Fika.CodeServer
+  alias Fika.Compiler.CodeServer
 
   # Returns one of the following:
   # {:error, [{:error, module}, {:ok, module}, ...]} if compilation fails

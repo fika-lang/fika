@@ -1,9 +1,9 @@
 defmodule Fika.Compiler.TypeCheckerTest do
   use ExUnit.Case, async: true
 
-  alias Fika.{
-    Compiler.TypeChecker,
-    Compiler.Parser,
+  alias Fika.Compiler.{
+    TypeChecker,
+    Parser,
     CodeServer
   }
 

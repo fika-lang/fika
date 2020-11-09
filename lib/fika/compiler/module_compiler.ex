@@ -1,10 +1,10 @@
 defmodule Fika.Compiler.ModuleCompiler do
   require Logger
 
-  alias Fika.{
-    Compiler.Parser,
-    Compiler.TypeChecker.ParallelTypeChecker,
-    Compiler.ErlTranslate,
+  alias Fika.Compiler.{
+    Parser,
+    TypeChecker.ParallelTypeChecker,
+    ErlTranslate,
     CodeServer
   }
 

@@ -3,8 +3,8 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
 
   require Logger
 
-  alias Fika.{
-    Compiler.TypeChecker,
+  alias Fika.Compiler.{
+    TypeChecker,
     CodeServer
   }
 

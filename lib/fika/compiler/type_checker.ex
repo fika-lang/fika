@@ -1,8 +1,6 @@
 defmodule Fika.Compiler.TypeChecker do
-  # alias Fika.Env
   alias Fika.Compiler.TypeChecker.Types, as: T
-
-  alias Fika.CodeServer
+  alias Fika.Compiler.CodeServer
 
   alias Fika.Compiler.TypeChecker.{
     ParallelTypeChecker,

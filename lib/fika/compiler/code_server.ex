@@ -1,4 +1,4 @@
-defmodule Fika.CodeServer do
+defmodule Fika.Compiler.CodeServer do
   use GenServer
 
   require Logger
