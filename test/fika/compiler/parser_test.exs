@@ -1010,5 +1010,18 @@ defmodule Fika.Compiler.ParserTest do
                  {"foo2", {3, 32, 40}}
                ]
     end
+
+    test "path with alphanumerics" do
+      str = """
+      use /var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo
+      """
+
+      {:ok, result, _, _, _, _} = TestParser.use_modules(str)
+
+      assert result ==
+               [
+                 {"/var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo", {1, 0, 56}}
+               ]
+    end
   end
 end

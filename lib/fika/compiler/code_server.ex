@@ -64,6 +64,7 @@ defmodule Fika.Compiler.CodeServer do
   def handle_cast({:put_result, module, :error}, state) do
     Logger.debug("Compilation failed for #{module}")
     state = put_in(state, [:compile_result, module], :error)
+    state = fail_waiting_type_checks(state, module, "Compilation failed for module #{module}")
     maybe_reply_with_result(state.compile_result, state.parent_pid)
     {:noreply, state}
   end
@@ -75,6 +76,13 @@ defmodule Fika.Compiler.CodeServer do
       state
       |> Map.put(:binaries, [{module, file, binary} | state.binaries])
       |> put_in([:compile_result, module], :ok)
+
+    state =
+      fail_waiting_type_checks(
+        state,
+        module,
+        "#{module} was compiled, but type was not resolved yet."
+      )
 
     maybe_reply_with_result(state.compile_result, state.parent_pid)
     {:noreply, state}
@@ -104,9 +112,9 @@ defmodule Fika.Compiler.CodeServer do
     {:noreply, state}
   end
 
-  def handle_call({:compile_module, module}, from, state) do
+  def handle_call({:compile_module, module}, from, _state) do
     state =
-      state
+      init_state()
       |> start_module_compile(module)
       |> Map.put(:parent_pid, from)
 
@@ -142,6 +150,24 @@ defmodule Fika.Compiler.CodeServer do
     end
 
     Map.put(state, :waiting, waiting)
+  end
+
+  defp fail_waiting_type_checks(state, module, reason) do
+    {waitlist, rest} =
+      Enum.reduce(state.waiting, {[], []}, fn {{waited_module, _}, waitlist} = k_v,
+                                              {from_acc, rest} ->
+        if waited_module == module do
+          {waitlist ++ from_acc, rest}
+        else
+          {from_acc, [k_v | rest]}
+        end
+      end)
+
+    Enum.each(waitlist, fn from ->
+      GenServer.reply(from, {:error, reason})
+    end)
+
+    Map.put(state, :waiting, Map.new(rest))
   end
 
   defp maybe_compile(state, module) do

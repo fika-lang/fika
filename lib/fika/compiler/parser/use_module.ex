@@ -14,12 +14,13 @@ defmodule Fika.Compiler.Parser.UseModule do
     |> ascii_string([?a..?z, ?_, ?0..?9], min: 0)
 
   path =
-    string("/")
-    |> concat(module_str)
+    ascii_string([?a..?z, ?_, ?0..?9, ?A..?Z], min: 1)
+    |> string("/")
 
   module_path =
-    module_str
+    optional(string("/"))
     |> repeat(path)
+    |> concat(module_str)
     |> reduce({Enum, :join, [""]})
 
   use_module =

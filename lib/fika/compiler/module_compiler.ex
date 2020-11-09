@@ -11,6 +11,17 @@ defmodule Fika.Compiler.ModuleCompiler do
   # Returns {:ok, module_name, file, binary} | {:error, message}
   def compile(module_name) do
     Logger.debug("Compiling #{module_name}")
+
+    case do_compile(module_name) do
+      {:ok, module_name, file, binary} ->
+        CodeServer.put_result(module_name, {file, binary})
+
+      {:error, _message} ->
+        CodeServer.put_result(module_name, :error)
+    end
+  end
+
+  defp do_compile(module_name) do
     state = init(module_name)
 
     with {:ok, str} <- read_file(state.file),
@@ -38,6 +49,7 @@ defmodule Fika.Compiler.ModuleCompiler do
         {:error, "Cannot read file #{file}: #{inspect(error)}"}
 
       {:ok, str} ->
+        Logger.debug("File #{file} read successfully")
         {:ok, str}
     end
   end
@@ -45,6 +57,7 @@ defmodule Fika.Compiler.ModuleCompiler do
   defp parse(str, state) do
     case Parser.parse_module(str) do
       {:ok, ast} ->
+        Logger.debug("Module #{state.module_name} parsed successfully")
         {:ok, Map.put(state, :ast, ast)}
 
       {:error, {line, _offset, _column}, message} ->
