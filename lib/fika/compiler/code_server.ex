@@ -61,15 +61,15 @@ defmodule Fika.Compiler.CodeServer do
     {:noreply, state}
   end
 
-  def handle_cast({:put_result, module, :error}, state) do
+  def handle_cast({:put_result, module, {:error, reason}}, state) do
     Logger.debug("Compilation failed for #{module}")
-    state = put_in(state, [:compile_result, module], :error)
+    state = put_in(state, [:compile_result, module], {:error, reason})
     state = fail_waiting_type_checks(state, module, "Compilation failed for module #{module}")
     maybe_reply_with_result(state.compile_result, state.parent_pid)
     {:noreply, state}
   end
 
-  def handle_cast({:put_result, module, {file, binary}}, state) do
+  def handle_cast({:put_result, module, {:ok, {file, binary}}}, state) do
     Logger.debug("Storing binary for #{module}")
 
     state =
@@ -226,13 +226,18 @@ defmodule Fika.Compiler.CodeServer do
 
   # Goes through the map %{<module_name> => :ok | :error} and returns
   # {:ok | :error, [module_compile_result]}
-  # module_compile_result is {:ok | :error, <module_name>}
+  # module_compile_result is {<module_name>, :ok | {:error, <reason>}
   defp maybe_reply_with_result(compile_result, parent_pid) do
     result =
       Enum.reduce_while(compile_result, {:ok, []}, fn
-        {_module, nil}, _ -> {:halt, nil}
-        {module, :ok}, {status, results} -> {:cont, {status, [{:ok, module} | results]}}
-        {module, :error}, {_, results} -> {:cont, {:error, [{:error, module} | results]}}
+        {_module, nil}, _ ->
+          {:halt, nil}
+
+        {module, :ok}, {status, results} ->
+          {:cont, {status, [{module, :ok} | results]}}
+
+        {module, {:error, reason}}, {_, results} ->
+          {:cont, {:error, [{module, {:error, reason}} | results]}}
       end)
 
     if result && parent_pid do

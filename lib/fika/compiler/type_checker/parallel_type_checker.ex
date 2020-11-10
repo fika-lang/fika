@@ -8,6 +8,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     CodeServer
   }
 
+  # Returns :ok | :error
   def check(module_name, function_asts) do
     start_link(module_name, function_asts)
 
@@ -99,7 +100,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   def handle_info(:finish, state) do
     result =
       if state.error_found do
-        {:error, "Type check error"}
+        :error
       else
         :ok
       end

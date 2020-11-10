@@ -16,10 +16,10 @@ defmodule Fika.Compiler.ModuleCompiler do
 
     case result do
       {:ok, module_name, file, binary} ->
-        CodeServer.put_result(module_name, {file, binary})
+        CodeServer.put_result(module_name, {:ok, {file, binary}})
 
-      {:error, _message} ->
-        CodeServer.put_result(module_name, :error)
+      {:error, reason} ->
+        CodeServer.put_result(module_name, {:error, reason})
     end
 
     result
@@ -64,18 +64,16 @@ defmodule Fika.Compiler.ModuleCompiler do
         Logger.debug("Module #{state.module_name} parsed successfully")
         {:ok, Map.put(state, :ast, ast)}
 
-      {:error, {line, _offset, _column}, message} ->
-        message = """
-        Parse error: #{state.file}:#{line}
-        #{inspect(message)}
-        """
-
-        {:error, message}
+      {:error, _position, _message} ->
+        {:error, "Parse error"}
     end
   end
 
   defp type_check(state) do
-    ParallelTypeChecker.check(state.module_name, state.ast[:function_defs])
+    case ParallelTypeChecker.check(state.module_name, state.ast[:function_defs]) do
+      :ok -> :ok
+      :error -> {:error, "Type check error"}
+    end
   end
 
   defp erl_translate(state) do
@@ -86,19 +84,10 @@ defmodule Fika.Compiler.ModuleCompiler do
   defp compile_forms(forms, state) do
     case :compile.forms(forms) do
       {:ok, _, binary} ->
-        CodeServer.put_result(state.module_name, {state.file, binary})
         {:ok, state.module_name, state.file, binary}
 
-      {:error, errors, warnings} ->
-        CodeServer.put_result(state.module_name, :error)
-
-        message = """
-        Error while compiling Erlang forms: #{state.file}
-        Errors: #{inspect(errors)}
-        Warnings: #{inspect(warnings)}
-        """
-
-        {:error, message}
+      {:error, _errors, _warnings} ->
+        {:error, "Load error"}
     end
   end
 end
