@@ -1,7 +1,7 @@
-defmodule Fika.Types.Record do
+defmodule Fika.Compiler.TypeChecker.Types.Record do
   defstruct [:fields]
 
-  alias Fika.Types, as: T
+  alias Fika.Compiler.TypeChecker.Types, as: T
 
   defimpl String.Chars, for: T.Record do
     def to_string(%{fields: fields}) do

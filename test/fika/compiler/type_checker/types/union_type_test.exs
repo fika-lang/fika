@@ -1,7 +1,7 @@
-defmodule Fika.Types.UnionTypeTest do
+defmodule Fika.Compiler.TypeChecker.Types.UnionTypeTest do
   use ExUnit.Case, async: true
 
-  alias Fika.Types.Union
+  alias Fika.Compiler.TypeChecker.Types.Union
 
   describe "new/1" do
     test "handles a flat list" do

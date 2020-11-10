@@ -1,7 +1,7 @@
-defmodule Fika.Parser.Types do
+defmodule Fika.Compiler.Parser.Types do
   import NimbleParsec
 
-  alias Fika.Parser.{Common, Helper}
+  alias Fika.Compiler.Parser.{Common, Helper}
 
   allow_space = parsec({Common, :allow_space})
   identifier_str = parsec({Common, :identifier_str})

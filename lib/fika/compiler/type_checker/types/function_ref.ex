@@ -1,7 +1,7 @@
-defmodule Fika.Types.FunctionRef do
+defmodule Fika.Compiler.TypeChecker.Types.FunctionRef do
   defstruct [:return_type, arg_types: []]
 
-  alias Fika.Types, as: T
+  alias Fika.Compiler.TypeChecker.Types, as: T
 
   defimpl String.Chars, for: T.FunctionRef do
     def to_string(%{arg_types: arg_types, return_type: return_type}) do

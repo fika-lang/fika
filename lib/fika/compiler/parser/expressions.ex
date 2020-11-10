@@ -1,7 +1,7 @@
-defmodule Fika.Parser.Expressions do
+defmodule Fika.Compiler.Parser.Expressions do
   import NimbleParsec
 
-  alias Fika.Parser.{Common, Helper, LiteralExps, NonLiteralExps}
+  alias Fika.Compiler.Parser.{Common, Helper, LiteralExps, NonLiteralExps}
 
   allow_space = parsec({Common, :allow_space})
   allow_horizontal_space = parsec({Common, :allow_horizontal_space})

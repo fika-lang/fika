@@ -1,7 +1,7 @@
-defmodule Fika.Parser.FunctionDef do
+defmodule Fika.Compiler.Parser.FunctionDef do
   import NimbleParsec
 
-  alias Fika.Parser.{
+  alias Fika.Compiler.Parser.{
     Common,
     Types,
     Helper,
@@ -66,6 +66,12 @@ defmodule Fika.Parser.FunctionDef do
     |> label("function definition")
     |> Helper.to_ast(:function_def)
 
+  function_defs =
+    allow_space
+    |> concat(function_def)
+    |> times(min: 1)
+
   defcombinatorp :args, args
   defcombinator :function_def, function_def
+  defcombinator :function_defs, function_defs
 end

@@ -1,7 +1,7 @@
-defmodule Fika.Parser.Common do
+defmodule Fika.Compiler.Parser.Common do
   import NimbleParsec
 
-  alias Fika.Parser.Helper
+  alias Fika.Compiler.Parser.Helper
 
   keyword =
     choice([

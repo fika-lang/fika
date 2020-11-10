@@ -1,7 +1,7 @@
-defmodule Fika.Types.Tuple do
+defmodule Fika.Compiler.TypeChecker.Types.Tuple do
   defstruct elements: []
 
-  alias Fika.Types, as: T
+  alias Fika.Compiler.TypeChecker.Types, as: T
 
   defimpl String.Chars, for: T.Tuple do
     def to_string(%{elements: elements}) do

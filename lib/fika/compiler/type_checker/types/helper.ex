@@ -1,4 +1,4 @@
-defmodule Fika.Types.Helper do
+defmodule Fika.Compiler.TypeChecker.Types.Helper do
   @moduledoc """
   Helper functions for dealing with types
   """

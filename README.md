@@ -118,7 +118,7 @@ mix deps.get
 iex -S mix
 
 # In the Elixir shell, compile and load a Fika file using the following:
-> Fika.Code.load_file("example.fi")
+> Fika.Code.load_module("example")
 
 # Now you can run functions from the module like this:
 > :example.sum(40, 2)

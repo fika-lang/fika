@@ -1,4 +1,4 @@
-defmodule Fika.Types.Union do
+defmodule Fika.Compiler.TypeChecker.Types.Union do
   defstruct types: MapSet.new()
 
   @type t :: %__MODULE__{types: MapSet.t()}
@@ -22,7 +22,7 @@ defmodule Fika.Types.Union do
     |> MapSet.new()
   end
 
-  defimpl String.Chars, for: Fika.Types.Union do
+  defimpl String.Chars, for: Fika.Compiler.TypeChecker.Types.Union do
     def to_string(%{types: types}) do
       Enum.join(types, " | ")
     end

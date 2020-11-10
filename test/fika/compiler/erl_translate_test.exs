@@ -1,7 +1,7 @@
-defmodule Fika.ErlTranslateTest do
-  use ExUnit.Case
+defmodule Fika.Compiler.ErlTranslateTest do
+  use ExUnit.Case, async: true
 
-  alias Fika.{
+  alias Fika.Compiler.{
     Parser,
     ErlTranslate
   }
@@ -18,8 +18,8 @@ defmodule Fika.ErlTranslateTest do
     end
     """
 
-    ast = Parser.parse_module(str, "test")
-    result = ErlTranslate.translate(ast, "/tmp/foo")
+    {:ok, ast} = Parser.parse_module(str)
+    result = ErlTranslate.translate(ast, :test, "/tmp/foo")
 
     forms = [
       {:attribute, 1, :file, {'/tmp/foo', 1}},
@@ -47,12 +47,12 @@ defmodule Fika.ErlTranslateTest do
     end
     """
 
-    ast = Parser.parse_module(str, "test_arithmetic")
-    result = ErlTranslate.translate(ast, "/tmp/foo")
+    {:ok, ast} = Parser.parse_module(str)
+    result = ErlTranslate.translate(ast, :test, "/tmp/foo")
 
     forms = [
       {:attribute, 1, :file, {'/tmp/foo', 1}},
-      {:attribute, 1, :module, :test_arithmetic},
+      {:attribute, 1, :module, :test},
       {:attribute, 3, :export, [a: 0]},
       {:function, 3, :a, 0,
        [
@@ -114,12 +114,16 @@ defmodule Fika.ErlTranslateTest do
 
   describe "function reference" do
     test "with module" do
-      str = "&my_module.foo(Int, Int)"
-      ast = TestParser.expression!(str)
+      str = """
+      use my_module
+      &my_module.foo(Int, Int)
+      """
+
+      {:ok, [_, ast], _, _, _, _} = TestParser.exp_with_expanded_modules(str)
       result = ErlTranslate.translate_expression(ast)
 
       assert result ==
-               {:fun, 1, {:function, {:atom, 1, :my_module}, {:atom, 1, :foo}, {:integer, 1, 2}}}
+               {:fun, 2, {:function, {:atom, 2, :my_module}, {:atom, 2, :foo}, {:integer, 2, 2}}}
     end
 
     test "without module" do

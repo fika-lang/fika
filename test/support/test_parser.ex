@@ -1,16 +1,19 @@
 defmodule TestParser do
   import NimbleParsec
 
-  alias Fika.Parser.{
+  alias Fika.Compiler.Parser.{
     Common,
     Types,
     Expressions,
-    FunctionDef
+    FunctionDef,
+    UseModule
   }
 
   exp = parsec({Expressions, :exp})
   exps = parsec({Expressions, :exps})
+  function_defs = parsec({FunctionDef, :function_defs})
   function_def = parsec({FunctionDef, :function_def})
+  use_modules = parsec({UseModule, :use_modules})
   allow_space = parsec({Common, :allow_space})
   parse_type = parsec({Types, :parse_type})
 
@@ -56,4 +59,20 @@ defmodule TestParser do
             |> eos()
 
   defparsec :exps, exps |> concat(allow_space) |> eos()
+
+  defparsec :function_defs,
+            function_defs |> concat(allow_space) |> eos() |> map({:fetch_function_def, []})
+
+  defparsec :use_modules, use_modules |> concat(allow_space) |> eos()
+
+  defparsec :exp_with_expanded_modules,
+            use_modules
+            |> concat(allow_space)
+            |> concat(exp)
+            |> concat(allow_space)
+            |> eos()
+
+  defp fetch_function_def({:function_defs, [function_def]}) do
+    function_def
+  end
 end
