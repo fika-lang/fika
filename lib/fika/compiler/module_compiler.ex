@@ -12,13 +12,17 @@ defmodule Fika.Compiler.ModuleCompiler do
   def compile(module_name) do
     Logger.debug("Compiling #{module_name}")
 
-    case do_compile(module_name) do
+    result = do_compile(module_name)
+
+    case result do
       {:ok, module_name, file, binary} ->
         CodeServer.put_result(module_name, {file, binary})
 
       {:error, _message} ->
         CodeServer.put_result(module_name, :error)
     end
+
+    result
   end
 
   defp do_compile(module_name) do

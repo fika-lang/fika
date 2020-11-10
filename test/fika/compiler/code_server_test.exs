@@ -31,8 +31,8 @@ defmodule Fika.Compiler.CodeServerTest do
 
     assert {:ok,
             [
-              ok: :"/var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo",
-              ok: :"/var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/bar"
+              ok: module,
+              ok: dep_module
             ]} == CodeServer.compile_module(module)
 
     File.rm!(temp_file_1)
@@ -57,8 +57,8 @@ defmodule Fika.Compiler.CodeServerTest do
 
     assert {:error,
             [
-              error: :"/var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo",
-              error: :"/var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/bar"
+              error: module,
+              error: dep_module
             ]} == CodeServer.compile_module(module)
 
     File.rm!(temp_file_1)
