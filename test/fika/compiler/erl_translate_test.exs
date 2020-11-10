@@ -104,8 +104,12 @@ defmodule Fika.Compiler.ErlTranslateTest do
     ast = TestParser.expression!(str)
     result = ErlTranslate.translate_expression(ast)
 
-    assert result ==
-             {:map, 1, [{:map_field_assoc, 1, {:string, 1, 'foo'}, {:integer, 1, 1}}]}
+    assert {:map, 1,
+            [
+              {:map_field_assoc, 1,
+               {:bin, 1, [{:bin_element, 1, {:string, 1, 'foo'}, :default, :default}]},
+               {:integer, 1, 1}}
+            ]} = result
   end
 
   describe "function reference" do
@@ -173,8 +177,10 @@ defmodule Fika.Compiler.ErlTranslateTest do
 
     assert {:case, 5, {:atom, 1, true},
             [
-              {:clause, 5, [{:atom, 5, true}], [], [{:string, 2, 'foo'}]},
-              {:clause, 5, [{:atom, 5, false}], [], [{:string, 4, 'bar'}]}
+              {:clause, 5, [{:atom, 5, true}], '',
+               [{:bin, 2, [{:bin_element, 2, {:string, 2, 'foo'}, :default, :default}]}]},
+              {:clause, 5, [{:atom, 5, false}], '',
+               [{:bin, 4, [{:bin_element, 4, {:string, 4, 'bar'}, :default, :default}]}]}
             ]} = result
   end
 
@@ -187,15 +193,16 @@ defmodule Fika.Compiler.ErlTranslateTest do
       ast = TestParser.expression!(str)
       result = ErlTranslate.translate_expression(ast)
 
-      assert {
-               :bin,
-               1,
-               [
-                 {:bin_element, 1, {:string, 1, 'Hello'}, :default, :default},
-                 {:bin_element, 1, {:string, 1, ' '}, :default, :default},
-                 {:bin_element, 1, {:string, 1, 'World'}, :default, :default}
-               ]
-             } = result
+      assert {:bin, 1,
+              [
+                {:bin_element, 1,
+                 {:bin, 1, [{:bin_element, 1, {:string, 1, 'Hello'}, :default, :default}]},
+                 :default, [:binary]},
+                {:bin_element, 1, {:string, 1, ' '}, :default, :default},
+                {:bin_element, 1,
+                 {:bin, 1, [{:bin_element, 1, {:string, 1, 'World'}, :default, :default}]},
+                 :default, [:binary]}
+              ]} = result
     end
 
     test "parses known variable in string interpolation" do
@@ -208,7 +215,7 @@ defmodule Fika.Compiler.ErlTranslateTest do
 
       result = ErlTranslate.translate_expression(interpolation)
 
-      assert {:bin, 2, [{:bin_element, 2, {:var, 2, :hello}, :default, :default}]} = result
+      assert {:bin, 2, [{:bin_element, 2, {:var, 2, :hello}, :default, [:binary]}]} = result
     end
   end
 

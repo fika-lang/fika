@@ -201,6 +201,19 @@ defmodule Fika.Compiler.TypeCheckerTest do
       assert {:ok, :String, _} = TypeChecker.infer_block(env, ast)
     end
 
+    test "parses multiple string interpolation with expressions" do
+      str = ~S"""
+      hello = "Hello#{"!"}"
+      "#{hello} Greetings to the #{"world!"}"
+      """
+
+      {:ok, ast, _, _, _, _} = TestParser.exps(str)
+
+      env = Env.init_module_env(Env.init(), "test", ast)
+
+      assert {:ok, :String, _} = TypeChecker.infer_block(env, ast)
+    end
+
     test "accepts only strings in interpolation" do
       str = ~S"""
       "#{1}"
