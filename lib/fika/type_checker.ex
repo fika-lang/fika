@@ -151,15 +151,15 @@ defmodule Fika.TypeChecker do
 
   # String
   def infer_exp(env, {:string, _line, string_parts}) do
-    Enum.reduce_while(string_parts, env, fn
-      string, env when is_binary(string) ->
+    Enum.reduce_while(string_parts, {:ok, nil, env}, fn
+      string, {:ok, _acc_type, acc_env} when is_binary(string) ->
         Logger.debug("String #{string} found. Type: String")
-        {:cont, {:ok, :String, env}}
+        {:cont, {:ok, :String, acc_env}}
 
-      exp, env ->
+      exp, {:ok, _acc_type, acc_env} ->
         Logger.debug("String interpolation found. Inferring type of expression")
 
-        case infer_exp(env, exp) do
+        case infer_exp(acc_env, exp) do
           {:ok, :String, _env} = result ->
             {:cont, result}
 
