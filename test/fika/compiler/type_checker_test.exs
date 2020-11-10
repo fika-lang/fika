@@ -209,7 +209,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       {:ok, ast, _, _, _, _} = TestParser.exps(str)
 
-      env = Env.init_module_env(Env.init(), "test", ast)
+      env = TypeChecker.init_env(ast)
 
       assert {:ok, :String, _} = TypeChecker.infer_block(env, ast)
     end
