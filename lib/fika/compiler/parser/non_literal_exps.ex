@@ -6,6 +6,7 @@ defmodule Fika.Compiler.Parser.NonLiteralExps do
   allow_space = parsec({Common, :allow_space})
   require_space = parsec({Common, :require_space})
   identifier = parsec({Common, :identifier})
+  module_name = parsec({Common, :module_name})
   exp = parsec({Expressions, :exp})
   exps = parsec({Expressions, :exps})
 
@@ -34,7 +35,7 @@ defmodule Fika.Compiler.Parser.NonLiteralExps do
     |> Helper.to_ast(:local_function_call)
 
   remote_function_call =
-    identifier
+    module_name
     |> ignore(string("."))
     |> concat(identifier)
     |> ignore(string("("))

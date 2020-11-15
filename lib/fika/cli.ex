@@ -31,11 +31,10 @@ defmodule Fika.Cli do
 
     {opts, rest} = OptionParser.parse!(rest, options)
 
-    main_module = List.first(rest) || "main"
-    module = String.to_atom(main_module)
+    module = List.first(rest) || "main"
     function = opts[:function] || "start()"
 
-    {:ok, _} = Fika.Code.load_module(main_module)
+    {:ok, _} = Fika.Code.load_module(module)
 
     fn_not_found_msg = "Function #{function} not found."
 

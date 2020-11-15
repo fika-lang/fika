@@ -5,6 +5,7 @@ defmodule Fika.Compiler.Parser.LiteralExps do
 
   allow_space = parsec({Common, :allow_space})
   identifier = parsec({Common, :identifier})
+  module_name = parsec({Common, :module_name})
   atom = parsec({Common, :atom})
   type = parsec({Types, :type})
   exp = parsec({Expressions, :exp})
@@ -126,7 +127,7 @@ defmodule Fika.Compiler.Parser.LiteralExps do
 
   function_ref =
     ignore(string("&"))
-    |> wrap(optional(identifier |> ignore(string("."))))
+    |> wrap(optional(module_name |> ignore(string("."))))
     |> concat(identifier)
     |> wrap(optional(function_ref_type_parens))
     |> Helper.to_ast(:function_ref)

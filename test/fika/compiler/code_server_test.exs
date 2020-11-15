@@ -4,13 +4,11 @@ defmodule Fika.Compiler.CodeServerTest do
   alias Fika.Compiler.CodeServer
 
   test "when module has a dependency" do
-    module = Path.join(System.tmp_dir!(), "foo") |> String.to_atom()
-    dep_module = Path.join(System.tmp_dir!(), "bar") |> String.to_atom()
-
-    temp_file_1 = "#{module}.fi"
+    tmp_dir = System.tmp_dir!()
+    temp_file_1 = Path.join(tmp_dir, "foo.fi")
 
     str = """
-    use #{dep_module}
+    use bar
 
     fn foo : String do
       bar.hello()
@@ -19,7 +17,7 @@ defmodule Fika.Compiler.CodeServerTest do
 
     File.write!(temp_file_1, str)
 
-    temp_file_2 = "#{dep_module}.fi"
+    temp_file_2 = Path.join(tmp_dir, "bar.fi")
 
     str = """
     fn hello : String do
@@ -29,24 +27,24 @@ defmodule Fika.Compiler.CodeServerTest do
 
     File.write!(temp_file_2, str)
 
-    assert {:ok,
-            [
-              {module, :ok},
-              {dep_module, :ok}
-            ]} == CodeServer.compile_module(module)
+    File.cd!(tmp_dir, fn ->
+      assert {:ok,
+              [
+                {"foo", :ok},
+                {"bar", :ok}
+              ]} == CodeServer.compile_module("foo")
+    end)
 
     File.rm!(temp_file_1)
     File.rm!(temp_file_2)
   end
 
   test "when module has a non existent dependency" do
-    module = Path.join(System.tmp_dir!(), "foo") |> String.to_atom()
-    dep_module = Path.join(System.tmp_dir!(), "bar") |> String.to_atom()
-
-    temp_file_1 = "#{module}.fi"
+    tmp_dir = System.tmp_dir!()
+    temp_file_1 = Path.join(tmp_dir, "foo.fi")
 
     str = """
-    use #{dep_module}
+    use bar
 
     fn foo : String do
       bar.hello()
@@ -55,23 +53,23 @@ defmodule Fika.Compiler.CodeServerTest do
 
     File.write!(temp_file_1, str)
 
-    assert {:error,
-            [
-              {module, {:error, "Type check error"}},
-              {dep_module, {:error, "Cannot read file #{dep_module}.fi: :enoent"}}
-            ]} == CodeServer.compile_module(module)
+    File.cd!(tmp_dir, fn ->
+      assert {:error,
+              [
+                {"foo", {:error, "Type check error"}},
+                {"bar", {:error, "Cannot read file bar.fi: :enoent"}}
+              ]} == CodeServer.compile_module("foo")
+    end)
 
     File.rm!(temp_file_1)
   end
 
   test "when function does not exist in the dependency module" do
-    module = Path.join(System.tmp_dir!(), "foo") |> String.to_atom()
-    dep_module = Path.join(System.tmp_dir!(), "bar") |> String.to_atom()
-
-    temp_file_1 = "#{module}.fi"
+    tmp_dir = System.tmp_dir!()
+    temp_file_1 = Path.join(tmp_dir, "foo.fi")
 
     str = """
-    use #{dep_module}
+    use bar
 
     fn foo : String do
       bar.hello()
@@ -80,7 +78,7 @@ defmodule Fika.Compiler.CodeServerTest do
 
     File.write!(temp_file_1, str)
 
-    temp_file_2 = "#{dep_module}.fi"
+    temp_file_2 = Path.join(tmp_dir, "bar.fi")
 
     str = """
     fn hello_world : String do
@@ -90,11 +88,13 @@ defmodule Fika.Compiler.CodeServerTest do
 
     File.write!(temp_file_2, str)
 
-    assert {:error,
-            [
-              {module, {:error, "Type check error"}},
-              {dep_module, :ok}
-            ]} == CodeServer.compile_module(module)
+    File.cd!(tmp_dir, fn ->
+      assert {:error,
+              [
+                {"foo", {:error, "Type check error"}},
+                {"bar", :ok}
+              ]} == CodeServer.compile_module("foo")
+    end)
 
     File.rm!(temp_file_1)
     File.rm!(temp_file_2)

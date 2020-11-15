@@ -10,9 +10,8 @@ defmodule Fika.Code do
   # {:error, module}. {:ok, module} if the module was successfully loaded.
   def load_module(module_name_str) do
     CodeServer.reset()
-    module = String.to_atom(module_name_str)
 
-    case CodeServer.compile_module(module) do
+    case CodeServer.compile_module(module_name_str) do
       {:ok, _} ->
         {:ok, CodeServer.load()}
 

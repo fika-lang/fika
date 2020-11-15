@@ -27,19 +27,20 @@ defmodule Fika.OperatorsTest do
                {:*, {1, 0, 14}},
                [
                  {:integer, {1, 0, 1}, 1},
-                 {:call, {:!, {1, 0, 14}}, [{:identifier, {1, 0, 14}, :something}], :kernel}
+                 {:call, {:!, {1, 0, 14}}, [{:identifier, {1, 0, 14}, :something}], "fika/kernel"}
                ],
-               :kernel
+               "fika/kernel"
              } == TestParser.expression!("1 * !something")
 
       assert {
                :call,
                {:/, {1, 0, 14}},
                [
-                 {:call, {:!, {1, 0, 10}}, [{:identifier, {1, 0, 10}, :something}], :kernel},
+                 {:call, {:!, {1, 0, 10}}, [{:identifier, {1, 0, 10}, :something}],
+                  "fika/kernel"},
                  {:integer, {1, 0, 14}, 2}
                ],
-               :kernel
+               "fika/kernel"
              } == TestParser.expression!("!something / 2")
     end
 
@@ -71,11 +72,11 @@ defmodule Fika.OperatorsTest do
                {:==, {1, 0, 14}},
                [
                  {:call, {:<, {1, 0, 5}}, [{:integer, {1, 0, 1}, 1}, {:integer, {1, 0, 5}, 1}],
-                  :kernel},
+                  "fika/kernel"},
                  {:call, {:>, {1, 0, 14}}, [{:integer, {1, 0, 10}, 2}, {:integer, {1, 0, 14}, 2}],
-                  :kernel}
+                  "fika/kernel"}
                ],
-               :kernel
+               "fika/kernel"
              } == TestParser.expression!("1 < 1 == 2 > 2")
 
       assert {
@@ -83,11 +84,11 @@ defmodule Fika.OperatorsTest do
                {:!=, {1, 0, 16}},
                [
                  {:call, {:<=, {1, 0, 6}}, [{:integer, {1, 0, 1}, 1}, {:integer, {1, 0, 6}, 1}],
-                  :kernel},
+                  "fika/kernel"},
                  {:call, {:>=, {1, 0, 16}},
-                  [{:integer, {1, 0, 11}, 2}, {:integer, {1, 0, 16}, 3}], :kernel}
+                  [{:integer, {1, 0, 11}, 2}, {:integer, {1, 0, 16}, 3}], "fika/kernel"}
                ],
-               :kernel
+               "fika/kernel"
              } == TestParser.expression!("1 <= 1 != 2 >= 3")
 
       # Then we test == and != actually work
@@ -172,7 +173,7 @@ defmodule Fika.OperatorsTest do
                {:foo, [], {:type, {1, 0, 6}, :Nothing},
                 [
                   {:identifier, {2, 10, 13}, :x},
-                  {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
+                  {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], "fika/kernel"}
                 ]}
              } == TestParser.function_def!(str)
     end

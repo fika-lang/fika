@@ -46,9 +46,9 @@ defmodule Fika.Compiler.ParserTest do
                [
                  {:integer, {1, 0, 1}, 2},
                  {:call, {:*, {1, 0, 9}}, [{:integer, {1, 0, 5}, 3}, {:integer, {1, 0, 9}, 4}],
-                  :kernel}
+                  "fika/kernel"}
                ],
-               :kernel
+               "fika/kernel"
              } == TestParser.expression!(str)
     end
 
@@ -57,7 +57,7 @@ defmodule Fika.Compiler.ParserTest do
                :call,
                {:-, {1, 0, 2}},
                [{:integer, {1, 0, 2}, 5}],
-               :kernel
+               "fika/kernel"
              } == TestParser.expression!("-5")
     end
 
@@ -73,19 +73,19 @@ defmodule Fika.Compiler.ParserTest do
                  {:call, {:+, {1, 0, 22}},
                   [
                     {:integer, {1, 0, 2}, 11},
-                    {:call, {:-, {1, 0, 7}}, [{:integer, {1, 0, 7}, 5}], :kernel}
-                  ], :kernel},
+                    {:call, {:-, {1, 0, 7}}, [{:integer, {1, 0, 7}, 5}], "fika/kernel"}
+                  ], "fika/kernel"},
                  {:call, {:/, {1, 0, 22}},
                   [
                     {:call, {:*, {1, 0, 22}},
                      [
                        {:integer, {1, 0, 12}, 10},
-                       {:call, {:-, {1, 0, 17}}, [{:integer, {1, 0, 17}, 1}], :kernel}
-                     ], :kernel},
-                    {:call, {:-, {1, 0, 22}}, [{:integer, {1, 0, 22}, 2}], :kernel}
-                  ], :kernel}
+                       {:call, {:-, {1, 0, 17}}, [{:integer, {1, 0, 17}, 1}], "fika/kernel"}
+                     ], "fika/kernel"},
+                    {:call, {:-, {1, 0, 22}}, [{:integer, {1, 0, 22}, 2}], "fika/kernel"}
+                  ], "fika/kernel"}
                ],
-               :kernel
+               "fika/kernel"
              } == TestParser.expression!(str)
     end
 
@@ -103,7 +103,7 @@ defmodule Fika.Compiler.ParserTest do
                {:foo, [], {:type, {1, 0, 6}, :Nothing},
                 [
                   {:identifier, {2, 10, 13}, :x},
-                  {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], :kernel}
+                  {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], "fika/kernel"}
                 ]}
              } ==
                TestParser.function_def!(str)
@@ -126,7 +126,7 @@ defmodule Fika.Compiler.ParserTest do
                    [
                      {:identifier, {2, 10, 13}, :x},
                      {:identifier, {3, 16, 19}, :y}
-                   ], :kernel}
+                   ], "fika/kernel"}
                 ]}
              } ==
                TestParser.function_def!(str)
@@ -145,12 +145,12 @@ defmodule Fika.Compiler.ParserTest do
                   [
                     {:integer, {1, 0, 2}, 10},
                     {:call, {:*, {1, 0, 12}},
-                     [{:integer, {1, 0, 7}, 20}, {:integer, {1, 0, 12}, 30}], :kernel}
-                  ], :kernel},
+                     [{:integer, {1, 0, 7}, 20}, {:integer, {1, 0, 12}, 30}], "fika/kernel"}
+                  ], "fika/kernel"},
                  {:call, {:/, {1, 0, 22}},
-                  [{:integer, {1, 0, 17}, 40}, {:integer, {1, 0, 22}, 50}], :kernel}
+                  [{:integer, {1, 0, 17}, 40}, {:integer, {1, 0, 22}, 50}], "fika/kernel"}
                ],
-               :kernel
+               "fika/kernel"
              } == TestParser.expression!(str)
     end
 
@@ -168,15 +168,15 @@ defmodule Fika.Compiler.ParserTest do
                    {:*, {1, 0, 26}},
                    [
                      {:call, {:+, {1, 0, 8}},
-                      [{:integer, {1, 0, 3}, 10}, {:integer, {1, 0, 8}, 20}], :kernel},
+                      [{:integer, {1, 0, 3}, 10}, {:integer, {1, 0, 8}, 20}], "fika/kernel"},
                      {:call, {:-, {1, 0, 20}},
-                      [{:integer, {1, 0, 15}, 30}, {:integer, {1, 0, 20}, 40}], :kernel}
+                      [{:integer, {1, 0, 15}, 30}, {:integer, {1, 0, 20}, 40}], "fika/kernel"}
                    ],
-                   :kernel
+                   "fika/kernel"
                  },
                  {:integer, {1, 0, 26}, 50}
                ],
-               :kernel
+               "fika/kernel"
              } == TestParser.expression!(str)
     end
   end
@@ -226,8 +226,8 @@ defmodule Fika.Compiler.ParserTest do
       assert {:ok, [_, function_call], _, context, _, _} =
                TestParser.exp_with_expanded_modules(str)
 
-      assert function_call == {:call, {:my_func, {3, 20, 45}}, args, :"deps/my_module"}
-      assert context == %{my_module: :"deps/my_module"}
+      assert function_call == {:call, {:my_func, {3, 20, 45}}, args, "deps/my_module"}
+      assert context == %{"my_module" => "deps/my_module"}
     end
 
     test "function calls with another function call as arg" do
@@ -313,7 +313,7 @@ defmodule Fika.Compiler.ParserTest do
                ], {:type, {1, 0, 28}, :Int},
                [
                  {:call, {:+, {2, 32, 39}},
-                  [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], :kernel}
+                  [{:identifier, {2, 32, 35}, :x}, {:identifier, {2, 32, 39}, :y}], "fika/kernel"}
                ]}} ==
                TestParser.function_def!(str)
     end
@@ -436,7 +436,7 @@ defmodule Fika.Compiler.ParserTest do
                   {:identifier, {1, 0, 6}, :x},
                   {:integer, {1, 0, 10}, 2}
                 }
-              ], :kernel} == TestParser.expression!(str)
+              ], "fika/kernel"} == TestParser.expression!(str)
     end
   end
 
@@ -572,7 +572,7 @@ defmodule Fika.Compiler.ParserTest do
                    {:list, {1, 0, 9},
                     [
                       {:call, {:+, {1, 0, 5}},
-                       [{:integer, {1, 0, 3}, 1}, {:integer, {1, 0, 5}, 1}], :kernel},
+                       [{:integer, {1, 0, 3}, 1}, {:integer, {1, 0, 5}, 1}], "fika/kernel"},
                       {:integer, {1, 0, 8}, 2}
                     ]},
                    {:map, {1, 0, 31},
@@ -596,7 +596,7 @@ defmodule Fika.Compiler.ParserTest do
       assert {:map, {1, 0, 23},
               [
                 {{:call, {:&, {1, 0, 13}},
-                  [{:boolean, {1, 0, 5}, true}, {:boolean, {1, 0, 13}, false}], :kernel},
+                  [{:boolean, {1, 0, 5}, true}, {:boolean, {1, 0, 13}, false}], "fika/kernel"},
                  {:boolean, {1, 0, 22}, false}}
               ]} == TestParser.expression!(str)
     end
@@ -769,8 +769,8 @@ defmodule Fika.Compiler.ParserTest do
       assert {:ok, [_, function_ref], _, context, _, _} =
                TestParser.exp_with_expanded_modules(str)
 
-      assert function_ref == {:function_ref, {3, 14, 22}, {:"deps/foo", :bar, []}}
-      assert context == %{foo: :"deps/foo"}
+      assert function_ref == {:function_ref, {3, 14, 22}, {"deps/foo", :bar, []}}
+      assert context == %{"foo" => "deps/foo"}
     end
 
     test "parses a function ref with arg types" do
@@ -875,9 +875,9 @@ defmodule Fika.Compiler.ParserTest do
         :call,
         {:!, _},
         [
-          {:call, {:|, _}, [{:boolean, _, true}, {:boolean, _, false}], :kernel}
+          {:call, {:|, _}, [{:boolean, _, true}, {:boolean, _, false}], "fika/kernel"}
         ],
-        :kernel
+        "fika/kernel"
       } = TestParser.expression!("!(true | false)")
     end
 
@@ -888,7 +888,7 @@ defmodule Fika.Compiler.ParserTest do
               [
                 {:boolean, _, false},
                 {:boolean, _, true}
-              ], :kernel} = TestParser.expression!(str)
+              ], "fika/kernel"} = TestParser.expression!(str)
     end
 
     test "more complex expressions" do
@@ -899,9 +899,9 @@ defmodule Fika.Compiler.ParserTest do
                {:&, _},
                [
                  {:boolean, _, true},
-                 {:call, {:|, _}, [{:boolean, _, false}, {:boolean, _, true}], :kernel}
+                 {:call, {:|, _}, [{:boolean, _, false}, {:boolean, _, true}], "fika/kernel"}
                ],
-               :kernel
+               "fika/kernel"
              } = TestParser.expression!(str)
     end
   end
@@ -1013,14 +1013,14 @@ defmodule Fika.Compiler.ParserTest do
 
     test "path with alphanumerics" do
       str = """
-      use /var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo
+      use var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo
       """
 
       {:ok, result, _, _, _, _} = TestParser.use_modules(str)
 
       assert result ==
                [
-                 {"/var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo", {1, 0, 56}}
+                 {"var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo", {1, 0, 55}}
                ]
     end
   end

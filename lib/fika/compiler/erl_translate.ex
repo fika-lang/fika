@@ -1,7 +1,9 @@
 defmodule Fika.Compiler.ErlTranslate do
-  def translate(ast, module_name, file) do
+  def translate(ast, module_name_str, file) do
     line = 1
     file = String.to_charlist(file)
+
+    module_name = erl_module_name(module_name_str)
 
     module_header = [
       {:attribute, line, :file, {file, line}},
@@ -16,6 +18,12 @@ defmodule Fika.Compiler.ErlTranslate do
 
   def translate_expression(exp) do
     translate_exp(exp)
+  end
+
+  def erl_module_name(module_name_str) do
+    module_name_str
+    |> String.replace("/", ".")
+    |> String.to_atom()
   end
 
   defp to_forms(functions) do
@@ -70,7 +78,7 @@ defmodule Fika.Compiler.ErlTranslate do
   end
 
   defp translate_exp({:call, {name, {line, _, _}}, args, module}) do
-    m_f = {:remote, line, {:atom, line, module}, {:atom, line, name}}
+    m_f = {:remote, line, {:atom, line, erl_module_name(module)}, {:atom, line, name}}
     {:call, line, m_f, translate_exps(args)}
   end
 
@@ -157,7 +165,8 @@ defmodule Fika.Compiler.ErlTranslate do
 
     f =
       if module do
-        {:function, {:atom, line, module}, {:atom, line, function}, {:integer, line, arity}}
+        {:function, {:atom, line, erl_module_name(module)}, {:atom, line, function},
+         {:integer, line, arity}}
       else
         {:function, function, arity}
       end

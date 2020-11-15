@@ -3,7 +3,10 @@ defmodule Fika.Compiler.CodeServer do
 
   require Logger
 
-  alias Fika.Compiler.ModuleCompiler
+  alias Fika.Compiler.{
+    ModuleCompiler,
+    ErlTranslate
+  }
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
@@ -124,7 +127,9 @@ defmodule Fika.Compiler.CodeServer do
   def handle_call(:load, _from, state) do
     result =
       Enum.map(state.binaries, fn {module, file, binary} ->
-        case :code.load_binary(module, String.to_charlist(file), binary) do
+        module_name = ErlTranslate.erl_module_name(module)
+
+        case :code.load_binary(module_name, String.to_charlist(file), binary) do
           {:module, module} -> {:ok, module}
           {:error, _reason} -> {:error, module}
         end
@@ -205,7 +210,7 @@ defmodule Fika.Compiler.CodeServer do
 
   defp default_functions do
     %{
-      kernel: insert_ok(Fika.Kernel.types())
+      "fika/kernel" => insert_ok(Fika.Kernel.types())
     }
   end
 

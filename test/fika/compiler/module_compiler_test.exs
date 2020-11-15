@@ -6,8 +6,8 @@ defmodule Fika.Compiler.ModuleCompilerTest do
   }
 
   test "given a file with fika code, returns the compiled binary" do
-    module = Path.join(System.tmp_dir!(), "foo") |> String.to_atom()
-    temp_file = "#{module}.fi"
+    tmp_dir = System.tmp_dir!()
+    temp_file = Path.join(tmp_dir, "foo.fi")
 
     str = """
     fn foo : String do
@@ -17,7 +17,9 @@ defmodule Fika.Compiler.ModuleCompilerTest do
 
     File.write!(temp_file, str)
 
-    assert {:ok, ^module, ^temp_file, _binary} = ModuleCompiler.compile(module)
+    File.cd!(tmp_dir, fn ->
+      assert {:ok, "foo", "foo.fi", _binary} = ModuleCompiler.compile("foo")
+    end)
 
     File.rm!(temp_file)
   end

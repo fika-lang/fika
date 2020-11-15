@@ -8,19 +8,15 @@ defmodule Fika.Compiler.Parser.UseModule do
 
   allow_space = parsec({Common, :allow_space})
   require_space = parsec({Common, :require_space})
-
-  module_str =
-    ascii_string([?a..?z], 1)
-    |> ascii_string([?a..?z, ?_, ?0..?9], min: 0)
+  identifier_str = parsec({Common, :identifier_str})
 
   path =
     ascii_string([?a..?z, ?_, ?0..?9, ?A..?Z], min: 1)
     |> string("/")
 
   module_path =
-    optional(string("/"))
-    |> repeat(path)
-    |> concat(module_str)
+    repeat(path)
+    |> concat(identifier_str)
     |> reduce({Enum, :join, [""]})
 
   use_module =
@@ -46,9 +42,8 @@ defmodule Fika.Compiler.Parser.UseModule do
         path
         |> String.split("/")
         |> List.last()
-        |> String.to_atom()
 
-      {module_name, String.to_atom(path)}
+      {module_name, path}
     end)
     |> Map.new()
   end

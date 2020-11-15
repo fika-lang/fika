@@ -54,6 +54,11 @@ defmodule Fika.Compiler.Parser.Common do
     |> reduce({Enum, :join, [""]})
     |> label("snake_case string")
 
+  module_name =
+    identifier_str
+    |> label("module name")
+    |> Helper.to_ast(:module_name)
+
   identifier =
     lookahead_not(keyword)
     |> concat(identifier_str)
@@ -70,6 +75,7 @@ defmodule Fika.Compiler.Parser.Common do
   defcombinator :require_space, require_space
   defcombinator :identifier_str, identifier_str
   defcombinator :identifier, identifier
+  defcombinator :module_name, module_name
   defcombinator :allow_horizontal_space, allow_horizontal_space
   defcombinator :atom, atom
 end

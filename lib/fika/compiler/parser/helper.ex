@@ -43,7 +43,7 @@ defmodule Fika.Compiler.Parser.Helper do
 
   def do_to_ast({[left, bin_op, right | rest], line}, :exp_bin_op)
       when bin_op in ["+", "-", "*", "/", "|", "&", "<", ">", "<=", ">=", "==", "!="] do
-    new_left = {:call, {String.to_atom(bin_op), line}, [left, right], :kernel}
+    new_left = {:call, {String.to_atom(bin_op), line}, [left, right], "fika/kernel"}
     do_to_ast({[new_left | rest], line}, :exp_bin_op)
   end
 
@@ -53,11 +53,15 @@ defmodule Fika.Compiler.Parser.Helper do
 
   def do_to_ast({[unary_op, exp], line}, :unary_op)
       when unary_op in ["!", "-"] do
-    {:call, {String.to_atom(unary_op), line}, [exp], :kernel}
+    {:call, {String.to_atom(unary_op), line}, [exp], "fika/kernel"}
   end
 
   def do_to_ast({[name], line}, :identifier) do
     {:identifier, line, String.to_atom(name)}
+  end
+
+  def do_to_ast({[name], line}, :module_name) do
+    {:module_name, line, name}
   end
 
   def do_to_ast({[name, args, type, exps], line}, :function_def) do
@@ -203,7 +207,8 @@ defmodule Fika.Compiler.Parser.Helper do
           {:function_ref, line,
            {value_from_identifier(module), value_from_identifier(function), arg_types}}
         else
-          {:error, "Unknown module #{value_from_identifier(module_alias)}"}
+          {:module_name, _line, module_name} = module_alias
+          {:error, "Unknown module #{module_name}"}
         end
     end
   end
@@ -214,7 +219,8 @@ defmodule Fika.Compiler.Parser.Helper do
       {:identifier, _, name} = name
       {:call, {name, line}, args, module}
     else
-      {:error, "Unknown module #{value_from_identifier(module_alias)}"}
+      {:module_name, _line, module_name} = module_alias
+      {:error, "Unknown module #{module_name}"}
     end
   end
 
@@ -228,10 +234,10 @@ defmodule Fika.Compiler.Parser.Helper do
     {tag, value}
   end
 
-  defp expand_module({:identifier, line, module}, context) do
+  defp expand_module({:module_name, line, module}, context) do
     module =
-      if module == :kernel do
-        :kernel
+      if module == "fika/kernel" do
+        "fika/kernel"
       else
         context[module]
       end

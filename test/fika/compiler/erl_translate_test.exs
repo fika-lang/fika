@@ -19,7 +19,7 @@ defmodule Fika.Compiler.ErlTranslateTest do
     """
 
     {:ok, ast} = Parser.parse_module(str)
-    result = ErlTranslate.translate(ast, :test, "/tmp/foo")
+    result = ErlTranslate.translate(ast, "test", "/tmp/foo")
 
     forms = [
       {:attribute, 1, :file, {'/tmp/foo', 1}},
@@ -48,7 +48,7 @@ defmodule Fika.Compiler.ErlTranslateTest do
     """
 
     {:ok, ast} = Parser.parse_module(str)
-    result = ErlTranslate.translate(ast, :test, "/tmp/foo")
+    result = ErlTranslate.translate(ast, "test", "/tmp/foo")
 
     forms = [
       {:attribute, 1, :file, {'/tmp/foo', 1}},
