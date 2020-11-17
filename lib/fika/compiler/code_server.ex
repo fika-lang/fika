@@ -39,8 +39,12 @@ defmodule Fika.Compiler.CodeServer do
   # Loads the accumulated binaries which were collected as a result of
   # parallel ModuleCompiler.compile.
   # Returns the list [{:ok, <module>}, {:error, <module>, <reason>}, ...]
-  def load do
-    GenServer.call(__MODULE__, :load)
+  def load_binaries do
+    GenServer.call(__MODULE__, :load_binaries)
+  end
+
+  def write_binaries(dest) do
+    GenServer.call(__MODULE__, {:write_binaries, dest})
   end
 
   def init(_) do
@@ -124,7 +128,9 @@ defmodule Fika.Compiler.CodeServer do
     {:noreply, state}
   end
 
-  def handle_call(:load, _from, state) do
+  def handle_call(:load_binaries, _from, state) do
+    Logger.debug("Loading binaries into beam")
+
     result =
       Enum.map(state.binaries, fn {module, file, binary} ->
         module_name = ErlTranslate.erl_module_name(module)
@@ -136,6 +142,26 @@ defmodule Fika.Compiler.CodeServer do
       end)
 
     {:reply, result, reset_binaries(state)}
+  end
+
+  def handle_call({:write_binaries, dest}, _from, state) do
+    Logger.debug("Writing binaries to beam files")
+
+    result =
+      Enum.map(state.binaries, fn {module, _file, binary} ->
+        full_path = Path.join(dest, beam_filename(module))
+        File.write!(full_path, binary)
+        module
+      end)
+
+    {:reply, result, reset_binaries(state)}
+  end
+
+  defp beam_filename(module) do
+    module
+    |> ErlTranslate.erl_module_name()
+    |> to_string()
+    |> Kernel.<>(".beam")
   end
 
   defp set_type(state, module, signature, result) do
