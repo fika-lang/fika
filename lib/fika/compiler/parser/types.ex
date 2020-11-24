@@ -83,6 +83,13 @@ defmodule Fika.Compiler.Parser.Types do
     |> label("list type")
     |> Helper.to_ast(:list_type)
 
+  effect_type =
+    ignore(string("Effect("))
+    |> concat(parsec(:type))
+    |> ignore(string(")"))
+    |> label("effect type")
+    |> Helper.to_ast(:effect_type)
+
   string_type =
     string("String")
     |> label("string")
@@ -118,6 +125,7 @@ defmodule Fika.Compiler.Parser.Types do
       bool_type,
       function_type,
       list_type,
+      effect_type,
       record_type,
       map_type,
       tuple_type

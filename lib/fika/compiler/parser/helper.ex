@@ -85,6 +85,14 @@ defmodule Fika.Compiler.Parser.Helper do
     %T.List{type: inner_type}
   end
 
+  def do_to_ast({[{_, _, inner_type}], _line}, :effect_type) when is_struct(inner_type) do
+    %T.Effect{type: inner_type}
+  end
+
+  def do_to_ast({[inner_type], _line}, :effect_type) do
+    %T.Effect{type: inner_type}
+  end
+
   def do_to_ast({inner_types, _line}, :tuple_type) do
     %T.Tuple{elements: inner_types}
   end
@@ -236,10 +244,10 @@ defmodule Fika.Compiler.Parser.Helper do
 
   defp expand_module({:module_name, line, module}, context) do
     module =
-      if module == "fika/kernel" do
-        "fika/kernel"
-      else
-        context[module]
+      case module do
+        "kernel" -> "fika/kernel"
+        "io" -> "fika/io"
+        _ -> context[module]
       end
 
     module && {:identifier, line, module}

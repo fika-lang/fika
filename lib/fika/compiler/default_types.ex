@@ -1,11 +1,12 @@
-defmodule Fika.Kernel do
+defmodule Fika.Compiler.DefaultTypes do
   @moduledoc """
-  This module right now only has a function named types which returns a map
-  of known function types belonging to kernel. In the future, this module will
-  be moved to a .fi file.
+  This module holds the type signatures of the functions which are included
+  by default in Fika, but are defined externally in erlang or elixir.
   """
 
-  def types do
+  alias Fika.Compiler.TypeChecker.Types, as: T
+
+  def kernel do
     %{
       "+(Int, Int)" => :Int,
       "+(Int, Float)" => :Float,
@@ -33,6 +34,13 @@ defmodule Fika.Kernel do
       ">=(Int, Int)" => :Bool,
       "==(Int, Int)" => :Bool,
       "!=(Int, Int)" => :Bool
+    }
+  end
+
+  def io do
+    %{
+      "gets(String)" => %T.Effect{type: :String},
+      "puts(String)" => %T.Effect{type: :String}
     }
   end
 end

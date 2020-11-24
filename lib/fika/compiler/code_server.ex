@@ -4,6 +4,7 @@ defmodule Fika.Compiler.CodeServer do
   require Logger
 
   alias Fika.Compiler.{
+    DefaultTypes,
     ModuleCompiler,
     ErlTranslate
   }
@@ -210,7 +211,8 @@ defmodule Fika.Compiler.CodeServer do
 
   defp default_functions do
     %{
-      "fika/kernel" => insert_ok(Fika.Kernel.types())
+      "fika/kernel" => insert_ok(DefaultTypes.kernel()),
+      "fika/io" => insert_ok(DefaultTypes.io())
     }
   end
 
