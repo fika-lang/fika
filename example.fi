@@ -104,3 +104,10 @@ fn interval(start: Int, finish: Int) : {:error, String} | {:ok, Int} do
     {:error, "Interval cannot end before it's started"}
   end
 end
+
+# Wrap and use an external function defined in the BEAM
+ext str_length(str: String) : Int = {"Elixir.String", "length", [str]}
+
+fn call_ext_function : Int do
+  str_length("Hello world")
+end

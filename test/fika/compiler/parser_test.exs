@@ -2,6 +2,7 @@ defmodule Fika.Compiler.ParserTest do
   use ExUnit.Case, async: true
 
   alias Fika.Compiler.TypeChecker.Types, as: T
+  alias Fika.Compiler.Parser
 
   test "integer" do
     str = """
@@ -374,7 +375,8 @@ defmodule Fika.Compiler.ParserTest do
                  {:type, {1, 0, 29}, :Int},
                  [
                    {:ext_call, {1, 0, 62},
-                    {Test, :foo, [{:identifier, {1, 0, 57}, :x}, {:identifier, {1, 0, 60}, :y}]}}
+                    {Test, :foo, [{:identifier, {1, 0, 57}, :x}, {:identifier, {1, 0, 60}, :y}],
+                     :Int}}
                  ]
                }
              } ==
@@ -1047,5 +1049,58 @@ defmodule Fika.Compiler.ParserTest do
                  {"var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo", {1, 0, 55}}
                ]
     end
+  end
+
+  test "parsing modules" do
+    str = """
+    use foo/bar
+
+    ext ext1 = {"Test", "foo", []}
+    ext ext2(x: Int, y: Int) : Int = {"Elixir.Test", "foo", [x, y]}
+
+    fn foo do
+      bar.baz()
+    end
+
+    fn foo2 do
+      123
+    end
+    """
+
+    assert Parser.parse_module(str) == {
+             :ok,
+             [
+               use_modules: [{"foo/bar", {1, 0, 11}}],
+               function_defs: [
+                 {:function, [position: {3, 13, 43}],
+                  {:ext1, [], {:type, {3, 13, 21}, :Nothing},
+                   [{:ext_call, {3, 13, 43}, {:Test, :foo, [], :Nothing}}]}},
+                 {
+                   :function,
+                   [position: {4, 44, 107}],
+                   {
+                     :ext2,
+                     [
+                       {{:identifier, {4, 44, 54}, :x}, {:type, {4, 44, 59}, :Int}},
+                       {{:identifier, {4, 44, 62}, :y}, {:type, {4, 44, 67}, :Int}}
+                     ],
+                     {:type, {4, 44, 74}, :Int},
+                     [
+                       {:ext_call, {4, 44, 107},
+                        {Test, :foo,
+                         [{:identifier, {4, 44, 102}, :x}, {:identifier, {4, 44, 105}, :y}],
+                         :Int}}
+                     ]
+                   }
+                 },
+                 {:function, [position: {8, 131, 134}],
+                  {:foo, [], {:type, {6, 109, 115}, :Nothing},
+                   [{:call, {:baz, {7, 119, 130}}, [], "foo/bar"}]}},
+                 {:function, [position: {12, 153, 156}],
+                  {:foo2, [], {:type, {10, 136, 143}, :Nothing},
+                   [{:integer, {11, 147, 152}, 123}]}}
+               ]
+             ]
+           }
   end
 end

@@ -51,14 +51,11 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     )
 
   arg_list =
-    choice([
-      ignore(string("["))
-      |> concat(allow_space)
-      |> wrap(arg_names)
-      |> concat(allow_space)
-      |> ignore(string("]")),
-      empty() |> wrap()
-    ])
+    ignore(string("["))
+    |> concat(allow_space)
+    |> wrap(optional(arg_names))
+    |> concat(allow_space)
+    |> ignore(string("]"))
 
   return_type =
     optional(
@@ -82,7 +79,7 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     |> wrap(exps)
     |> concat(require_space)
     |> ignore(string("end"))
-    |> label("function definition")
+    |> label("public function definition")
     |> Helper.to_ast(:public_function_def)
 
   ext_atom =
@@ -92,7 +89,8 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     |> Helper.to_ast(:ext_atom)
 
   ext_function_def =
-    ignore(string("ext"))
+    allow_space
+    |> ignore(string("ext"))
     |> concat(require_space)
     |> concat(identifier)
     |> concat(arg_parens)
@@ -123,8 +121,7 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     ])
 
   function_defs =
-    allow_space
-    |> concat(function_def)
+    function_def
     |> times(min: 1)
 
   defcombinatorp :args, args

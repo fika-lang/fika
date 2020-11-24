@@ -104,6 +104,22 @@ record = {foo: 123}
 [example.fi](https://github.com/fika-lang/fika/blob/main/example.fi) has
 working examples that demonstrate the syntax.
 
+
+#### Interop with Elixir and Erlang
+
+Fika makes it easy to call functions defined externally in the BEAM:
+
+```
+# Inside module foo
+ext str_length(str: String) : Int = {"Elixir.String", "length", [str]}
+
+# Can be called using `foo.str_length("Hello world")`
+```
+
+When reaching out to functions external to Fika, the compiler
+blindly trusts the type signature provided by the developer, so be careful here!
+
+
 ### Running Fika programs
 
 Fika is written in Elixir, so make sure you have that installed.

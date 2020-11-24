@@ -74,7 +74,9 @@ defmodule Fika.Compiler.Parser.Helper do
         :ext_function_def
       ) do
     {:identifier, _, name} = name
-    call = {:ext_call, line, {ext_module, ext_function, arg_names}}
+    {:type, _, ext_type} = type
+
+    call = {:ext_call, line, {ext_module, ext_function, arg_names, ext_type}}
     {:function, [position: line], {name, args, type, [call]}}
   end
 
