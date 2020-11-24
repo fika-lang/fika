@@ -41,6 +41,25 @@ defmodule Fika.Compiler.Parser.FunctionDef do
       empty() |> wrap()
     ])
 
+  arg_names =
+    identifier
+    |> repeat(
+      allow_space
+      |> ignore(string(","))
+      |> concat(allow_space)
+      |> concat(identifier)
+    )
+
+  arg_list =
+    choice([
+      ignore(string("["))
+      |> concat(allow_space)
+      |> wrap(arg_names)
+      |> concat(allow_space)
+      |> ignore(string("]")),
+      empty() |> wrap()
+    ])
+
   return_type =
     optional(
       allow_space
@@ -50,7 +69,7 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     )
     |> Helper.to_ast(:return_type)
 
-  function_def =
+  public_function_def =
     allow_space
     |> ignore(string("fn"))
     |> concat(require_space)
@@ -64,7 +83,44 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     |> concat(require_space)
     |> ignore(string("end"))
     |> label("function definition")
-    |> Helper.to_ast(:function_def)
+    |> Helper.to_ast(:public_function_def)
+
+  ext_atom =
+    ignore(string("\""))
+    |> repeat(choice([string("\\\""), utf8_char(not: ?")]))
+    |> ignore(string("\""))
+    |> Helper.to_ast(:ext_atom)
+
+  ext_function_def =
+    ignore(string("ext"))
+    |> concat(require_space)
+    |> concat(identifier)
+    |> concat(arg_parens)
+    |> concat(return_type)
+    |> concat(allow_space)
+    |> ignore(string("="))
+    |> concat(allow_space)
+    |> ignore(string("{"))
+    |> concat(allow_space)
+    |> concat(ext_atom)
+    |> concat(allow_space)
+    |> ignore(string(","))
+    |> concat(allow_space)
+    |> concat(ext_atom)
+    |> concat(allow_space)
+    |> ignore(string(","))
+    |> concat(allow_space)
+    |> concat(arg_list)
+    |> concat(allow_space)
+    |> ignore(string("}"))
+    |> label("external function definition")
+    |> Helper.to_ast(:ext_function_def)
+
+  function_def =
+    choice([
+      public_function_def,
+      ext_function_def
+    ])
 
   function_defs =
     allow_space

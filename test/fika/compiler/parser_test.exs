@@ -356,6 +356,30 @@ defmodule Fika.Compiler.ParserTest do
                   ]}
                ]}} = TestParser.function_def!(code)
     end
+
+    test "external function" do
+      str = """
+      ext foo(x: Int, y: Int) : Int = {"Elixir.Test", "foo", [x, y]}
+      """
+
+      assert {
+               :function,
+               [position: {1, 0, 62}],
+               {
+                 :foo,
+                 [
+                   {{:identifier, {1, 0, 9}, :x}, {:type, {1, 0, 14}, :Int}},
+                   {{:identifier, {1, 0, 17}, :y}, {:type, {1, 0, 22}, :Int}}
+                 ],
+                 {:type, {1, 0, 29}, :Int},
+                 [
+                   {:ext_call, {1, 0, 62},
+                    {Test, :foo, [{:identifier, {1, 0, 57}, :x}, {:identifier, {1, 0, 60}, :y}]}}
+                 ]
+               }
+             } ==
+               TestParser.function_def!(str)
+    end
   end
 
   describe "if-else expression" do
