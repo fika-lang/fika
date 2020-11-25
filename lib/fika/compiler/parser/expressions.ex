@@ -5,6 +5,7 @@ defmodule Fika.Compiler.Parser.Expressions do
 
   allow_space = parsec({Common, :allow_space})
   allow_horizontal_space = parsec({Common, :allow_horizontal_space})
+  vertical_space = parsec({Common, :vertical_space})
   identifier = parsec({Common, :identifier})
   literal_exps = parsec({LiteralExps, :literal_exps})
   non_literal_exps = parsec({NonLiteralExps, :non_literal_exps})
@@ -108,13 +109,13 @@ defmodule Fika.Compiler.Parser.Expressions do
 
   exp_delimiter =
     allow_horizontal_space
-    |> ignore(times(choice([string("\n"), string(";")]), min: 1))
+    |> ignore(choice([vertical_space, string(";")]))
     |> concat(allow_horizontal_space)
 
   exps =
     parsec(:exp)
     |> optional(
-      exp_delimiter
+      times(exp_delimiter, min: 1)
       |> parsec(:exps)
     )
 

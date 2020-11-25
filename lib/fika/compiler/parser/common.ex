@@ -26,11 +26,12 @@ defmodule Fika.Compiler.Parser.Common do
   vertical_space =
     choice([
       string("\r"),
-      string("\n")
+      string("\n"),
+      comment
     ])
 
   space =
-    choice([vertical_space, horizontal_space, comment])
+    choice([vertical_space, horizontal_space])
     |> label("space or newline")
 
   require_space =
@@ -77,5 +78,6 @@ defmodule Fika.Compiler.Parser.Common do
   defcombinator :identifier, identifier
   defcombinator :module_name, module_name
   defcombinator :allow_horizontal_space, allow_horizontal_space
+  defcombinator :vertical_space, vertical_space
   defcombinator :atom, atom
 end
