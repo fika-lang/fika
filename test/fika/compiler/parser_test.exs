@@ -830,6 +830,46 @@ defmodule Fika.Compiler.ParserTest do
               {:foo, [], {:type, {1, 0, 6}, :Nothing}, [{:string, {2, 10, 21}, ["foo#bar"]}]}} ==
                TestParser.function_def!(str)
     end
+
+    test "Works in between 2 lines" do
+      str = """
+      x = 1
+      # Comment
+      y = 2
+      """
+
+      assert {:ok,
+              [
+                {{:=, _}, {:identifier, _, :x}, {:integer, _, 1}},
+                {{:=, _}, {:identifier, _, :y}, {:integer, _, 2}}
+              ], _, _, _, _} = TestParser.exps(str)
+    end
+
+    test "Works in between lines in a function def" do
+      str = """
+      fn foo do
+        x = 1
+        # Comment
+        y = 2
+      end
+      """
+
+      assert {
+               :function,
+               [position: {5, 38, 41}],
+               {
+                 :foo,
+                 '',
+                 {:type, {1, 0, 6}, :Nothing},
+                 [
+                   {{:=, {2, 10, 17}}, {:identifier, {2, 10, 13}, :x},
+                    {:integer, {2, 10, 17}, 1}},
+                   {{:=, {4, 30, 37}}, {:identifier, {4, 30, 33}, :y}, {:integer, {4, 30, 37}, 2}}
+                 ]
+               }
+             } ==
+               TestParser.function_def!(str)
+    end
   end
 
   describe "call using function reference" do
