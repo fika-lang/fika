@@ -87,6 +87,11 @@ defmodule Fika.Compiler.ErlTranslate do
     {:call, line, translate_exp(identifier), translate_exps(args)}
   end
 
+  defp translate_exp({:ext_call, {line, _, _}, {m, f, args, _}}) do
+    m_f = {:remote, line, {:atom, line, m}, {:atom, line, f}}
+    {:call, line, m_f, translate_exps(args)}
+  end
+
   defp translate_exp({:integer, {line, _, _}, value}) do
     {:integer, line, value}
   end

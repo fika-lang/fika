@@ -64,9 +64,20 @@ defmodule Fika.Compiler.Parser.Helper do
     {:module_name, line, name}
   end
 
-  def do_to_ast({[name, args, type, exps], line}, :function_def) do
+  def do_to_ast({[name, args, type, exps], line}, :public_function_def) do
     {:identifier, _, name} = name
     {:function, [position: line], {name, args, type, exps}}
+  end
+
+  def do_to_ast(
+        {[name, args, type, ext_module, ext_function, arg_names], line},
+        :ext_function_def
+      ) do
+    {:identifier, _, name} = name
+    {:type, _, ext_type} = type
+
+    call = {:ext_call, line, {ext_module, ext_function, arg_names, ext_type}}
+    {:function, [position: line], {name, args, type, [call]}}
   end
 
   def do_to_ast({[], line}, :return_type) do
@@ -203,6 +214,10 @@ defmodule Fika.Compiler.Parser.Helper do
 
   def do_to_ast({[value], line}, :use_module) do
     {value, line}
+  end
+
+  def do_to_ast({str, _line}, :ext_atom) do
+    List.to_atom(str)
   end
 
   def do_to_ast({ast, line}, context, :function_ref) do
