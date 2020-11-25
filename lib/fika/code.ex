@@ -13,7 +13,19 @@ defmodule Fika.Code do
 
     case CodeServer.compile_module(module_name_str) do
       {:ok, _} ->
-        {:ok, CodeServer.load()}
+        {:ok, CodeServer.load_binaries()}
+
+      error ->
+        error
+    end
+  end
+
+  def compile_to_path(module_name_str, dest) do
+    CodeServer.reset()
+
+    case CodeServer.compile_module(module_name_str) do
+      {:ok, _} ->
+        {:ok, CodeServer.write_binaries(dest)}
 
       error ->
         error

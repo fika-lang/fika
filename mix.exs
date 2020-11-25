@@ -14,7 +14,8 @@ defmodule Fika.MixProject do
       xref: [exclude: [:router]],
       elixirc_paths: elixirc_paths(Mix.env()),
       releases: [{@app, release()}],
-      preferred_cli_env: [release: :prod]
+      preferred_cli_env: [release: :prod],
+      compilers: Mix.compilers() ++ [:fika]
     ]
   end
 
