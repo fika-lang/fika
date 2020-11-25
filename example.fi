@@ -111,3 +111,9 @@ ext str_length(str: String) : Int = {"Elixir.String", "length", [str]}
 fn call_ext_function : Int do
   str_length("Hello world")
 end
+
+# Side effect
+fn greet : Effect(String) do
+  name = io.gets("What's your name? ")
+  io.puts("Hello #{name}")
+end
