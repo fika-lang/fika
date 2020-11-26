@@ -385,6 +385,13 @@ defmodule Fika.Compiler.TypeChecker do
           {:halt, error}
       end
     end)
+    |> case do
+      {:ok, reversed_types, env} ->
+        {:ok, Enum.reverse(reversed_types), env}
+
+      error ->
+        error
+    end
   end
 
   defp do_infer_args_without_name(env, args) do
