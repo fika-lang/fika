@@ -3,15 +3,6 @@ defmodule Fika.Compiler.Parser.Common do
 
   alias Fika.Compiler.Parser.Helper
 
-  keyword =
-    choice([
-      string("fn"),
-      string("do"),
-      string("end"),
-      string("if"),
-      string("else")
-    ])
-
   horizontal_space =
     choice([
       string("\s"),
@@ -26,11 +17,12 @@ defmodule Fika.Compiler.Parser.Common do
   vertical_space =
     choice([
       string("\r"),
-      string("\n")
+      string("\n"),
+      comment
     ])
 
   space =
-    choice([vertical_space, horizontal_space, comment])
+    choice([vertical_space, horizontal_space])
     |> label("space or newline")
 
   require_space =
@@ -60,8 +52,7 @@ defmodule Fika.Compiler.Parser.Common do
     |> Helper.to_ast(:module_name)
 
   identifier =
-    lookahead_not(keyword)
-    |> concat(identifier_str)
+    identifier_str
     |> label("identifier")
     |> Helper.to_ast(:identifier)
 
@@ -77,5 +68,6 @@ defmodule Fika.Compiler.Parser.Common do
   defcombinator :identifier, identifier
   defcombinator :module_name, module_name
   defcombinator :allow_horizontal_space, allow_horizontal_space
+  defcombinator :vertical_space, vertical_space
   defcombinator :atom, atom
 end
