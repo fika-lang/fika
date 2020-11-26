@@ -247,13 +247,13 @@ defmodule Fika.Compiler.ParserTest do
   describe "function definition" do
     test "without args or type" do
       str = """
-      fn foo do
+      fn fnfoo do
         123
       end
       """
 
-      assert {:function, [position: {3, 16, 19}],
-              {:foo, [], {:type, {1, 0, 6}, :Nothing}, [{:integer, {2, 10, 15}, 123}]}} ==
+      assert {:function, [position: {3, 18, 21}],
+              {:fnfoo, [], {:type, {1, 0, 8}, :Nothing}, [{:integer, {2, 12, 17}, 123}]}} ==
                TestParser.function_def!(str)
     end
 
@@ -1062,6 +1062,22 @@ defmodule Fika.Compiler.ParserTest do
                [
                  {"var/folders/bb/vzln2mls1b53x4bhz4xfdyrm0000gn/T/foo", {1, 0, 55}}
                ]
+    end
+  end
+
+  describe "identifiers" do
+    test "cannot be keywords" do
+      keywords = ["fn", "do", "end", "if", "else"]
+
+      for str <- keywords do
+        assert {:error, _, _, _, _, _} = TestParser.expression(str)
+      end
+    end
+
+    test "can start with keywords" do
+      str = "fnfoo"
+
+      assert {:identifier, {1, 0, 5}, :fnfoo} == TestParser.expression!(str)
     end
   end
 end
