@@ -103,7 +103,6 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     |> concat(allow_space)
     |> ignore(string("}"))
 
-
   ext_function_def =
     allow_space
     |> ignore(string("ext"))
