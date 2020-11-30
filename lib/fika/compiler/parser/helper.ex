@@ -221,10 +221,6 @@ defmodule Fika.Compiler.Parser.Helper do
     {value, line}
   end
 
-  def do_to_ast({str, _line}, :ext_atom) do
-    List.to_atom(str)
-  end
-
   def do_to_ast({ast, line}, context, :function_ref) do
     case ast do
       [[], function, arg_types] ->

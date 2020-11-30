@@ -30,7 +30,7 @@ defmodule Fika.Compiler.Parser.LiteralExps do
 
   string_exp =
     ignore(string("\""))
-    |> repeat(choice([interpolation, string("\\\""), utf8_char(not: ?")]))
+    |> repeat(choice([interpolation, string(~S{\"}), utf8_char(not: ?")]))
     |> ignore(string("\""))
     |> Helper.to_ast(:string)
 
