@@ -617,6 +617,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
       """
 
       ast = TestParser.expression!(str)
+
       assert {:ok,
               %T.FunctionRef{
                 arg_types: [:Int, :Int],
