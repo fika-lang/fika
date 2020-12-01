@@ -74,6 +74,23 @@ defmodule Fika.Compiler.TypeCheckerTest do
     assert {:error, "Unknown variable: foo"} = TypeChecker.infer_exp(%{}, ast)
   end
 
+  test "infer ext function's return type" do
+    str = """
+    ext foo(a: Int) : String = {"Test", "foo", [a]}
+
+    fn bar(x: Int) do
+      foo(x)
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+    env = TypeChecker.init_env(ast)
+
+    [_foo, bar] = ast[:function_defs]
+
+    assert {:ok, :String} = TypeChecker.infer(bar, env)
+  end
+
   test "infer function's return type" do
     str = """
     fn foo(a: Int) do
@@ -525,7 +542,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
       assert {:ok, :Bool} = TypeChecker.infer(function, %{})
     end
 
-    test "when function returns is expected to return an union type and has if-else clause" do
+    test "when function returns is expected to return a union type and has if-else clause" do
       str = """
       use test2
 

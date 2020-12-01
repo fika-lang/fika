@@ -257,6 +257,35 @@ defmodule Fika.Compiler.ErlTranslateTest do
     end
   end
 
+  test "an ext function call" do
+    str = """
+    ext foo(x: Int) : Int = {"Test", "foo", [x]}
+
+    fn bar do
+      foo(x)
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+    result = ErlTranslate.translate(ast, "test", "/tmp/foo")
+
+    forms = [
+      {:attribute, 1, :file, {'/tmp/foo', 1}},
+      {:attribute, 1, :module, :test},
+      {:attribute, 5, :export, [bar: 0]},
+      {:attribute, 1, :export, [foo: 1]},
+      {:function, 5, :bar, 0,
+       [{:clause, 5, [], '', [{:call, 4, {:atom, 4, :foo}, [{:var, 4, :x}]}]}]},
+      {:function, 1, :foo, 1,
+       [
+         {:clause, 1, [{:var, 1, :x}], '',
+          [{:call, 1, {:remote, 1, {:atom, 1, :Test}, {:atom, 1, :foo}}, [{:var, 1, :x}]}]}
+       ]}
+    ]
+
+    assert result == forms
+  end
+
   test "anonymous function" do
     str = "(x: Int){x + 10}"
     ast = TestParser.expression!(str)

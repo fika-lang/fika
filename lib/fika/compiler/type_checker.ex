@@ -89,6 +89,12 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
+  # External function calls
+  def infer_exp(env, {:ext_call, _line, {m, f, _, type}}) do
+    Logger.debug("Return type of ext function #{m}.#{f} specified as #{type}")
+    {:ok, type, env}
+  end
+
   # Function calls
   def infer_exp(env, {:call, {name, _line}, args, module}) do
     exp = %{args: args, name: name}
