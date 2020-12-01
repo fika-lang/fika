@@ -617,7 +617,11 @@ defmodule Fika.Compiler.TypeCheckerTest do
       """
 
       ast = TestParser.expression!(str)
-      assert {:ok, :Int, _} = TypeChecker.infer_exp(%{}, ast)
+      assert {:ok,
+              %T.FunctionRef{
+                arg_types: [:Int, :Int],
+                return_type: :Int
+              }, _} = TypeChecker.infer_exp(%{}, ast)
     end
   end
 end
