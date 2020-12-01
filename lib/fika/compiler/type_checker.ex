@@ -258,6 +258,26 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
+  # anonymous function
+  def infer_exp(env, {:anonymous_function, _line, args, exps}) do
+    Logger.debug("Inferring type of anonymous function")
+
+    env =
+      env
+      |> Map.put(:scope, %{})
+      |> add_args_to_scope(args)
+
+    case infer_block(env, exps) do
+      {:ok, return_type, _env} ->
+        arg_types = Enum.map(args, fn {_, {:type, _, type}} -> type end)
+        type = %T.FunctionRef{arg_types: arg_types, return_type: return_type}
+        {:ok, type, env}
+
+      error ->
+        error
+    end
+  end
+
   def function_ast_signature({:function, _line, {name, args, _type, _exprs}}) do
     arg_types = Enum.map(args, fn {_, {:type, _, type}} -> type end)
     get_function_signature(name, arg_types)

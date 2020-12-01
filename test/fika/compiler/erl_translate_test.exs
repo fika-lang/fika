@@ -256,4 +256,18 @@ defmodule Fika.Compiler.ErlTranslateTest do
                {nil, 1}}} = ErlTranslate.translate_expression(ast)
     end
   end
+
+  test "anonymous function" do
+    str = "(x: Int){x + 10}"
+    ast = TestParser.expression!(str)
+    result = ErlTranslate.translate_expression(ast)
+
+    assert result ==
+             {:fun, 1,
+              {:clauses,
+               [
+                 {:clause, 1, [{:var, 1, :x}], [],
+                  [{:op, 1, :+, {:var, 1, :x}, {:integer, 1, 10}}]}
+               ]}}
+  end
 end
