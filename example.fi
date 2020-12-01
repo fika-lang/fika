@@ -105,11 +105,16 @@ fn interval(start: Int, finish: Int) : {:error, String} | {:ok, Int} do
   end
 end
 
-# Wrap and use an external function defined in the BEAM
+# Wrap and use external functions defined in the BEAM
 ext str_length(str: String) : Int = {"Elixir.String", "length", [str]}
+ext list_size(l: List(Int)) : Int = {"erlang", "length", [l]}
 
-fn call_ext_function : Int do
+fn string_length : Int do
   str_length("Hello world")
+end
+
+fn list_length : Int do
+  list_size([1, 2, 3])
 end
 
 # Side effect

@@ -4,8 +4,8 @@ defmodule Fika.Compiler.Parser.Expressions do
   alias Fika.Compiler.Parser.{Common, Helper, LiteralExps, NonLiteralExps}
 
   allow_space = parsec({Common, :allow_space})
-  vertical_space = parsec({Common, :vertical_space})
   allow_horizontal_space = parsec({Common, :allow_horizontal_space})
+  vertical_space = parsec({Common, :vertical_space})
   identifier = parsec({Common, :identifier})
   literal_exps = parsec({LiteralExps, :literal_exps})
   non_literal_exps = parsec({NonLiteralExps, :non_literal_exps})

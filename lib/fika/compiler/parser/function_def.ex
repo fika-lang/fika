@@ -84,21 +84,12 @@ defmodule Fika.Compiler.Parser.FunctionDef do
 
   ext_atom =
     ignore(string("\""))
-    |> repeat(choice([string("\\\""), utf8_char(not: ?")]))
+    |> repeat(choice([string(~S{\"}), utf8_char(not: ?")]))
     |> ignore(string("\""))
-    |> Helper.to_ast(:ext_atom)
+    |> reduce({List, :to_atom, []})
 
-  ext_function_def =
-    allow_space
-    |> ignore(string("ext"))
-    |> concat(require_space)
-    |> concat(identifier)
-    |> concat(arg_parens)
-    |> concat(return_type)
-    |> concat(allow_space)
-    |> ignore(string("="))
-    |> concat(allow_space)
-    |> ignore(string("{"))
+  ext_mfa =
+    ignore(string("{"))
     |> concat(allow_space)
     |> concat(ext_atom)
     |> concat(allow_space)
@@ -111,6 +102,18 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     |> concat(arg_list)
     |> concat(allow_space)
     |> ignore(string("}"))
+
+  ext_function_def =
+    allow_space
+    |> ignore(string("ext"))
+    |> concat(require_space)
+    |> concat(identifier)
+    |> concat(arg_parens)
+    |> concat(return_type)
+    |> concat(allow_space)
+    |> ignore(string("="))
+    |> concat(allow_space)
+    |> concat(ext_mfa)
     |> label("external function definition")
     |> Helper.to_ast(:ext_function_def)
 

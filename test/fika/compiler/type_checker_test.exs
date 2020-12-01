@@ -152,6 +152,25 @@ defmodule Fika.Compiler.TypeCheckerTest do
     assert {:ok, :Int} = TypeChecker.infer(foo, env)
   end
 
+  test "infer calls with multiple args" do
+    str = """
+    fn foo(a: Int, b: String) : Int do
+      a
+    end
+
+    fn bar : Int do
+      foo(5, "a")
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+    [_foo, bar] = ast[:function_defs]
+
+    env = TypeChecker.init_env(ast)
+
+    assert {:ok, :Int} = TypeChecker.infer(bar, env)
+  end
+
   test "infer function with variable assignments which get used in function calls" do
     str = """
     use test2

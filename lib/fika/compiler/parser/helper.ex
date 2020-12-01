@@ -3,25 +3,38 @@ defmodule Fika.Compiler.Parser.Helper do
 
   alias Fika.Compiler.TypeChecker.Types, as: T
 
+  @keywords ~w(fn do if else end)
+
   def to_ast(c, kind) do
     c
     |> line()
     |> byte_offset()
     |> map({__MODULE__, :put_line_offset, []})
-    |> post_traverse({__MODULE__, :do_to_ast_with_context, [kind]})
+    |> post_traverse({__MODULE__, :post_traverse, [kind]})
   end
 
-  def do_to_ast_with_context(_, [result], context, _, _, kind) do
-    if kind in [:remote_function_call, :function_ref] do
-      case do_to_ast(result, context, kind) do
-        {:error, _} = error ->
-          error
+  def post_traverse(_, [result], context, _, _, kind) do
+    case kind do
+      kind when kind in [:remote_function_call, :function_ref] ->
+        case do_to_ast(result, context, kind) do
+          {:error, _} = error ->
+            error
 
-        result ->
-          {[result], context}
-      end
-    else
-      {[do_to_ast(result, kind)], context}
+          result ->
+            {[result], context}
+        end
+
+      :identifier ->
+        {[str], _} = result
+
+        if str in @keywords do
+          {:error, "Identifier cannot be one of #{inspect(@keywords)}"}
+        else
+          {[do_to_ast(result, kind)], context}
+        end
+
+      _ ->
+        {[do_to_ast(result, kind)], context}
     end
   end
 
