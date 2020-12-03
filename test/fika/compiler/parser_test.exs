@@ -418,34 +418,21 @@ defmodule Fika.Compiler.ParserTest do
   describe "anonymous function" do
     test "with args" do
       str = """
-      (x: Int){x}
+      (x: Int) do x end
       """
 
-      assert {:anonymous_function, {1, 0, 11},
+      assert {:anonymous_function, {1, 0, 17},
               [{{:identifier, {1, 0, 2}, :x}, {:type, {1, 0, 7}, :Int}}],
-              [{:identifier, {1, 0, 10}, :x}]} = TestParser.expression!(str)
+              [{:identifier, {1, 0, 13}, :x}]} = TestParser.expression!(str)
     end
 
     test "without args" do
       str = """
-      (){123}
+      () do 123 end
       """
 
-      assert {:anonymous_function, {1, 0, 7}, [], [{:integer, {1, 0, 6}, 123}]} =
+      assert {:anonymous_function, {1, 0, 13}, [], [{:integer, {1, 0, 9}, 123}]} =
                TestParser.expression!(str)
-    end
-
-    test "does not clash with exps in parens and tuples" do
-      str = """
-      (x)
-      {1}
-      """
-
-      assert {:ok,
-              [
-                {:identifier, {1, 0, 2}, :x},
-                {:tuple, {2, 4, 7}, [{:integer, {2, 4, 6}, 1}]}
-              ], _, _, _, _} = TestParser.exps(str)
     end
   end
 

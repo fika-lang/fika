@@ -61,11 +61,11 @@ defmodule Fika.Compiler.Parser.NonLiteralExps do
   anonymous_function =
     arg_parens
     |> concat(allow_space)
-    |> ignore(string("{"))
+    |> ignore(string("do"))
     |> concat(allow_space)
     |> wrap(exps)
     |> concat(allow_space)
-    |> ignore(string("}"))
+    |> ignore(string("end"))
     |> label("anonymous function")
     |> Helper.to_ast(:anonymous_function)
 

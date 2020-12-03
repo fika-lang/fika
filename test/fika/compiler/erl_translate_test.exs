@@ -287,7 +287,7 @@ defmodule Fika.Compiler.ErlTranslateTest do
   end
 
   test "anonymous function" do
-    str = "(x: Int){x + 10}"
+    str = "(x: Int) do x + 10 end"
     ast = TestParser.expression!(str)
     result = ErlTranslate.translate_expression(ast)
 

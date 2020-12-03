@@ -12,7 +12,10 @@ end
 
 # Anonymous function
 fn anonymous_call : Int do
-  f = (x: Int, y: Int){ x + y }
+  f = (x: Int, y: Int) do
+    x + y
+  end
+
   f.(10, 20)
 end
 

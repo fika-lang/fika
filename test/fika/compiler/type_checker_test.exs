@@ -628,9 +628,9 @@ defmodule Fika.Compiler.TypeCheckerTest do
   describe "anonymous function" do
     test "with arg types" do
       str = """
-      (x: Int, y: Int) {
+      (x: Int, y: Int) do
         x + y
-      }
+      end
       """
 
       ast = TestParser.expression!(str)
