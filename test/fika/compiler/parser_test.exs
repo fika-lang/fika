@@ -415,6 +415,27 @@ defmodule Fika.Compiler.ParserTest do
     end
   end
 
+  describe "anonymous function" do
+    test "with args" do
+      str = """
+      (x: Int) do x end
+      """
+
+      assert {:anonymous_function, {1, 0, 17},
+              [{{:identifier, {1, 0, 2}, :x}, {:type, {1, 0, 7}, :Int}}],
+              [{:identifier, {1, 0, 13}, :x}]} = TestParser.expression!(str)
+    end
+
+    test "without args" do
+      str = """
+      () do 123 end
+      """
+
+      assert {:anonymous_function, {1, 0, 13}, [], [{:integer, {1, 0, 9}, 123}]} =
+               TestParser.expression!(str)
+    end
+  end
+
   describe "match expression" do
     test "simple match" do
       str = """

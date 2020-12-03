@@ -191,6 +191,10 @@ defmodule Fika.Compiler.ErlTranslate do
     }
   end
 
+  defp translate_exp({:anonymous_function, {line, _, _}, args, exps}) do
+    {:fun, line, {:clauses, [translate_clauses(args, line, exps)]}}
+  end
+
   defp add_record_meta(k_vs, name, line) do
     name =
       if name do

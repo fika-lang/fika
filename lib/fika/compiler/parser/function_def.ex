@@ -127,7 +127,7 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     function_def
     |> times(min: 1)
 
-  defcombinatorp :args, args
+  defcombinator :args, args
   defcombinator :function_def, function_def
   defcombinator :function_defs, function_defs
 end
