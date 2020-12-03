@@ -1,7 +1,7 @@
 defmodule Fika.Compiler.Parser.NonLiteralExps do
   import NimbleParsec
 
-  alias Fika.Compiler.Parser.{Common, Helper, Expressions}
+  alias Fika.Compiler.Parser.{Common, Helper, Expressions, FunctionDef}
 
   allow_space = parsec({Common, :allow_space})
   require_space = parsec({Common, :require_space})
@@ -9,6 +9,7 @@ defmodule Fika.Compiler.Parser.NonLiteralExps do
   module_name = parsec({Common, :module_name})
   exp = parsec({Expressions, :exp})
   exps = parsec({Expressions, :exps})
+  args = parsec({FunctionDef, :args})
 
   exp_paren =
     ignore(string("("))
@@ -50,6 +51,24 @@ defmodule Fika.Compiler.Parser.NonLiteralExps do
     ])
     |> label("function call")
 
+  arg_parens =
+    ignore(string("("))
+    |> concat(allow_space)
+    |> wrap(optional(args))
+    |> concat(allow_space)
+    |> ignore(string(")"))
+
+  anonymous_function =
+    arg_parens
+    |> concat(allow_space)
+    |> ignore(string("do"))
+    |> concat(allow_space)
+    |> wrap(exps)
+    |> concat(allow_space)
+    |> ignore(string("end"))
+    |> label("anonymous function")
+    |> Helper.to_ast(:anonymous_function)
+
   # TO-DO: accept nested if-else expressions
   exp_if_else =
     ignore(string("if"))
@@ -79,7 +98,8 @@ defmodule Fika.Compiler.Parser.NonLiteralExps do
       exp_paren,
       function_call,
       identifier,
-      exp_if_else
+      exp_if_else,
+      anonymous_function
     ])
     |> optional(function_ref_call)
     |> Helper.to_ast(:function_ref_call)

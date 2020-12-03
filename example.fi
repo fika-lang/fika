@@ -10,6 +10,15 @@ fn hello : String do
   "World"
 end
 
+# Anonymous function
+fn anonymous_call : Int do
+  f = (x: Int, y: Int) do
+    x + y
+  end
+
+  f.(10, 20)
+end
+
 # Strings support interpolations
 fn hello_interpolation : String do
   hello = "Hello!"

@@ -691,4 +691,22 @@ defmodule Fika.Compiler.TypeCheckerTest do
       assert {:ok, %T.Effect{type: :String}} = TypeChecker.check(function, env)
     end
   end
+
+  describe "anonymous function" do
+    test "with arg types" do
+      str = """
+      (x: Int, y: Int) do
+        x + y
+      end
+      """
+
+      ast = TestParser.expression!(str)
+
+      assert {:ok,
+              %T.FunctionRef{
+                arg_types: [:Int, :Int],
+                return_type: :Int
+              }, _} = TypeChecker.infer_exp(%{}, ast)
+    end
+  end
 end
