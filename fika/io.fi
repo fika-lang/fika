@@ -1,0 +1,2 @@
+ext gets(prompt: String) : Effect(String) = {"Elixir.IO", "gets", [prompt]}
+ext puts(str: String) : Effect(:ok) = {"Elixir.IO", "puts", [str]}

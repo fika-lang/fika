@@ -625,6 +625,73 @@ defmodule Fika.Compiler.TypeCheckerTest do
     end
   end
 
+  describe "effect" do
+    test "io.gets" do
+      str = "io.gets(\"Hello\")"
+
+      ast = TestParser.expression!(str)
+
+      assert {:ok, :String, %{has_effect: true}} = TypeChecker.infer_exp(%{}, ast)
+    end
+
+    test "functions with effects inside them become effectful" do
+      str = """
+      fn foo : Effect(String) do
+        x = io.gets("Enter your name")
+        "Hello #\{x}"
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [function] = ast[:function_defs]
+
+      assert {:ok, %T.Effect{type: :String}} = TypeChecker.infer(function, %{})
+      assert {:ok, %T.Effect{type: :String}} = TypeChecker.check(function, %{})
+    end
+
+    test "function with multiple effects" do
+      str = """
+      use test
+
+      fn foo : Effect(Int) do
+        x = io.gets("Enter your name")
+        test.to_int(x)
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+      CodeServer.reset()
+      CodeServer.set_type("test", "to_int(String)", {:ok, %T.Effect{type: :Int}})
+
+      [function] = ast[:function_defs]
+
+      assert {:ok, %T.Effect{type: :Int}} = TypeChecker.infer(function, %{})
+      assert {:ok, %T.Effect{type: :Int}} = TypeChecker.check(function, %{})
+    end
+
+    test "effectful function ref call" do
+      str = """
+      use test2
+
+      fn foo : Effect(String) do
+        f = &test2.bar
+        f.()
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+      [function] = ast[:function_defs]
+      env = TypeChecker.init_env(ast)
+
+      CodeServer.reset()
+      CodeServer.set_type("test2", "bar()", {:ok, %T.Effect{type: :String}})
+
+      assert {:ok, %T.Effect{type: :String}} = TypeChecker.infer(function, env)
+      assert {:ok, %T.Effect{type: :String}} = TypeChecker.check(function, env)
+    end
+  end
+
   describe "anonymous function" do
     test "with arg types" do
       str = """

@@ -34,10 +34,18 @@ defmodule Fika.Compiler.TypeChecker do
     env =
       env
       |> Map.put(:scope, %{})
+      |> Map.put(:has_effect, false)
       |> add_args_to_scope(args)
 
     case infer_block(env, exprs) do
-      {:ok, type, _env} ->
+      {:ok, type, env} ->
+        type =
+          if env[:has_effect] do
+            %T.Effect{type: type}
+          else
+            type
+          end
+
         {:ok, type}
 
       error ->
@@ -354,6 +362,10 @@ defmodule Fika.Compiler.TypeChecker do
         signature = get_function_signature(exp.name, type_acc)
 
         case get_type(module, signature, env) do
+          {:ok, %T.Effect{type: type}} ->
+            env = Map.put(env, :has_effect, true)
+            {:ok, type, env}
+
           {:ok, type} ->
             {:ok, type, env}
 
