@@ -63,7 +63,7 @@ jobs:
       - name: Install Bakeware Dependencies
         if: matrix.os == 'ubuntu-latest'
         run:
-          apt install -y zstd
+          sudo apt install -y zstd
       - name: Generate Release
         run: rm -fr _build && mix release
       - name: Rename Executable
