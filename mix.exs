@@ -37,7 +37,7 @@ defmodule Fika.MixProject do
     [
       overwrite: true,
       cookie: "#{@app}_cookie",
-      steps: [:assemble, &Bakeware.assemble/1, &Fika.Deploy.copy_files/1],
+      steps: [:assemble, &Bakeware.assemble/1, &Fika.Deployment.copy_files/1],
       strip_beams: Mix.env() == :prod,
       quiet: true
     ]
