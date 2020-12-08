@@ -17,8 +17,6 @@ defmodule Fika.Application do
         children
       end
 
-    IO.inspect(children, label: "application children")
-
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Fika.Supervisor]
