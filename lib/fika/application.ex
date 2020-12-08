@@ -12,10 +12,12 @@ defmodule Fika.Application do
 
     children =
       if Application.get_env(:fika, :start_cli) do
-        [%{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}} | children]
+        children ++ [%{id: Fika.Cli, start: {Fika.Cli, :start, [nil, nil]}}]
       else
         children
       end
+
+    IO.inspect(children, label: "application children")
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
