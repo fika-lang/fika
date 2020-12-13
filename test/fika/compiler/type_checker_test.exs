@@ -173,34 +173,38 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
   test "infer return type when there is intra-module recursion" do
     str = """
-    fn foo(a: Int) : Int | String do
+    fn foo(a: Int) : Int do
       bar(a)
     end
 
-    fn bar(a: Int) : Int | String do
+    fn bar(a: Int) : Int do
       if a <= 1 do
-        "a"
+        foobar()
       else
         baz(a - 1)
       end
     end
 
-    fn baz(a: Int) : Int | String do
+    fn baz(a: Int) : Int do
       if a == 1 do
         1
       else
         foo(a - 1)
       end
     end
+
+    fn foobar do
+    end
     """
 
     {:ok, ast} = Parser.parse_module(str)
-    [foo, bar, baz] = ast[:function_defs]
+    [foo, bar, baz, foobar] = ast[:function_defs]
 
     env = TypeChecker.init_env(ast)
 
-    types = MapSet.new([:Int, :String])
+    assert {:ok, :Nothing} = TypeChecker.infer(foobar, env)
 
+    types = MapSet.new([:Int, :Nothing])
     assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(foo, env)
     assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(bar, env)
     assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(baz, env)

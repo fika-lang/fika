@@ -382,6 +382,16 @@ defmodule Fika.Compiler.ParserTest do
              } ==
                TestParser.function_def!(str)
     end
+
+    test "empty body function" do
+      str = """
+      fn foo do
+      end
+      """
+
+      assert {:function, [position: {2, 10, 13}], {:foo, [], {:type, {1, 0, 6}, :Nothing}, []}} ==
+               TestParser.function_def!(str)
+    end
   end
 
   describe "if-else expression" do

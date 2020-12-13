@@ -2,7 +2,7 @@ defmodule Fika.Compiler.TypeChecker.Types.Loop do
   @moduledoc """
   Defines when a function may not terminate due to recursion
   """
-  defstruct type: :Nothing
+  defstruct [:type]
 
   alias Fika.Compiler.TypeChecker.Types, as: T
 
@@ -14,7 +14,7 @@ defmodule Fika.Compiler.TypeChecker.Types.Loop do
   def is_loop(%__MODULE__{}), do: true
   def is_loop(_), do: false
 
-  def is_empty_loop(%__MODULE__{type: :Nothing}), do: true
+  def is_empty_loop(%__MODULE__{type: nil}), do: true
   def is_empty_loop(_), do: false
 
   defimpl String.Chars, for: T.Loop do

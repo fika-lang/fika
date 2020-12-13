@@ -1,7 +1,7 @@
 defmodule Fika.Compiler.TypeChecker.Types.UnionTypeTest do
   use ExUnit.Case, async: true
 
-  alias Fika.Compiler.TypeChecker.Types.Union
+  alias Fika.Compiler.TypeChecker.Types.{Loop, Union}
 
   describe "new/1" do
     test "handles a flat list" do
@@ -27,6 +27,27 @@ defmodule Fika.Compiler.TypeChecker.Types.UnionTypeTest do
                    ]
                  }
                ])
+    end
+  end
+
+  describe "find_and_expand_loops/1" do
+    test "works when received types do not include loops" do
+      types = [:a, :b, %Union{types: [:c, :d]}]
+      assert {false, MapSet.new(types)} == Union.find_and_expand_loops(types)
+    end
+
+    test "works when received types include empty loops" do
+      types = [:a, :b]
+
+      assert {true, MapSet.new(types)} ==
+               Union.find_and_expand_loops([%Loop{} | types])
+    end
+
+    test "works when received types include non-empty loops" do
+      types = [:a, :b]
+
+      assert {true, MapSet.new([:c | types])} ==
+               Union.find_and_expand_loops([%Loop{type: :c} | types])
     end
   end
 end
