@@ -193,12 +193,15 @@ defmodule Fika.Compiler.TypeCheckerTest do
       end
     end
 
-    fn foobar do
+    fn foobar : Nothing do
+      to_atom("Nothing")
     end
+
+    ext to_atom(x: String) : Nothing = {"Elixir.String", "to_atom", [x]}
     """
 
     {:ok, ast} = Parser.parse_module(str)
-    [foo, bar, baz, foobar] = ast[:function_defs]
+    [foo, bar, baz, foobar, _to_atom] = ast[:function_defs]
 
     env = TypeChecker.init_env(ast)
 
