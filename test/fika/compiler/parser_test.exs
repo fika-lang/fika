@@ -382,6 +382,58 @@ defmodule Fika.Compiler.ParserTest do
              } ==
                TestParser.function_def!(str)
     end
+
+    test "parses loop type" do
+      str = """
+      fn foo(x: Int) : Loop(Int) do
+        if x <= 1 do
+          1
+        else
+          foo(x - 1)
+        end
+      end
+      """
+
+      assert {
+               :function,
+               [position: {7, 79, 82}],
+               {
+                 :foo,
+                 [
+                   {
+                     {:identifier, {1, 0, 8}, :x},
+                     {:type, {1, 0, 13}, :Int}
+                   }
+                 ],
+                 {
+                   :type,
+                   {1, 0, 26},
+                   %Fika.Compiler.TypeChecker.Types.Loop{type: :Int}
+                 },
+                 [
+                   {
+                     {:if, {6, 73, 78}},
+                     {
+                       :call,
+                       {:<=, {2, 30, 41}},
+                       [{:identifier, {2, 30, 36}, :x}, {:integer, {2, 30, 41}, 1}],
+                       "fika/kernel"
+                     },
+                     [{:integer, {3, 45, 50}, 1}],
+                     [
+                       {:call, {:foo, {5, 58, 72}},
+                        [
+                          {:call, {:-, {5, 58, 71}},
+                           [{:identifier, {5, 58, 67}, :x}, {:integer, {5, 58, 71}, 1}],
+                           "fika/kernel"}
+                        ], nil}
+                     ]
+                   }
+                 ]
+               }
+             } ==
+               TestParser.function_def!(str)
+    end
   end
 
   describe "if-else expression" do
