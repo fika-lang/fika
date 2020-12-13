@@ -210,6 +210,26 @@ defmodule Fika.Compiler.TypeCheckerTest do
     assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(baz, env)
   end
 
+  test "infer empty-function recursion" do
+    str = """
+    fn foo do
+      bar()
+    end
+
+    fn bar() do
+      foo()
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+    [foo, bar] = ast[:function_defs]
+
+    env = TypeChecker.init_env(ast)
+
+    assert {:ok, %T.Loop{}} = TypeChecker.infer(foo, env)
+    assert {:ok, %T.Loop{}} = TypeChecker.infer(bar, env)
+  end
+
   test "infer calls with multiple args" do
     str = """
     fn foo(a: Int, b: String) : Int do
