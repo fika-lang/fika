@@ -7,21 +7,22 @@ defmodule Fika.Compiler.TypeChecker.Types.Union do
 
   @spec new(types :: Enumerable.t()) :: any()
   def new(nested_types) do
-    types = flatten_types(nested_types)
+    {has_loop, expanded_types} = find_and_expand_loops(nested_types)
 
-    # We need to unnest loops because they can emerge upon recursive calls
-    case Enum.split_with(types, &T.Loop.is_loop/1) do
-      {_loops = [], _base_types} ->
+    types = flatten_types(expanded_types)
+
+    cond do
+      Enum.count(types) < 2 and has_loop ->
+        types
+        |> Enum.to_list()
+        |> T.Loop.new()
+
+      has_loop ->
+        T.Loop.new(%__MODULE__{types: types})
+
+      true ->
+        # There were no loops and we have more types to begin with
         %__MODULE__{types: types}
-
-      {_loops, []} ->
-        T.Loop.new()
-
-      {_loops, [type]} ->
-        T.Loop.new(type)
-
-      {_loops, base_types} ->
-        T.Loop.new(%__MODULE__{types: MapSet.new(base_types)})
     end
   end
 
@@ -37,6 +38,26 @@ defmodule Fika.Compiler.TypeChecker.Types.Union do
         [t]
     end)
     |> MapSet.new()
+  end
+
+  @spec find_and_expand_loops(types :: Enumerable.t()) ::
+          {has_loop :: boolean(), types :: MapSet.t()}
+  @doc false
+  def find_and_expand_loops(types) do
+    expanded_types =
+      types
+      |> Enum.reject(&T.Loop.is_empty_loop/1)
+      |> MapSet.new(fn
+        %T.Loop{type: t} ->
+          t
+
+        t ->
+          t
+      end)
+
+    has_loop = Enum.any?(types, &T.Loop.is_loop/1)
+
+    {has_loop, expanded_types}
   end
 
   defimpl String.Chars, for: Fika.Compiler.TypeChecker.Types.Union do

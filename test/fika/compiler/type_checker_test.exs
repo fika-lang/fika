@@ -152,7 +152,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
     assert {:ok, :Int} = TypeChecker.infer(foo, env)
   end
 
-  test "infer return type when there is recursion" do
+  test "infer return type when there is simple recursion" do
     str = """
     fn factorial(x: Int, acc: Int) : Int do
       if x <= 1 do
@@ -169,6 +169,41 @@ defmodule Fika.Compiler.TypeCheckerTest do
     env = TypeChecker.init_env(ast)
 
     assert {:ok, %T.Loop{type: :Int}} = TypeChecker.infer(factorial, env)
+  end
+
+  test "infer return type when there is intra-module recursion" do
+    str = """
+    fn foo(a: Int) : Int | String do
+      bar(a)
+    end
+
+    fn bar(a: Int) : Int | String do
+      if a <= 1 do
+        "a"
+      else
+        baz(a - 1)
+      end
+    end
+
+    fn baz(a: Int) : Int | String do
+      if a == 1 do
+        1
+      else
+        foo(a - 1)
+      end
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+    [foo, bar, baz] = ast[:function_defs]
+
+    env = TypeChecker.init_env(ast)
+
+    types = MapSet.new([:Int, :String])
+
+    assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(foo, env)
+    assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(bar, env)
+    assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(baz, env)
   end
 
   test "infer calls with multiple args" do
@@ -521,7 +556,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
       types = MapSet.new([:String, :Int])
-      assert {:ok, %T.Union{types: types}, _env} = TypeChecker.infer_exp(%{}, ast)
+      assert {:ok, %T.Union{types: ^types}, _env} = TypeChecker.infer_exp(%{}, ast)
     end
 
     test "with multiple expressions in blocks" do
