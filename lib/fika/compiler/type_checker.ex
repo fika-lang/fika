@@ -493,20 +493,22 @@ defmodule Fika.Compiler.TypeChecker do
 
     current_signature = env[:current_signature]
 
+    pid = env[:type_checker_pid]
+
     function_dependency = FunctionDependencies.set(current_signature, target_signature)
 
-    case {is_local_call, function_dependency} do
-      {true, :ok} ->
-        ParallelTypeChecker.get_result(target_signature, env)
+    case {is_local_call, function_dependency, pid} do
+      {true, :ok, pid} when is_pid(pid) ->
+        ParallelTypeChecker.get_result(pid, target_signature)
 
-      {true, {:error, :cycle_encountered}} ->
+      {true, :ok, nil} ->
         SequentialTypeChecker.get_result(target_signature, env)
 
-      {false, _} ->
+      {true, {:error, :cycle_encountered}, _} ->
+        SequentialTypeChecker.get_result(target_signature, env)
+
+      {false, _, _} ->
         CodeServer.get_type(module, target_signature)
     end
-  rescue
-    _ ->
-      SequentialTypeChecker.get_result(target_signature, env)
   end
 end

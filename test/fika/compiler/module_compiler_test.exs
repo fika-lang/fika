@@ -71,7 +71,7 @@ defmodule Fika.Compiler.ModuleCompilerTest do
 
     str = """
     fn f : Loop(Nothing) do
-      g()
+      h()
     end
 
     fn g : Loop(Nothing) do
