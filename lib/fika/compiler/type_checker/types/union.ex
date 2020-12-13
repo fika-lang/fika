@@ -3,9 +3,26 @@ defmodule Fika.Compiler.TypeChecker.Types.Union do
 
   @type t :: %__MODULE__{types: MapSet.t()}
 
-  @spec new(types :: Enumerable.t()) :: t()
-  def new(types) do
-    %__MODULE__{types: flatten_types(types)}
+  alias Fika.Compiler.TypeChecker.Types, as: T
+
+  @spec new(types :: Enumerable.t()) :: any()
+  def new(nested_types) do
+    types = flatten_types(nested_types)
+
+    # We need to unnest loops because they can emerge upon recursive calls
+    case Enum.split_with(types, &T.Loop.is_loop/1) do
+      {_loops = [], _base_types} ->
+        %__MODULE__{types: types}
+
+      {_loops, []} ->
+        T.Loop.new()
+
+      {_loops, [type]} ->
+        T.Loop.new(type)
+
+      {_loops, base_types} ->
+        T.Loop.new(%__MODULE__{types: MapSet.new(base_types)})
+    end
   end
 
   @spec flatten_types(types :: Enumerable.t()) :: MapSet.t()

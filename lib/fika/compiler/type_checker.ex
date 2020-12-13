@@ -31,25 +31,36 @@ defmodule Fika.Compiler.TypeChecker do
   def infer({:function, _line, {name, args, _type, exprs}}, env) do
     Logger.debug("Inferring type of function: #{name}")
 
-    env =
-      env
-      |> Map.put(:scope, %{})
-      |> Map.put(:has_effect, false)
-      |> add_args_to_scope(args)
+    mfa = {env[:module_name], name, length(args)}
 
-    case infer_block(env, exprs) do
-      {:ok, type, env} ->
-        type =
-          if env[:has_effect] do
-            %T.Effect{type: type}
-          else
-            type
-          end
+    previously_called_functions = Map.get(env, :called_functions, MapSet.new())
 
-        {:ok, type}
+    if mfa in previously_called_functions do
+      {:ok, T.Loop.new()}
+    else
+      Logger.debug("First call to #{inspect(mfa)}")
 
-      error ->
-        error
+      env =
+        env
+        |> Map.put(:scope, %{})
+        |> Map.put(:has_effect, false)
+        |> add_args_to_scope(args)
+        |> add_function_to_called_functions(mfa)
+
+      case infer_block(env, exprs) do
+        {:ok, type, env} ->
+          type =
+            if env[:has_effect] do
+              %T.Effect{type: type}
+            else
+              type
+            end
+
+          {:ok, type}
+
+        error ->
+          error
+      end
     end
   end
 
@@ -458,6 +469,17 @@ defmodule Fika.Compiler.TypeChecker do
       Logger.debug("Adding arg type to scope: #{name}:#{type}")
       put_in(env, [:scope, name], type)
     end)
+  end
+
+  defp add_function_to_called_functions(env, mfa) do
+    called_functions =
+      env
+      |> Map.get(:called_functions, MapSet.new())
+      |> MapSet.put(mfa)
+
+    env
+    |> Map.put(:called_functions, called_functions)
+    |> Map.put(:latest_called_function, mfa)
   end
 
   defp get_function_signature(function_name, arg_types) do
