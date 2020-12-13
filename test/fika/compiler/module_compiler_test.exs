@@ -64,14 +64,14 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     File.rm!(temp_file)
   end
 
-  test "does not hang when there is local recursion" do
+  test "does not hang when there is local recursion with both direct and indirect cycles" do
     module = Path.join(System.tmp_dir!(), "foo") |> String.to_atom()
 
     temp_file = "#{module}.fi"
 
     str = """
     fn f : Loop(Nothing) do
-      h()
+      g()
     end
 
     fn g : Loop(Nothing) do
@@ -80,6 +80,20 @@ defmodule Fika.Compiler.ModuleCompilerTest do
 
     fn h : Loop(Nothing) do
       f()
+    end
+
+    fn a : Loop(Nothing) do
+      c()
+      b()
+    end
+
+    fn b : Loop(Nothing) do
+      c()
+      a()
+    end
+
+    fn c : Int do
+      1 + 1
     end
     """
 
