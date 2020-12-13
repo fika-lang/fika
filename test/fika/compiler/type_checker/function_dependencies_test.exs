@@ -38,8 +38,13 @@ defmodule Fika.Compiler.TypeChecker.FunctionDependenciesTest do
     test "should warn about indirect dependency cycles" do
       assert :ok == FunctionDependencies.set("a", "b")
       assert :ok == FunctionDependencies.set("b", "c")
-
       assert {:error, :cycle_encountered} == FunctionDependencies.set("c", "a")
+
+      nodes = ["a", "b", "c"]
+
+      for x <- nodes, y <- nodes do
+        assert {:error, :cycle_encountered} == FunctionDependencies.set(x, y)
+      end
     end
   end
 end
