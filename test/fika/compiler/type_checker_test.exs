@@ -216,7 +216,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
       bar()
     end
 
-    fn bar() do
+    fn bar do
       foo()
     end
     """

@@ -75,12 +75,8 @@ defmodule Fika.Compiler.Parser.FunctionDef do
     |> concat(return_type)
     |> concat(require_space)
     |> ignore(string("do"))
-    |> choice([
-      require_space
-      |> wrap(exps)
-      |> concat(require_space),
-      wrap(require_space)
-    ])
+    |> concat(require_space)
+    |> wrap(optional(concat(exps, require_space)))
     |> ignore(string("end"))
     |> label("public function definition")
     |> Helper.to_ast(:public_function_def)
