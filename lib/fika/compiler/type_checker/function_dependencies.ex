@@ -9,7 +9,16 @@ defmodule Fika.Compiler.TypeChecker.FunctionDependencies do
   use Agent
 
   def start_link(_) do
-    Agent.start_link(fn -> MapSet.new() end, name: __MODULE__)
+    Agent.start_link(&initial_state/0, name: __MODULE__)
+  end
+
+  @doc false
+  def reset do
+    Agent.update(__MODULE__, fn _ -> initial_state() end)
+  end
+
+  defp initial_state do
+    %{}
   end
 
   @spec set(source :: String.t() | nil, target :: String.t() | nil) ::
@@ -21,12 +30,19 @@ defmodule Fika.Compiler.TypeChecker.FunctionDependencies do
   end
 
   def set(source, target) do
-    Agent.update(__MODULE__, fn state -> MapSet.put(state, {source, target}) end)
+    Agent.update(__MODULE__, fn state ->
+      deps =
+        state
+        |> Map.get(source, MapSet.new())
+        |> MapSet.put(target)
+
+      Map.put(state, source, deps)
+    end)
 
     dependencies = Agent.get(__MODULE__, & &1)
 
     # Check if after adding {source, target}, we can find a cycle
-    if check_cycle(dependencies, [target], target) do
+    if check_cycle(dependencies, target) do
       {:error, :cycle_encountered}
     else
       :ok
@@ -34,15 +50,15 @@ defmodule Fika.Compiler.TypeChecker.FunctionDependencies do
   end
 
   @doc false
-  def check_cycle(dependencies, travelled_nodes, node) do
-    if node in travelled_nodes do
-      true
-    else
-      targets = Enum.find(dependencies, fn {source, _} -> source == node end)
+  def check_cycle(dependencies, node, travelled_nodes \\ MapSet.new()) do
+    targets = Map.get(dependencies, node, MapSet.new())
 
-      Enum.any?(targets, fn target ->
-        check_cycle(dependencies, [target | travelled_nodes], node)
-      end)
-    end
+    Enum.any?(targets, fn target ->
+      if target in travelled_nodes do
+        true
+      else
+        check_cycle(dependencies, node, MapSet.put(travelled_nodes, target))
+      end
+    end)
   end
 end
