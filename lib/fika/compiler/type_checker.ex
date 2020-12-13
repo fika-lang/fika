@@ -36,6 +36,7 @@ defmodule Fika.Compiler.TypeChecker do
     previously_called_functions = Map.get(env, :called_functions, MapSet.new())
 
     if mfa in previously_called_functions do
+      Logger.debug("Found loop into function #{inspect(mfa)}")
       {:ok, T.Loop.new()}
     else
       Logger.debug("First call to #{inspect(mfa)}")
