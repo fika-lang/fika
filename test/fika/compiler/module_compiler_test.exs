@@ -75,6 +75,10 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     end
 
     fn g : Loop(Nothing) do
+      h()
+    end
+
+    fn h : Loop(Nothing) do
       f()
     end
     """
