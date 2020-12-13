@@ -70,7 +70,7 @@ defmodule Fika.Compiler.ModuleCompiler do
   end
 
   defp type_check(state) do
-    case ParallelTypeChecker.check(state.module_name, state.ast[:function_defs]) do
+    case ParallelTypeChecker.check(state.module_name, state.ast) do
       :ok -> :ok
       :error -> {:error, "Type check error"}
     end

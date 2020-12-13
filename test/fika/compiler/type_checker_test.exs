@@ -212,11 +212,11 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
   test "infer empty-function recursion" do
     str = """
-    fn foo do
+    fn foo : Loop(Nothing) do
       bar()
     end
 
-    fn bar do
+    fn bar : Loop(Nothing) do
       foo()
     end
     """

@@ -9,8 +9,8 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   }
 
   # Returns :ok | :error
-  def check(module_name, function_asts) do
-    start_link(module_name, function_asts)
+  def check(module_name, ast) do
+    start_link(module_name, ast)
 
     receive do
       {:result, result} ->
@@ -19,10 +19,10 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     end
   end
 
-  def start_link(module_name, function_asts) do
+  def start_link(module_name, ast) do
     pid = self()
-    signature_map = signature_map(function_asts)
-    GenServer.start_link(__MODULE__, [pid, module_name, signature_map])
+    signature_map = signature_map(ast)
+    GenServer.start_link(__MODULE__, [pid, module_name, signature_map, ast])
   end
 
   def get_result(pid, signature) do
@@ -33,7 +33,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     GenServer.cast(pid, {:post_result, signature, result})
   end
 
-  def init([caller_pid, module_name, signature_map]) do
+  def init([caller_pid, module_name, signature_map, ast]) do
     state = %{
       caller_pid: caller_pid,
       module_name: module_name,
@@ -41,7 +41,8 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
       unchecked_functions: signature_map,
       checked_functions: %{},
       waiting: %{},
-      error_found: false
+      error_found: false,
+      ast: ast
     }
 
     Logger.debug("Initializing ParallelTypeChecker for #{module_name}")
@@ -54,7 +55,14 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
 
     Enum.each(state.unchecked_functions, fn {signature, function} ->
       Task.start_link(fn ->
-        result = TypeChecker.check(function, %{type_checker_pid: pid})
+        result =
+          TypeChecker.check(function, %{
+            ast: state.ast,
+            module_name: state.module_name,
+            current_signature: signature,
+            type_checker_pid: pid
+          })
+
         __MODULE__.post_result(pid, signature, result)
       end)
     end)
@@ -155,8 +163,8 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     state
   end
 
-  defp signature_map(function_asts) do
-    Enum.map(function_asts, fn function ->
+  defp signature_map(ast) do
+    Enum.map(ast[:function_defs], fn function ->
       signature = TypeChecker.function_ast_signature(function)
       {signature, function}
     end)

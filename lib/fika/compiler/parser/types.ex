@@ -90,6 +90,13 @@ defmodule Fika.Compiler.Parser.Types do
     |> label("effect type")
     |> Helper.to_ast(:effect_type)
 
+  loop_type =
+    ignore(string("Loop("))
+    |> concat(parsec(:type))
+    |> ignore(string(")"))
+    |> label("loop type")
+    |> Helper.to_ast(:loop_type)
+
   string_type =
     string("String")
     |> label("string")
@@ -126,6 +133,7 @@ defmodule Fika.Compiler.Parser.Types do
       function_type,
       list_type,
       effect_type,
+      loop_type,
       record_type,
       map_type,
       tuple_type

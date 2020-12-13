@@ -3,6 +3,7 @@ defmodule Fika.Compiler.TypeChecker do
   alias Fika.Compiler.CodeServer
 
   alias Fika.Compiler.TypeChecker.{
+    FunctionDependencies,
     ParallelTypeChecker,
     SequentialTypeChecker
   }
@@ -487,17 +488,25 @@ defmodule Fika.Compiler.TypeChecker do
     "#{function_name}(#{Enum.join(arg_types, ", ")})"
   end
 
-  # Local function
-  defp get_type(nil, signature, env) do
-    if pid = env[:type_checker_pid] do
-      ParallelTypeChecker.get_result(pid, signature)
-    else
-      SequentialTypeChecker.get_result(signature, env)
-    end
-  end
+  defp get_type(module, target_signature, env) do
+    is_local_call = is_nil(module) or module == env[:module_name]
 
-  # Remote function
-  defp get_type(module, signature, _env) do
-    CodeServer.get_type(module, signature)
+    current_signature = env[:current_signature]
+
+    function_dependency = FunctionDependencies.set(current_signature, target_signature)
+
+    case {is_local_call, function_dependency} do
+      {true, :ok} ->
+        ParallelTypeChecker.get_result(target_signature, env)
+
+      {true, {:error, :cycle_encountered}} ->
+        SequentialTypeChecker.get_result(target_signature, env)
+
+      {false, _} ->
+        CodeServer.get_type(module, target_signature)
+    end
+  rescue
+    _ ->
+      SequentialTypeChecker.get_result(target_signature, env)
   end
 end

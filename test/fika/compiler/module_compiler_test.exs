@@ -63,4 +63,26 @@ defmodule Fika.Compiler.ModuleCompilerTest do
 
     File.rm!(temp_file)
   end
+
+  test "does not hang when there is local recursion" do
+    module = Path.join(System.tmp_dir!(), "foo") |> String.to_atom()
+
+    temp_file = "#{module}.fi"
+
+    str = """
+    fn f : Loop(Nothing) do
+      g()
+    end
+
+    fn g : Loop(Nothing) do
+      f()
+    end
+    """
+
+    File.write!(temp_file, str)
+
+    assert {:error, "Type check error"} == ModuleCompiler.compile(module)
+
+    File.rm!(temp_file)
+  end
 end
