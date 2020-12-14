@@ -54,6 +54,8 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     pid = self()
 
     Enum.each(state.unchecked_functions, fn {signature, function} ->
+      # We need to use this approach instead of Task.async_stream due to
+      # timeout and concurrency issues
       Task.start_link(fn ->
         result =
           TypeChecker.check(function, %{

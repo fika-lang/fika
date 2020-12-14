@@ -24,6 +24,33 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     File.rm!(temp_file)
   end
 
+  test "can compile a file with many functions" do
+    tmp_dir = System.tmp_dir!()
+    temp_file = Path.join(tmp_dir, "foo.fi")
+
+    # Show that we're not limited to the number of online schedulers
+    n = System.schedulers_online() * 2
+
+    str =
+      1..n
+      |> Enum.map(fn number ->
+        """
+        fn foo_#{number} : String do
+          "Hello world"
+        end
+        """
+      end)
+      |> Enum.join("\n")
+
+    File.write!(temp_file, str)
+
+    File.cd!(tmp_dir, fn ->
+      assert {:ok, "foo", "foo.fi", _binary} = ModuleCompiler.compile("foo")
+    end)
+
+    File.rm!(temp_file)
+  end
+
   test "returns error when file doesn't exist" do
     module = Path.join(System.tmp_dir!(), "foo") |> String.to_atom()
 
