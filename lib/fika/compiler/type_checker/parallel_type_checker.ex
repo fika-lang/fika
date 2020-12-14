@@ -52,11 +52,21 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   def handle_continue(:start, state) do
     pid = self()
 
-    Enum.each(state.unchecked_functions, fn {signature, function} ->
-      Task.start_link(fn ->
+    state.unchecked_functions
+    |> Task.async_stream(
+      fn {signature, function} ->
         result = TypeChecker.check(function, %{type_checker_pid: pid})
         __MODULE__.post_result(pid, signature, result)
-      end)
+      end,
+      max_concurrency: Enum.count(state.unchecked_functions)
+    )
+    |> Enum.each(fn
+      {:ok, _} ->
+        :ok
+
+      error ->
+        Logger.error("Error while running ParallelTypeChecker: #{inspect(error)}")
+        raise CompileError, description: "failed to run ParallelTypeChecker"
     end)
 
     {:noreply, state}
