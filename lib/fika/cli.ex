@@ -66,4 +66,9 @@ defmodule Fika.Cli do
     IO.puts("Press Ctrl+C to exit")
     :timer.sleep(:infinity)
   end
+
+  defp parse_args(_) do
+    IO.puts("Invalid arguments received.")
+    parse_args([])
+  end
 end

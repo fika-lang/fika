@@ -29,7 +29,7 @@ defmodule Fika.MixProject do
     [
       {:nimble_parsec, "~> 1.1.0"},
       {:plug_cowboy, "~> 2.0"},
-      {:bakeware, github: "spawnfest/bakeware", tag: "v0.1.0", sparse: "bakeware", runtime: false}
+      {:bakeware, "~> 0.1.4", runtime: false}
     ]
   end
 
@@ -37,7 +37,7 @@ defmodule Fika.MixProject do
     [
       overwrite: true,
       cookie: "#{@app}_cookie",
-      steps: [:assemble, &Bakeware.assemble/1, &Fika.Deploy.copy_files/1],
+      steps: [:assemble, &Bakeware.assemble/1, &Fika.Deployment.copy_files/1],
       strip_beams: Mix.env() == :prod,
       quiet: true
     ]
