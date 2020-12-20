@@ -186,24 +186,11 @@ defmodule Fika.Compiler.CodeServer do
   def handle_call(
         {:set_function_dependency, source, target},
         _from,
-        %{function_dependencies: current_graph} = state
+        %{function_dependencies: graph} = state
       ) do
-    graph =
-      current_graph
-      |> add_vertex(source)
-      |> add_vertex(target)
-      |> add_edge(source, target)
+    response = __MODULE__.FunctionDependencies.set_function_dependency(graph, source, target)
 
-    response =
-      if :digraph.get_cycle(graph, source) do
-        {:error, :cycle_encountered}
-      else
-        :ok
-      end
-
-    updated_state = Map.put(state, :function_dependencies, graph)
-
-    {:reply, response, updated_state}
+    {:reply, response, state}
   end
 
   defp beam_filename(module) do
@@ -325,17 +312,5 @@ defmodule Fika.Compiler.CodeServer do
     if result && parent_pid do
       GenServer.reply(parent_pid, result)
     end
-  end
-
-  defp add_vertex(graph, v) do
-    :digraph.add_vertex(graph, v, v)
-    graph
-  end
-
-  defp add_edge(graph, source, target) do
-    edge = {source, target}
-
-    :digraph.add_edge(graph, edge, source, target, edge)
-    graph
   end
 end
