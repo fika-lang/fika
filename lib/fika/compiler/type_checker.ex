@@ -35,7 +35,7 @@ defmodule Fika.Compiler.TypeChecker do
 
     mfa = {env[:module_name], name, length(args)}
 
-    result =
+    check_loop =
       if latest_call = env[:latest_called_function] do
         FunctionDependencies.set_function_dependency(
           env.callstack,
@@ -44,7 +44,7 @@ defmodule Fika.Compiler.TypeChecker do
         )
       end
 
-    if result == {:error, :cycle_encountered} do
+    if check_loop == {:error, :cycle_encountered} do
       Logger.debug("Found loop into function #{inspect(mfa)}")
       {:ok, T.Loop.new()}
     else
