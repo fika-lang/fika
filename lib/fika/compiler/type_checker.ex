@@ -504,7 +504,7 @@ defmodule Fika.Compiler.TypeChecker do
         SequentialTypeChecker.get_result(target_signature, env)
 
       {true, {:error, :cycle_encountered}, _} ->
-        SequentialTypeChecker.get_result(target_signature, env)
+        {:ok, T.Loop.new()}
 
       {false, _, _} ->
         CodeServer.get_type(module, target_signature)
