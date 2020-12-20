@@ -6,59 +6,88 @@ defmodule Fika.Compiler.TypeChecker.FunctionDependencies do
   parallel compiler when there's recursion involved.
   """
 
-  use Agent
+  use GenServer
 
   def start_link(_) do
-    Agent.start_link(&initial_state/0, name: __MODULE__)
+    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+  end
+
+  def init(_) do
+    {:ok, initial_state()}
   end
 
   @doc false
   def reset do
-    Agent.update(__MODULE__, fn _ -> initial_state() end)
+    GenServer.call(__MODULE__, :reset)
+  end
+
+  @doc false
+  def get_dependency_graph do
+    GenServer.call(__MODULE__, :get_dependency_graph, timeout())
   end
 
   defp initial_state do
-    %{}
+    %{graph: :digraph.new()}
   end
 
   @spec set(source :: String.t() | nil, target :: String.t() | nil) ::
           :ok | {:error, :cycle_encountered}
-  def set(source, target)
-
-  def set(source, target) when is_nil(source) or is_nil(target) do
-    :ok
-  end
-
   def set(source, target) do
-    Agent.update(__MODULE__, fn state ->
-      deps =
-        state
-        |> Map.get(source, MapSet.new())
-        |> MapSet.put(target)
-
-      Map.put(state, source, deps)
-    end)
-
-    dependencies = Agent.get(__MODULE__, & &1)
-
-    # Check if after adding {source, target}, we can find a cycle
-    if check_cycle(dependencies, target) do
-      {:error, :cycle_encountered}
-    else
-      :ok
-    end
+    GenServer.call(__MODULE__, {:set, source, target}, timeout())
   end
 
-  @doc false
-  def check_cycle(dependencies, node, travelled_nodes \\ MapSet.new()) do
-    targets = Map.get(dependencies, node, MapSet.new())
+  def handle_call(:reset, _from, _state) do
+    {:reply, :ok, initial_state()}
+  end
 
-    Enum.any?(targets, fn target ->
-      if target in travelled_nodes do
-        true
+  def handle_call(:get_dependency_graph, _from, %{graph: graph} = state) do
+    vertices = graph |> :digraph.vertices() |> Enum.sort()
+    edges = graph |> :digraph.edges() |> Enum.sort()
+
+    deps = %{vertices: vertices, edges: edges}
+
+    {:reply, deps, state}
+  end
+
+  def handle_call({:set, source, target}, _from, state)
+      when is_nil(source) or is_nil(target) do
+    {:reply, :ok, state}
+  end
+
+  def handle_call({:set, source, target}, _from, %{graph: current_graph} = state) do
+    graph =
+      current_graph
+      |> add_vertex(source)
+      |> add_vertex(target)
+      |> add_edge(source, target)
+
+    response =
+      if :digraph.get_cycle(graph, source) do
+        {:error, :cycle_encountered}
       else
-        check_cycle(dependencies, node, MapSet.put(travelled_nodes, target))
+        :ok
       end
-    end)
+
+    updated_state = Map.put(state, :graph, graph)
+
+    {:reply, response, updated_state}
+  end
+
+  defp add_vertex(graph, v) do
+    :digraph.add_vertex(graph, v, v)
+    graph
+  end
+
+  defp add_edge(graph, source, target) do
+    edge = {source, target}
+
+    :digraph.add_edge(graph, edge, source, target, edge)
+    graph
+  end
+
+  defp timeout do
+    :fika
+    |> Application.get_env(__MODULE__, [])
+    |> Keyword.get(:genserver_timeout, 5_000)
   end
 end
