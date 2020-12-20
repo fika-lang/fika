@@ -5,6 +5,8 @@ defmodule Fika.Compiler.CodeServer.FunctionDependencies do
   Helper module that is used by the TypeChecker and the CodeServer.
   """
 
+  def new_graph, do: :digraph.new()
+
   def set_function_dependency(graph, source, target) do
     graph
     |> add_vertex(source)

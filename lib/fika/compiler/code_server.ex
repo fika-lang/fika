@@ -263,7 +263,7 @@ defmodule Fika.Compiler.CodeServer do
       compile_result: %{},
       parent_pid: nil,
       binaries: [],
-      function_dependencies: :digraph.new()
+      function_dependencies: __MODULE__.FunctionDependencies.new_graph()
     }
   end
 

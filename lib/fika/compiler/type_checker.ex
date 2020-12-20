@@ -1,6 +1,8 @@
 defmodule Fika.Compiler.TypeChecker do
   alias Fika.Compiler.TypeChecker.Types, as: T
+
   alias Fika.Compiler.CodeServer
+  alias Fika.Compiler.CodeServer.FunctionDependencies
 
   alias Fika.Compiler.TypeChecker.{
     ParallelTypeChecker,
@@ -33,9 +35,16 @@ defmodule Fika.Compiler.TypeChecker do
 
     mfa = {env[:module_name], name, length(args)}
 
-    previously_called_functions = Map.get(env, :called_functions, MapSet.new())
+    result =
+      if latest_call = env[:latest_called_function] do
+        FunctionDependencies.set_function_dependency(
+          env.callstack,
+          latest_call,
+          mfa
+        )
+      end
 
-    if mfa in previously_called_functions do
+    if result == {:error, :cycle_encountered} do
       Logger.debug("Found loop into function #{inspect(mfa)}")
       {:ok, T.Loop.new()}
     else
@@ -46,7 +55,7 @@ defmodule Fika.Compiler.TypeChecker do
         |> Map.put(:scope, %{})
         |> Map.put(:has_effect, false)
         |> add_args_to_scope(args)
-        |> add_function_to_called_functions(mfa)
+        |> set_latest_call(mfa)
 
       case infer_block(env, exprs) do
         {:ok, type, env} ->
@@ -472,15 +481,10 @@ defmodule Fika.Compiler.TypeChecker do
     end)
   end
 
-  defp add_function_to_called_functions(env, mfa) do
-    called_functions =
-      env
-      |> Map.get(:called_functions, MapSet.new())
-      |> MapSet.put(mfa)
-
+  defp set_latest_call(env, mfa) do
     env
-    |> Map.put(:called_functions, called_functions)
     |> Map.put(:latest_called_function, mfa)
+    |> Map.put_new(:callstack, FunctionDependencies.new_graph())
   end
 
   defp get_function_signature(function_name, arg_types) do
