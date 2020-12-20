@@ -99,4 +99,55 @@ defmodule Fika.Compiler.CodeServerTest do
     File.rm!(temp_file_1)
     File.rm!(temp_file_2)
   end
+
+  describe "set_function_dependency/2" do
+    setup do
+      CodeServer.reset()
+
+      :ok
+    end
+
+    test "should not change state if any of the args is nil" do
+      state = CodeServer.get_dependency_graph()
+
+      CodeServer.set_function_dependency(nil, 1)
+      CodeServer.set_function_dependency(1, nil)
+
+      assert state == CodeServer.get_dependency_graph()
+    end
+
+    test "should update the state in an idempotent manner" do
+      assert :ok == CodeServer.set_function_dependency("a", "b")
+      graph = CodeServer.get_dependency_graph()
+
+      assert :ok == CodeServer.set_function_dependency("a", "b")
+      assert graph == CodeServer.get_dependency_graph()
+
+      assert %{edges: [{"a", "b"}], vertices: ["a", "b"]} == graph
+    end
+
+    test "should warn about direct dependency cycles" do
+      assert :ok == CodeServer.set_function_dependency("a", "b")
+
+      assert {:error, :cycle_encountered} == CodeServer.set_function_dependency("b", "a")
+    end
+
+    test "should warn about indirect dependency cycles" do
+      assert :ok == CodeServer.set_function_dependency("a", "b")
+      assert :ok == CodeServer.set_function_dependency("b", "c")
+      assert {:error, :cycle_encountered} == CodeServer.set_function_dependency("c", "a")
+
+      nodes = ["a", "b", "c"]
+
+      for x <- nodes, y <- nodes do
+        assert {:error, :cycle_encountered} == CodeServer.set_function_dependency(x, y)
+      end
+    end
+
+    test "should correctly handle acyclic graphs" do
+      assert :ok == CodeServer.set_function_dependency("a", "x")
+      assert :ok == CodeServer.set_function_dependency("b", "c")
+      assert :ok == CodeServer.set_function_dependency("c", "a")
+    end
+  end
 end

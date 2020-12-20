@@ -3,7 +3,6 @@ defmodule Fika.Compiler.TypeChecker do
   alias Fika.Compiler.CodeServer
 
   alias Fika.Compiler.TypeChecker.{
-    FunctionDependencies,
     ParallelTypeChecker,
     SequentialTypeChecker
   }
@@ -495,7 +494,7 @@ defmodule Fika.Compiler.TypeChecker do
 
     pid = env[:type_checker_pid]
 
-    function_dependency = FunctionDependencies.set(current_signature, target_signature)
+    function_dependency = CodeServer.set_function_dependency(current_signature, target_signature)
 
     case {is_local_call, function_dependency, pid} do
       {true, :ok, pid} when is_pid(pid) ->

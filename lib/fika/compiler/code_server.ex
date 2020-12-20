@@ -34,7 +34,7 @@ defmodule Fika.Compiler.CodeServer do
   end
 
   def reset do
-    GenServer.call(__MODULE__, :reset)
+    GenServer.cast(__MODULE__, :reset)
   end
 
   # Loads the accumulated binaries which were collected as a result of
@@ -46,6 +46,17 @@ defmodule Fika.Compiler.CodeServer do
 
   def write_binaries(dest) do
     GenServer.call(__MODULE__, {:write_binaries, dest})
+  end
+
+  @doc false
+  def get_dependency_graph do
+    GenServer.call(__MODULE__, :get_dependency_graph)
+  end
+
+  @spec set_function_dependency(source :: String.t() | nil, target :: String.t() | nil) ::
+          :ok | {:error, :cycle_encountered}
+  def set_function_dependency(source, target) do
+    GenServer.call(__MODULE__, {:set_function_dependency, source, target})
   end
 
   def init(_) do
@@ -102,8 +113,17 @@ defmodule Fika.Compiler.CodeServer do
     {:noreply, state}
   end
 
-  def handle_call(:reset, _from, _state) do
-    {:reply, :ok, init_state()}
+  def handle_cast(:reset, _state) do
+    {:noreply, init_state()}
+  end
+
+  def handle_call(:get_dependency_graph, _from, %{function_dependencies: graph} = state) do
+    vertices = graph |> :digraph.vertices() |> Enum.sort()
+    edges = graph |> :digraph.edges() |> Enum.sort()
+
+    deps = %{vertices: vertices, edges: edges}
+
+    {:reply, deps, state}
   end
 
   def handle_call({:get_type, module, signature}, from, state) do
@@ -156,6 +176,34 @@ defmodule Fika.Compiler.CodeServer do
       end)
 
     {:reply, result, reset_binaries(state)}
+  end
+
+  def handle_call({:set_function_dependency, source, target}, _from, state)
+      when is_nil(source) or is_nil(target) do
+    {:reply, :ok, state}
+  end
+
+  def handle_call(
+        {:set_function_dependency, source, target},
+        _from,
+        %{function_dependencies: current_graph} = state
+      ) do
+    graph =
+      current_graph
+      |> add_vertex(source)
+      |> add_vertex(target)
+      |> add_edge(source, target)
+
+    response =
+      if :digraph.get_cycle(graph, source) do
+        {:error, :cycle_encountered}
+      else
+        :ok
+      end
+
+    updated_state = Map.put(state, :function_dependencies, graph)
+
+    {:reply, response, updated_state}
   end
 
   defp beam_filename(module) do
@@ -227,7 +275,8 @@ defmodule Fika.Compiler.CodeServer do
       waiting: %{},
       compile_result: %{},
       parent_pid: nil,
-      binaries: []
+      binaries: [],
+      function_dependencies: :digraph.new()
     }
   end
 
@@ -276,5 +325,17 @@ defmodule Fika.Compiler.CodeServer do
     if result && parent_pid do
       GenServer.reply(parent_pid, result)
     end
+  end
+
+  defp add_vertex(graph, v) do
+    :digraph.add_vertex(graph, v, v)
+    graph
+  end
+
+  defp add_edge(graph, source, target) do
+    edge = {source, target}
+
+    :digraph.add_edge(graph, edge, source, target, edge)
+    graph
   end
 end
