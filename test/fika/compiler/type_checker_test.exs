@@ -171,6 +171,29 @@ defmodule Fika.Compiler.TypeCheckerTest do
     assert {:ok, %T.Loop{type: :Int}} = TypeChecker.infer(factorial, env)
   end
 
+  test "infer return type when the recursion is not at the top level" do
+    str = """
+    fn factorial(x: Int) : Int do
+      do_factorial(x, 0)
+    end
+
+    fn do_factorial(x: Int, acc: Int) : Loop(Int) do
+      if x <= 1 do
+        acc
+      else
+        do_factorial(x - 1, acc * x)
+      end
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+    [factorial, _do_factorial] = ast[:function_defs]
+
+    env = TypeChecker.init_env(ast)
+
+    assert {:ok, %T.Loop{type: :Int}} = TypeChecker.infer(factorial, env)
+  end
+
   test "infer return type when there is intra-module recursion" do
     str = """
     fn foo(a: Int) : Int do
