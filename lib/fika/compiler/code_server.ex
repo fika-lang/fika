@@ -61,6 +61,12 @@ defmodule Fika.Compiler.CodeServer do
     GenServer.call(__MODULE__, {:set_function_dependency, source, target})
   end
 
+  @spec check_cycle(source :: String.t() | nil) ::
+          :ok | {:error, :cycle_encountered}
+  def check_cycle(node) do
+    GenServer.call(__MODULE__, {:check_cycle, node})
+  end
+
   def init(_) do
     state = init_state()
 
@@ -191,6 +197,21 @@ defmodule Fika.Compiler.CodeServer do
         %{function_dependencies: graph} = state
       ) do
     response = __MODULE__.FunctionDependencies.set_function_dependency(graph, source, target)
+
+    {:reply, response, state}
+  end
+
+  def handle_call({:check_cycle, node}, _from, state)
+      when is_nil(node) do
+    {:reply, :ok, state}
+  end
+
+  def handle_call(
+        {:check_cycle, node},
+        _from,
+        %{function_dependencies: graph} = state
+      ) do
+    response = __MODULE__.FunctionDependencies.check_cycle(graph, node)
 
     {:reply, response, state}
   end

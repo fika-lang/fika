@@ -12,8 +12,11 @@ defmodule Fika.Compiler.CodeServer.FunctionDependencies do
     |> add_vertex(source)
     |> add_vertex(target)
     |> add_edge(source, target)
+    |> check_cycle(source)
+  end
 
-    if :digraph.get_cycle(graph, source) do
+  def check_cycle(graph, node) do
+    if :digraph.get_cycle(graph, node) do
       {:error, :cycle_encountered}
     else
       :ok

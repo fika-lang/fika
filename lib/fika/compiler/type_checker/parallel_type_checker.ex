@@ -60,7 +60,8 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
       # timeout and concurrency issues
       Task.start_link(fn ->
         result =
-          TypeChecker.check(function, %{
+          function
+          |> TypeChecker.check(%{
             ast: state.ast,
             module_name: state.module_name,
             current_signature: signature,
@@ -96,17 +97,15 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   def handle_cast({:post_result, signature, result}, state) do
     Logger.debug("Result of type checking #{state.module_name}.#{signature} = #{inspect(result)}")
 
-    unwrapped_result = unwrap_result(result)
-
     state =
       state
-      |> notify_waiting_type_checks(signature, unwrapped_result)
-      |> mark_function(signature, unwrapped_result)
-      |> process_error(unwrapped_result)
+      |> notify_waiting_type_checks(signature, result)
+      |> mark_function(signature, result)
+      |> process_error(result)
       |> maybe_finish()
 
     # TODO: when we have private functions, do this conditionally.
-    CodeServer.set_type(state.module_name, signature, unwrapped_result)
+    CodeServer.set_type(state.module_name, signature, result)
 
     {:noreply, state}
   end
@@ -184,7 +183,4 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     end)
     |> Map.new()
   end
-
-  defp unwrap_result({:ok, %T.Loop{type: t}}), do: {:ok, t}
-  defp unwrap_result(result), do: result
 end

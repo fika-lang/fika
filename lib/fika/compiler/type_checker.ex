@@ -21,12 +21,30 @@ defmodule Fika.Compiler.TypeChecker do
         result
 
       {:ok, inferred_type} ->
-        {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
+        unwrap_loop(env, expected_type, inferred_type)
 
       error ->
         error
     end
   end
+
+  defp unwrap_loop(env, t, %T.Loop{type: t} = loop_type) do
+    # The function can be a top-level function which depends on a loop
+    # In this case, we can unwrap the loop
+
+    case CodeServer.check_cycle(env[:current_signature]) do
+      :ok ->
+        {:ok, t}
+
+      _ ->
+        {:error, "Expected type: #{t}, got: #{loop_type}"}
+    end
+  end
+
+  defp unwrap_loop(_env, t, t), do: {:ok, t}
+
+  defp unwrap_loop(_env, expected_type, inferred_type),
+    do: {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
 
   # Given the AST of a function definition, this function infers the
   # return type of the body of the function.
