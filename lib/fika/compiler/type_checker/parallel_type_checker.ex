@@ -8,6 +8,8 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     CodeServer
   }
 
+  alias Fika.Compiler.TypeChecker.Types, as: T
+
   # Returns :ok | :error
   def check(module_name, ast) do
     start_link(module_name, ast)
@@ -94,15 +96,17 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   def handle_cast({:post_result, signature, result}, state) do
     Logger.debug("Result of type checking #{state.module_name}.#{signature} = #{inspect(result)}")
 
+    unwrapped_result = unwrap_result(result)
+
     state =
       state
-      |> notify_waiting_type_checks(signature, result)
-      |> mark_function(signature, result)
-      |> process_error(result)
+      |> notify_waiting_type_checks(signature, unwrapped_result)
+      |> mark_function(signature, unwrapped_result)
+      |> process_error(unwrapped_result)
       |> maybe_finish()
 
     # TODO: when we have private functions, do this conditionally.
-    CodeServer.set_type(state.module_name, signature, result)
+    CodeServer.set_type(state.module_name, signature, unwrapped_result)
 
     {:noreply, state}
   end
@@ -134,6 +138,14 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     end
 
     Map.put(state, :waiting, waiting)
+  end
+
+  defp mark_function(state, signature, {:ok, %T.Loop{type: result}}) do
+    %{
+      state
+      | unchecked_functions: Map.delete(state.unchecked_functions, signature),
+        checked_functions: Map.put(state.checked_functions, signature, result)
+    }
   end
 
   defp mark_function(state, signature, result) do
@@ -172,4 +184,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     end)
     |> Map.new()
   end
+
+  defp unwrap_result({:ok, %T.Loop{type: t}}), do: {:ok, t}
+  defp unwrap_result(result), do: result
 end

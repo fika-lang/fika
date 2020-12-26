@@ -9,6 +9,8 @@ defmodule Fika.Compiler.CodeServer do
     ErlTranslate
   }
 
+  alias Fika.Compiler.TypeChecker.Types, as: T
+
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
@@ -201,6 +203,12 @@ defmodule Fika.Compiler.CodeServer do
   end
 
   defp set_type(state, module, signature, result) do
+    type =
+      case result do
+        %T.Loop{type: t} -> t
+        t -> t
+      end
+
     update_in(state, [:public_functions, module], fn
       nil -> %{signature => result}
       signatures -> Map.put(signatures, signature, result)
