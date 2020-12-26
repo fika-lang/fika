@@ -13,8 +13,7 @@ defmodule Fika.Compiler.TypeChecker.Types.MatchTest do
     lhs = TestParser.expression!(str)
     env = %{}
 
-    assert Match.match(env, lhs, rhs) ==
-             {:error, "Type a | b | c cannot match left hand side value."}
+    assert Match.match(env, lhs, rhs) == :error
 
     rhs = :a
     assert {:ok, env} = Match.match(env, lhs, rhs)
@@ -33,7 +32,7 @@ defmodule Fika.Compiler.TypeChecker.Types.MatchTest do
     str = "1"
     lhs = TestParser.expression!(str)
     env = %{}
-    assert Match.match(env, lhs, rhs) == {:error, "Type Int cannot match left hand side value."}
+    assert Match.match(env, lhs, rhs) == :error
   end
 
   test "match tuples" do
@@ -83,6 +82,12 @@ defmodule Fika.Compiler.TypeChecker.Types.MatchTest do
     env = %{scope: %{}}
 
     assert Match.match_case(env, pattern, rhs) == :error
+  end
+
+  test "match_case for strings" do
+    rhs = :String
+    pattern = TestParser.expression!("\"foo\"")
+    assert {:ok, _, [:String]} = Match.match_case(%{}, pattern, rhs)
   end
 
   test "match_case when lhs matches one of many in a union" do
