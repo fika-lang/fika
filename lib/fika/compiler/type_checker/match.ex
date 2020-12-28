@@ -3,16 +3,24 @@ defmodule Fika.Compiler.TypeChecker.Match do
 
   # Returns:
   # {:ok, env, unmatched_types} | :error
-  def match_case(env, lhs_ast, rhs_type) do
-    find_unmatched(env, lhs_ast, rhs_type)
+  def match_case(env, lhs_ast, rhs_types) when is_list(rhs_types) do
+    find_unmatched(env, lhs_ast, rhs_types)
+  end
+
+  def match_case(env, lhs_ast, rhs_types) do
+    match_case(env, lhs_ast, expand_unions(rhs_types))
   end
 
   # Returns {:ok, env} | :error
-  def match(env, lhs_ast, rhs_type) do
+  def match(env, lhs_ast, rhs_type) when is_list(rhs_type) do
     case find_unmatched(env, lhs_ast, rhs_type) do
       {:ok, env, []} -> {:ok, env}
       _ -> :error
     end
+  end
+
+  def match(env, lhs_ast, rhs_type) do
+    match(env, lhs_ast, expand_unions(rhs_type))
   end
 
   def expand_unions(%T.Union{types: types}) do
@@ -61,8 +69,7 @@ defmodule Fika.Compiler.TypeChecker.Match do
     end)
   end
 
-  defp find_unmatched(env, lhs_ast, rhs) do
-    all_rhs_types = expand_unions(rhs)
+  defp find_unmatched(env, lhs_ast, all_rhs_types) do
     find_unmatched(env, lhs_ast, all_rhs_types, [], false)
   end
 

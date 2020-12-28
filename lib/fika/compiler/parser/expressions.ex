@@ -113,7 +113,7 @@ defmodule Fika.Compiler.Parser.Expressions do
     |> concat(allow_horizontal_space)
 
   exps =
-    parsec(:exp)
+    exp
     |> optional(
       times(exp_delimiter, min: 1)
       |> parsec(:exps)
@@ -128,4 +128,5 @@ defmodule Fika.Compiler.Parser.Expressions do
   defcombinator :factor, factor
   defcombinator :exp, exp
   defcombinator :exps, exps
+  defcombinator :exp_delimiter, exp_delimiter
 end

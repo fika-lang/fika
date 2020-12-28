@@ -114,6 +114,15 @@ fn interval(start: Int, finish: Int) : {:error, String} | {:ok, Int} do
   end
 end
 
+# Case expressions allow you to pattern match expressions and conditionally
+# execute statements
+fn get_score(result: {:ok, Int} | :error) : Int do
+  case result do
+    {:ok, score} -> score
+    :error -> 0
+  end
+end
+
 # Wrap and use external functions defined in the BEAM
 ext str_length(str: String) : Int = {"Elixir.String", "length", [str]}
 ext list_size(l: List(Int)) : Int = {"erlang", "length", [l]}

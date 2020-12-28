@@ -4,7 +4,8 @@ defmodule Fika.Compiler.TypeChecker do
 
   alias Fika.Compiler.TypeChecker.{
     ParallelTypeChecker,
-    SequentialTypeChecker
+    SequentialTypeChecker,
+    Match
   }
 
   require Logger
@@ -272,6 +273,18 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
+  # case expression
+  def infer_exp(env, {{:case, _line}, exp, clauses}) do
+    Logger.debug("Inferring a case expression")
+
+    # Check the type of exp.
+    # For each clause, ensure all of the patterns return {:ok, env}
+    with {:ok, rhs_type, env} <- infer_exp(env, exp),
+         {:ok, type, env} <- infer_case_clauses(env, rhs_type, clauses) do
+      {:ok, type, env}
+    end
+  end
+
   # anonymous function
   def infer_exp(env, {:anonymous_function, _line, args, exps}) do
     Logger.debug("Inferring type of anonymous function")
@@ -299,6 +312,43 @@ defmodule Fika.Compiler.TypeChecker do
 
   def init_env(ast) do
     %{ast: ast, scope: %{}}
+  end
+
+  # TODO: made it work, now make it pretty.
+  defp infer_case_clauses(env, rhs, clauses) do
+    all_rhs_types = Match.expand_unions(rhs)
+
+    result =
+      Enum.reduce_while(clauses, {env, [], all_rhs_types}, fn [pattern, block],
+                                                              {env, types, unmatched} ->
+        case Match.match_case(env, pattern, unmatched) do
+          {:ok, env, unmatched} ->
+            case infer_block(env, block) do
+              {:ok, type, env} -> {:cont, {env, [type | types], unmatched}}
+              error -> {:halt, error}
+            end
+
+          :error ->
+            {:halt, {:error, "Non-matching pattern"}}
+        end
+      end)
+
+    case result do
+      {:error, _} = error ->
+        error
+
+      {env, types, []} ->
+        type =
+          case Enum.uniq(types) do
+            [type] -> type
+            types -> T.Union.new(types)
+          end
+
+        {:ok, type, env}
+
+      {_env, _types, unmatched} ->
+        {:error, "Missing pattern: #{Enum.join(unmatched, ", ")}"}
+    end
   end
 
   defp infer_if_else_condition(env, condition) do
