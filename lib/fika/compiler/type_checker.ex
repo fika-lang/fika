@@ -51,7 +51,7 @@ defmodule Fika.Compiler.TypeChecker do
   def infer({:function, _line, {name, args, _type, exprs}}, env) do
     Logger.debug("Inferring type of function: #{name}")
 
-    mfa = {env[:module_name], name, length(args)}
+    mfa = {env[:module_name], name, get_arg_types(args)}
 
     check_loop =
       if latest_call = env[:latest_called_function] do
@@ -507,6 +507,11 @@ defmodule Fika.Compiler.TypeChecker do
 
   defp get_function_signature(function_name, arg_types) do
     "#{function_name}(#{Enum.join(arg_types, ", ")})"
+  end
+
+  defp get_arg_types(arg_expression) do
+    # Expects [{:identifier, _, name}, {:type, _, type} | _]
+    Enum.map(arg_expression, fn {_, {:type, _, t}} -> t end)
   end
 
   defp get_type(module, target_signature, env) do

@@ -131,7 +131,6 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     File.rm!(temp_file)
   end
 
-  @tag :focus
   test "infer return type when the recursion is not at the top level" do
     tmp_dir = System.tmp_dir!()
     module = Path.join(tmp_dir, "foo") |> String.to_atom()
