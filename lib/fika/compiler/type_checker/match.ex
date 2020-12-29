@@ -1,6 +1,20 @@
 defmodule Fika.Compiler.TypeChecker.Match do
   alias Fika.Compiler.TypeChecker.Types, as: T
 
+  @moduledoc """
+  This module takes care of the type checking needed for pattern matching.
+
+  This is currently a naive algorithm with scope for optimization,
+  but it should do for now. Here's how the algorithm works:
+
+  1. Expand all unions in the RHS and convert it into a list of possible types
+  2. Remove all types from this list which are matched by the LHS
+  3. Return {:ok, env, unmatched_types} when a match happens,
+    Return :error if no match happens
+
+
+  """
+
   # Returns:
   # {:ok, env, unmatched_types} | :error
   def match_case(env, lhs_ast, rhs_types) when is_list(rhs_types) do
@@ -12,15 +26,11 @@ defmodule Fika.Compiler.TypeChecker.Match do
   end
 
   # Returns {:ok, env} | :error
-  def match(env, lhs_ast, rhs_type) when is_list(rhs_type) do
-    case find_unmatched(env, lhs_ast, rhs_type) do
+  def match(env, lhs_ast, rhs_type) do
+    case match_case(env, lhs_ast, rhs_type) do
       {:ok, env, []} -> {:ok, env}
       _ -> :error
     end
-  end
-
-  def match(env, lhs_ast, rhs_type) do
-    match(env, lhs_ast, expand_unions(rhs_type))
   end
 
   def expand_unions(%T.Union{types: types}) do
