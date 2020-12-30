@@ -3,7 +3,7 @@ defmodule Fika.Compiler.Parser.Helper do
 
   alias Fika.Compiler.TypeChecker.Types, as: T
 
-  @keywords ~w(fn do if else end)
+  @keywords ~w(fn do if else end case)
 
   def to_ast(c, kind) do
     c
@@ -52,6 +52,10 @@ defmodule Fika.Compiler.Parser.Helper do
 
   def do_to_ast({[condition, true_block, false_block], line}, :exp_if_else) do
     {{:if, line}, condition, true_block, false_block}
+  end
+
+  def do_to_ast({[exp, clauses], line}, :exp_case) do
+    {{:case, line}, exp, clauses}
   end
 
   def do_to_ast({[args, exps], line}, :anonymous_function) do

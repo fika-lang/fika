@@ -5,12 +5,14 @@ defmodule TestParser do
     Common,
     Types,
     Expressions,
+    Pattern,
     FunctionDef,
     UseModule
   }
 
   exp = parsec({Expressions, :exp})
   exps = parsec({Expressions, :exps})
+  pattern = parsec({Pattern, :pattern})
   function_defs = parsec({FunctionDef, :function_defs})
   function_def = parsec({FunctionDef, :function_def})
   use_modules = parsec({UseModule, :use_modules})
@@ -40,6 +42,7 @@ defmodule TestParser do
   end
 
   def expression!(str), do: do_parse(&expression/1, str)
+  def pattern!(str), do: do_parse(&pattern/1, str)
 
   def function_def!(str), do: do_parse(&function_def/1, str)
 
@@ -51,6 +54,7 @@ defmodule TestParser do
   end
 
   defparsec :expression, exp |> concat(allow_space) |> eos()
+  defparsec :pattern, pattern |> concat(allow_space) |> eos()
   defparsec :function_def, function_def
 
   defparsec :type_str,

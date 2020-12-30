@@ -191,8 +191,21 @@ defmodule Fika.Compiler.ErlTranslate do
     }
   end
 
+  defp translate_exp({{:case, {line, _, _}}, exp, clauses}) do
+    {
+      :case,
+      line,
+      translate_exp(exp),
+      Enum.map(clauses, &translate_case_clause(line, &1))
+    }
+  end
+
   defp translate_exp({:anonymous_function, {line, _, _}, args, exps}) do
     {:fun, line, {:clauses, [translate_clauses(args, line, exps)]}}
+  end
+
+  defp translate_case_clause(line, [pattern, block]) do
+    {:clause, line, [translate_exp(pattern)], [], translate_exps(block)}
   end
 
   defp add_record_meta(k_vs, name, line) do

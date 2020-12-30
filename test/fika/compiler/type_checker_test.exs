@@ -522,6 +522,74 @@ defmodule Fika.Compiler.TypeCheckerTest do
     end
   end
 
+  describe "case expression" do
+    test "when patterns match" do
+      str = """
+      case {:ok, 123} do
+        {:ok, 1} -> 1
+        {:ok, x} -> "x"
+      end
+      """
+
+      ast = TestParser.expression!(str)
+      env = TypeChecker.init_env(ast)
+
+      expected_type = T.Union.new([:Int, :String])
+      assert {:ok, ^expected_type, _env} = TypeChecker.infer_exp(env, ast)
+    end
+
+    test "when patterns match a union type" do
+      str = """
+      e =
+        if true do
+          {:ok, 123}
+        else
+          {:error, "Message"}
+        end
+
+      case e do
+        {:ok, x} -> x
+        {:error, str} -> 0
+      end
+      """
+
+      {:ok, ast, _, _, _, _} = TestParser.exps(str)
+      env = TypeChecker.init_env(ast)
+      assert {:ok, :Int, _} = TypeChecker.infer_block(env, ast)
+    end
+
+    test "when patterns are not exhaustive" do
+      str = """
+      e =
+        if true do
+          {:ok, 123}
+        else
+          {:error, "Message"}
+        end
+
+      case e do
+        {:ok, x} -> x
+      end
+      """
+
+      {:ok, ast, _, _, _, _} = TestParser.exps(str)
+      env = TypeChecker.init_env(ast)
+      assert {:error, "Missing pattern: {error, String}"} = TypeChecker.infer_block(env, ast)
+    end
+
+    test "when a pattern does not match" do
+      str = """
+      case 123 do
+        "hello" -> :ok
+      end
+      """
+
+      {:ok, ast, _, _, _, _} = TestParser.exps(str)
+      env = TypeChecker.init_env(ast)
+      assert {:error, "Non-matching pattern"} = TypeChecker.infer_block(env, ast)
+    end
+  end
+
   describe "function calls using reference" do
     test "valid reference" do
       str = """

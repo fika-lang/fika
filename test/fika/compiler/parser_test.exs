@@ -415,6 +415,136 @@ defmodule Fika.Compiler.ParserTest do
     end
   end
 
+  describe "case expression" do
+    test "case expression with two blocks" do
+      str = """
+      case result do
+        {:ok, x} ->
+          123
+          "Okay"
+        {:error, msg} ->
+          456
+          "Error"
+      end
+      """
+
+      assert {
+               {:case, {8, 87, 90}},
+               exp,
+               [clause_1, clause_2]
+             } = TestParser.expression!(str)
+
+      assert {:identifier, {1, 0, 11}, :result} = exp
+
+      assert [
+               {:tuple, {2, 15, 25}, [{:atom, {2, 15, 21}, :ok}, {:identifier, {2, 15, 24}, :x}]},
+               [{:integer, {3, 29, 36}, 123}, {:string, {4, 37, 47}, ["Okay"]}]
+             ] = clause_1
+
+      assert [
+               {:tuple, {5, 48, 63},
+                [{:atom, {5, 48, 57}, :error}, {:identifier, {5, 48, 62}, :msg}]},
+               [{:integer, {6, 67, 74}, 456}, {:string, {7, 75, 86}, ["Error"]}]
+             ] = clause_2
+    end
+
+    test "case expression with single line blocks" do
+      str = """
+      case result do
+        {:ok, x} -> "Okay"
+        {:error, msg} -> "Error"
+      end
+      """
+
+      assert {
+               {:case, {4, 63, 66}},
+               exp,
+               [clause_1, clause_2]
+             } = TestParser.expression!(str)
+
+      assert {:identifier, {1, 0, 11}, :result} = exp
+
+      assert [
+               {:tuple, {2, 15, 25}, [{:atom, {2, 15, 21}, :ok}, {:identifier, {2, 15, 24}, :x}]},
+               [{:string, {2, 15, 35}, ["Okay"]}]
+             ] = clause_1
+
+      assert [
+               {:tuple, {3, 36, 51},
+                [{:atom, {3, 36, 45}, :error}, {:identifier, {3, 36, 50}, :msg}]},
+               [{:string, {3, 36, 62}, ["Error"]}]
+             ] = clause_2
+    end
+
+    test "nested case expressions" do
+      inner_case = """
+      case x do
+        1 -> 1
+        2 -> 2
+      end
+      """
+
+      str = """
+      case result do
+        {:ok, x} ->
+          #{inner_case}
+        {:error, msg} -> "Error"
+      end
+      """
+
+      assert {
+               {:case, {4, 28, 31}},
+               exp,
+               [clause_1, clause_2]
+             } = TestParser.expression!(inner_case)
+
+      assert [
+               {:integer, {2, 10, 13}, 1},
+               [{:integer, {2, 10, 18}, 1}]
+             ] = clause_1
+
+      assert [
+               {:integer, {3, 19, 22}, 2},
+               [{:integer, {3, 19, 27}, 2}]
+             ] = clause_2
+
+      assert {
+               {:case, {9, 93, 96}},
+               exp,
+               [clause_1, clause_2]
+             } = TestParser.expression!(str)
+
+      assert {:identifier, {1, 0, 11}, :result} = exp
+
+      assert [
+               {:tuple, {2, 15, 25}, [{:atom, {2, 15, 21}, :ok}, {:identifier, {2, 15, 24}, :x}]},
+               [inner_case_ast]
+             ] = clause_1
+
+      assert inner_case_ast ==
+               {{:case, {6, 61, 64}}, {:identifier, {3, 29, 39}, :x},
+                [
+                  [{:integer, {4, 43, 46}, 1}, [{:integer, {4, 43, 51}, 1}]],
+                  [{:integer, {5, 52, 55}, 2}, [{:integer, {5, 52, 60}, 2}]]
+                ]}
+
+      assert [
+               {:tuple, {8, 66, 81},
+                [{:atom, {8, 66, 75}, :error}, {:identifier, {8, 66, 80}, :msg}]},
+               [{:string, {8, 66, 92}, ["Error"]}]
+             ] = clause_2
+    end
+
+    test "case expression with no clauses" do
+      str = """
+      case result do
+      end
+      """
+
+      assert {:error, _, _, _, _, _} = TestParser.expression(str)
+    end
+  end
+
   describe "anonymous function" do
     test "with args" do
       str = """
