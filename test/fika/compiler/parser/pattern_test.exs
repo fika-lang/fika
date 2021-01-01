@@ -36,4 +36,12 @@ defmodule Fika.Compiler.Parser.PatternTest do
              ]
            } == TestParser.pattern!(str)
   end
+
+  test "record pattern" do
+    str = "{foo: \"bar\"}"
+
+    assert {:record, {1, 0, 12}, nil,
+            [{{:identifier, {1, 0, 4}, :foo}, {:string, {1, 0, 11}, ["bar"]}}]} ==
+             TestParser.pattern!(str)
+  end
 end
