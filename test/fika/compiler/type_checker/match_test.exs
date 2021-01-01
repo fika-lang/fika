@@ -194,11 +194,6 @@ defmodule Fika.Compiler.TypeChecker.Types.MatchTest do
   test "match_case for record with a union inside" do
     str = "{name: String, id: Int, x: :a | :b | :c}"
     {:type, _, rhs} = TestParser.type_str!(str)
-    # env = %{scope: %{}}
-    # pattern = TestParser.expression!("{name: x}")
-    # assert {:ok, env, unmatched} = Match.match_case(env, pattern, rhs)
-    # assert unmatched == []
-    # assert env.scope[:x] == :String
 
     pattern = TestParser.expression!("{x: :a}")
     assert {:ok, env, unmatched} = Match.match_case(%{}, pattern, rhs)

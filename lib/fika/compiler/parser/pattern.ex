@@ -40,13 +40,37 @@ defmodule Fika.Compiler.Parser.Pattern do
     |> ignore(string("}"))
     |> Helper.to_ast(:tuple)
 
+  key_value =
+    allow_space
+    |> concat(identifier)
+    |> concat(allow_space)
+    |> ignore(string(":"))
+    |> concat(allow_space)
+    |> parsec(:pattern)
+    |> Helper.to_ast(:key_value)
+
+  record =
+    wrap(optional(string("Foo")))
+    |> ignore(string("{"))
+    |> concat(key_value)
+    |> repeat(
+      allow_space
+      |> ignore(string(","))
+      |> concat(allow_space)
+      |> concat(key_value)
+    )
+    |> optional(ignore(string(",")))
+    |> ignore(string("}"))
+    |> Helper.to_ast(:record)
+
   pattern =
     choice([
       atom_literal,
       string_literal,
       integer_literal,
       identifier,
-      tuple
+      tuple,
+      record
     ])
 
   defcombinator :pattern, pattern
