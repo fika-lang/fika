@@ -17,12 +17,12 @@ defmodule Fika.Compiler.CodeServer do
     GenServer.call(__MODULE__, {:compile_module, module})
   end
 
-  def get_type(module, signature) do
-    GenServer.call(__MODULE__, {:get_type, module, signature})
+  def get_type(signature) do
+    GenServer.call(__MODULE__, {:get_type, signature})
   end
 
-  def set_type(module, signature, result) do
-    GenServer.cast(__MODULE__, {:set_type, module, signature, result})
+  def set_type(signature, result) do
+    GenServer.cast(__MODULE__, {:set_type, signature, result})
   end
 
   def put_binary(module, file, binary) do
@@ -56,15 +56,15 @@ defmodule Fika.Compiler.CodeServer do
     {:ok, state}
   end
 
-  def handle_cast({:set_type, module, signature, result}, state) do
+  def handle_cast({:set_type, signature, result}, state) do
     Logger.debug(
-      "Setting typecheck result of public function: #{module}.#{signature} as #{inspect(result)}"
+      "Setting typecheck result of public function: #{signature} as #{inspect(result)}"
     )
 
     state =
       state
-      |> set_type(module, signature, result)
-      |> notify_waiting_type_checks(module, signature, result)
+      |> set_type(signature, result)
+      |> notify_waiting_type_checks(signature.module, signature, result)
 
     {:noreply, state}
   end
@@ -106,7 +106,9 @@ defmodule Fika.Compiler.CodeServer do
     {:reply, :ok, init_state()}
   end
 
-  def handle_call({:get_type, module, signature}, from, state) do
+  def handle_call({:get_type, signature}, from, state) do
+    module = signature.module
+
     state =
       if result = get_in(state, [:public_functions, module, signature]) do
         GenServer.reply(from, result)
@@ -165,8 +167,8 @@ defmodule Fika.Compiler.CodeServer do
     |> Kernel.<>(".beam")
   end
 
-  defp set_type(state, module, signature, result) do
-    update_in(state, [:public_functions, module], fn
+  defp set_type(state, signature, result) do
+    update_in(state, [:public_functions, signature.module], fn
       nil -> %{signature => result}
       signatures -> Map.put(signatures, signature, result)
     end)

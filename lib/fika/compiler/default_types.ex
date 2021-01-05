@@ -5,42 +5,53 @@ defmodule Fika.Compiler.DefaultTypes do
   """
 
   alias Fika.Compiler.TypeChecker.Types, as: T
+  alias Fika.Compiler.FunctionSignature
 
   def kernel do
+    m = "fika/kernel"
+
     %{
-      "+(Int, Int)" => :Int,
-      "+(Int, Float)" => :Float,
-      "+(Float, Int)" => :Float,
-      "+(Float, Float)" => :Float,
-      "-(Int, Int)" => :Int,
-      "-(Int, Float)" => :Float,
-      "-(Float, Int)" => :Float,
-      "-(Float, Float)" => :Float,
-      "*(Int, Int)" => :Int,
-      "*(Int, Float)" => :Float,
-      "*(Float, Int)" => :Float,
-      "*(Float, Float)" => :Float,
-      "/(Int, Int)" => :Float,
-      "/(Int, Float)" => :Float,
-      "/(Float, Int)" => :Float,
-      "/(Float, Float)" => :Float,
-      "|(Bool, Bool)" => :Bool,
-      "&(Bool, Bool)" => :Bool,
-      "!(Bool)" => :Bool,
-      "-(Int)" => :Int,
-      "<(Int, Int)" => :Bool,
-      ">(Int, Int)" => :Bool,
-      "<=(Int, Int)" => :Bool,
-      ">=(Int, Int)" => :Bool,
-      "==(Int, Int)" => :Bool,
-      "!=(Int, Int)" => :Bool
+      s(m, "+", [:Int, :Int]) => :Int,
+      s(m, "+", [:Int, :Float]) => :Float,
+      s(m, "+", [:Float, :Int]) => :Float,
+      s(m, "+", [:Float, :Float]) => :Float,
+      s(m, "-", [:Int, :Int]) => :Int,
+      s(m, "-", [:Int, :Float]) => :Float,
+      s(m, "-", [:Float, :Int]) => :Float,
+      s(m, "-", [:Float, :Float]) => :Float,
+      s(m, "*", [:Int, :Int]) => :Int,
+      s(m, "*", [:Int, :Float]) => :Float,
+      s(m, "*", [:Float, :Int]) => :Float,
+      s(m, "*", [:Float, :Float]) => :Float,
+      s(m, "/", [:Int, :Int]) => :Float,
+      s(m, "/", [:Int, :Float]) => :Float,
+      s(m, "/", [:Float, :Int]) => :Float,
+      s(m, "/", [:Float, :Float]) => :Float,
+      s(m, "|", [:Bool, :Bool]) => :Bool,
+      s(m, "&", [:Bool, :Bool]) => :Bool,
+      s(m, "!", [:Bool]) => :Bool,
+      s(m, "-", [:Int]) => :Int,
+      s(m, "<", [:Int, :Int]) => :Bool,
+      s(m, ">", [:Int, :Int]) => :Bool,
+      s(m, "<=", [:Int, :Int]) => :Bool,
+      s(m, ">=", [:Int, :Int]) => :Bool,
+      s(m, "==", [:Int, :Int]) => :Bool,
+      s(m, "!=", [:Int, :Int]) => :Bool
     }
   end
 
   def io do
+    m = "fika/io"
+
     %{
-      "gets(String)" => %T.Effect{type: :String},
-      "puts(String)" => %T.Effect{type: :String}
+      s(m, "gets", [:String]) => %T.Effect{type: :String},
+      s(m, "puts", [:String]) => %T.Effect{type: :String}
     }
+  end
+
+  # Helper function to create signature structs out of module, function and
+  # arg types.
+  defp s(m, f, t) do
+    %FunctionSignature{module: m, function: f, types: t}
   end
 end
