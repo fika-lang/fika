@@ -1,6 +1,10 @@
 defmodule Fika.Compiler.TypeChecker do
   alias Fika.Compiler.TypeChecker.Types, as: T
-  alias Fika.Compiler.CodeServer
+
+  alias Fika.Compiler.{
+    CodeServer,
+    FunctionSignature
+  }
 
   alias Fika.Compiler.TypeChecker.{
     ParallelTypeChecker,
@@ -245,7 +249,7 @@ defmodule Fika.Compiler.TypeChecker do
   def infer_exp(env, {:function_ref, _, {module, function_name, arg_types}}) do
     Logger.debug("Inferring type of function: #{function_name}")
 
-    signature = get_function_signature(function_name, arg_types)
+    signature = get_function_signature(module || env[:module], function_name, arg_types)
 
     case get_type(module, signature, env) do
       {:ok, type} ->
@@ -305,9 +309,9 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
-  def function_ast_signature({:function, _line, {name, args, _type, _exprs}}) do
+  def function_ast_signature(module, {:function, _line, {name, args, _type, _exprs}}) do
     arg_types = Enum.map(args, fn {_, {:type, _, type}} -> type end)
-    get_function_signature(name, arg_types)
+    get_function_signature(module, name, arg_types)
   end
 
   def init_env(ast) do
@@ -409,7 +413,7 @@ defmodule Fika.Compiler.TypeChecker do
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->
-        signature = get_function_signature(exp.name, type_acc)
+        signature = get_function_signature(module || env[:module], exp.name, type_acc)
 
         case get_type(module, signature, env) do
           {:ok, %T.Effect{type: type}} ->
@@ -510,8 +514,8 @@ defmodule Fika.Compiler.TypeChecker do
     end)
   end
 
-  defp get_function_signature(function_name, arg_types) do
-    "#{function_name}(#{Enum.join(arg_types, ", ")})"
+  defp get_function_signature(module, function_name, arg_types) do
+    %FunctionSignature{module: module, function: to_string(function_name), types: arg_types}
   end
 
   # Local function
@@ -524,7 +528,7 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # Remote function
-  defp get_type(module, signature, _env) do
-    CodeServer.get_type(module, signature)
+  defp get_type(_module, signature, _env) do
+    CodeServer.get_type(signature)
   end
 end

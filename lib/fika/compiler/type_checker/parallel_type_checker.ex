@@ -21,7 +21,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
 
   def start_link(module_name, function_asts) do
     pid = self()
-    signature_map = signature_map(function_asts)
+    signature_map = signature_map(module_name, function_asts)
     GenServer.start_link(__MODULE__, [pid, module_name, signature_map])
   end
 
@@ -54,7 +54,12 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
 
     Enum.each(state.unchecked_functions, fn {signature, function} ->
       Task.start_link(fn ->
-        result = TypeChecker.check(function, %{type_checker_pid: pid})
+        result =
+          TypeChecker.check(function, %{
+            type_checker_pid: pid,
+            module: state.module_name
+          })
+
         __MODULE__.post_result(pid, signature, result)
       end)
     end)
@@ -82,7 +87,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   end
 
   def handle_cast({:post_result, signature, result}, state) do
-    Logger.debug("Result of type checking #{state.module_name}.#{signature} = #{inspect(result)}")
+    Logger.debug("Result of type checking #{signature} = #{inspect(result)}")
 
     state =
       state
@@ -92,7 +97,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
       |> maybe_finish()
 
     # TODO: when we have private functions, do this conditionally.
-    CodeServer.set_type(state.module_name, signature, result)
+    CodeServer.set_type(signature, result)
 
     {:noreply, state}
   end
@@ -155,9 +160,9 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     state
   end
 
-  defp signature_map(function_asts) do
+  defp signature_map(module, function_asts) do
     Enum.map(function_asts, fn function ->
-      signature = TypeChecker.function_ast_signature(function)
+      signature = TypeChecker.function_ast_signature(module, function)
       {signature, function}
     end)
     |> Map.new()
