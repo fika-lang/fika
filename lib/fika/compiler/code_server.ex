@@ -6,7 +6,8 @@ defmodule Fika.Compiler.CodeServer do
   alias Fika.Compiler.{
     DefaultTypes,
     ModuleCompiler,
-    ErlTranslate
+    ErlTranslate,
+    TypeChecker
   }
 
   def start_link(_) do
@@ -108,15 +109,19 @@ defmodule Fika.Compiler.CodeServer do
 
   def handle_call({:get_type, signature}, from, state) do
     module = signature.module
+    signature_map = get_in(state, [:public_functions, module])
 
     state =
-      if result = get_in(state, [:public_functions, module, signature]) do
-        GenServer.reply(from, result)
-        state
-      else
-        state
-        |> maybe_compile(module)
-        |> wait_for(module, signature, from)
+      case TypeChecker.find_by_call(signature_map, signature) do
+        {_, result} ->
+          GenServer.reply(from, result)
+          state
+
+        _ ->
+          state
+          |> maybe_compile(module)
+          # TODO: Check match when notifying waiting type checks.
+          |> wait_for(module, signature, from)
       end
 
     {:noreply, state}

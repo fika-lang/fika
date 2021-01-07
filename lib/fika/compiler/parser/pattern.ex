@@ -1,10 +1,6 @@
 defmodule Fika.Compiler.Parser.Pattern do
   import NimbleParsec
 
-  # TODO: We need to add other patterns like records and matches.
-  # See https://erlang.org/doc/apps/erts/absform.html#patterns
-  # Also, we can organize the parser modules better.
-
   alias Fika.Compiler.Parser.{Common, Helper}
 
   allow_space = parsec({Common, :allow_space})

@@ -11,7 +11,9 @@ defmodule Fika.Compiler.TypeChecker.SequentialTypeChecker do
 
   defp find_by_signature(function_defs, signature) do
     Enum.find(function_defs, fn function ->
-      TypeChecker.function_ast_signature(signature.module, function) == signature
+      signature.module
+      |> TypeChecker.function_ast_signature(function)
+      |> TypeChecker.signature_matches_call?(signature)
     end)
   end
 end

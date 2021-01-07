@@ -68,12 +68,12 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   end
 
   def handle_call({:get_result, signature}, from, state) do
-    if Map.has_key?(state.local_functions, signature) do
-      if result = Map.get(state.checked_functions, signature) do
+    if {s, _} = TypeChecker.find_by_call(state.local_functions, signature) do
+      if {_, result} = TypeChecker.find_by_call(state.checked_functions, signature) do
         {:reply, result, state}
       else
         state =
-          update_in(state, [:waiting, signature], fn
+          update_in(state, [:waiting, s], fn
             nil -> [from]
             list -> [from | list]
           end)
