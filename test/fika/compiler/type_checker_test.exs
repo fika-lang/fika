@@ -10,6 +10,10 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
   alias Fika.Compiler.TypeChecker.Types, as: T
 
+  setup do
+    CodeServer.reset()
+  end
+
   test "infer type of integer literals" do
     str = "123"
 
@@ -194,6 +198,25 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
     assert {:ok, :Float} = TypeChecker.infer(function, %{})
     assert {:ok, :Float} = TypeChecker.check(function, %{})
+  end
+
+  test "infer function calls considering union types" do
+    str = """
+    use test2
+
+    fn foo : :ok do
+      test2.div(:a)
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+
+    arg_type = T.Union.new([:a, :b])
+    CodeServer.set_type(signature("test2", "div", [arg_type]), {:ok, :ok})
+
+    [function] = ast[:function_defs]
+
+    assert {:ok, :ok} = TypeChecker.infer(function, %{})
   end
 
   describe "string" do
@@ -626,7 +649,6 @@ defmodule Fika.Compiler.TypeCheckerTest do
       """
 
       {:ok, ast} = Parser.parse_module(str)
-      CodeServer.reset()
       CodeServer.set_type(signature("test2", "bar", [:String, :Int]), {:ok, :Bool})
       types = MapSet.new([:ok, :error])
       [function] = ast[:function_defs]
@@ -649,7 +671,6 @@ defmodule Fika.Compiler.TypeCheckerTest do
       env = TypeChecker.init_env(ast)
 
       types = MapSet.new([:error, :ok])
-      CodeServer.reset()
 
       CodeServer.set_type(
         signature("test2", "bar", [:String, :Int]),
@@ -688,7 +709,6 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       {:ok, ast} = Parser.parse_module(str)
       [function] = ast[:function_defs]
-      CodeServer.reset()
       CodeServer.set_type(signature("test2", "bar", [:String, :Int]), {:ok, :Bool})
 
       error =
@@ -734,7 +754,6 @@ defmodule Fika.Compiler.TypeCheckerTest do
       """
 
       {:ok, ast} = Parser.parse_module(str)
-      CodeServer.reset()
       CodeServer.set_type(signature("test", "to_int", [:String]), {:ok, %T.Effect{type: :Int}})
 
       [function] = ast[:function_defs]
@@ -757,7 +776,6 @@ defmodule Fika.Compiler.TypeCheckerTest do
       [function] = ast[:function_defs]
       env = TypeChecker.init_env(ast)
 
-      CodeServer.reset()
       CodeServer.set_type(signature("test2", "bar", []), {:ok, %T.Effect{type: :String}})
 
       assert {:ok, %T.Effect{type: :String}} = TypeChecker.infer(function, env)
@@ -781,6 +799,22 @@ defmodule Fika.Compiler.TypeCheckerTest do
                 return_type: :Int
               }, _} = TypeChecker.infer_exp(%{}, ast)
     end
+  end
+
+  test "find_by_call" do
+    s1 = signature("foo", "bar", [T.Union.new([:a, :b]), :Int])
+    s2 = signature("foo", "baz", [T.Union.new([:c, :d])])
+
+    map = %{
+      s1 => "value1",
+      s2 => "value2"
+    }
+
+    assert TypeChecker.find_by_call(map, signature("foo", "bar", [:d])) == nil
+    assert TypeChecker.find_by_call(map, signature("foo", "bar", [:a, :Int])) == {s1, "value1"}
+    assert TypeChecker.find_by_call(map, signature("foo", "bar", [:b, :Int])) == {s1, "value1"}
+    assert TypeChecker.find_by_call(map, signature("foo", "baz", [:c])) == {s2, "value2"}
+    assert TypeChecker.find_by_call(map, signature("foo", "baz", [:d])) == {s2, "value2"}
   end
 
   defp signature(m, f, t) do

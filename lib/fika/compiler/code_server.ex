@@ -6,7 +6,8 @@ defmodule Fika.Compiler.CodeServer do
   alias Fika.Compiler.{
     DefaultTypes,
     ModuleCompiler,
-    ErlTranslate
+    ErlTranslate,
+    TypeChecker
   }
 
   def start_link(_) do
@@ -108,15 +109,19 @@ defmodule Fika.Compiler.CodeServer do
 
   def handle_call({:get_type, signature}, from, state) do
     module = signature.module
+    function = signature.function
+    signature_map = get_in(state, [:public_functions, module, function])
 
     state =
-      if result = get_in(state, [:public_functions, module, signature]) do
-        GenServer.reply(from, result)
-        state
-      else
-        state
-        |> maybe_compile(module)
-        |> wait_for(module, signature, from)
+      case TypeChecker.find_by_call(signature_map, signature) do
+        {_, result} ->
+          GenServer.reply(from, result)
+          state
+
+        _ ->
+          state
+          |> async_compile(module)
+          |> wait_for(module, signature, from)
       end
 
     {:noreply, state}
@@ -168,87 +173,70 @@ defmodule Fika.Compiler.CodeServer do
   end
 
   defp set_type(state, signature, result) do
-    update_in(state, [:public_functions, signature.module], fn
-      nil -> %{signature => result}
-      signatures -> Map.put(signatures, signature, result)
-    end)
+    nested_put(
+      state,
+      [:public_functions, signature.module, signature.function, signature],
+      result
+    )
   end
 
   defp notify_waiting_type_checks(state, module, signature, result) do
-    {waitlist, waiting} = Map.pop(state.waiting, {module, signature})
+    keys = [
+      Access.key(:waiting, %{}),
+      Access.key(module, %{}),
+      Access.key(signature.function, [])
+    ]
 
-    if waitlist do
-      Enum.each(waitlist, fn from ->
-        GenServer.reply(from, result)
+    update_in(state, keys, fn waitlist ->
+      Enum.reject(waitlist, fn {s, from} ->
+        TypeChecker.signature_matches_call?(signature, s) &&
+          GenServer.reply(from, result)
       end)
-    end
-
-    Map.put(state, :waiting, waiting)
+    end)
   end
 
   defp fail_waiting_type_checks(state, module, reason) do
-    {waitlist, rest} =
-      Enum.reduce(state.waiting, {[], []}, fn {{waited_module, _}, waitlist} = k_v,
-                                              {from_acc, rest} ->
-        if waited_module == module do
-          {waitlist ++ from_acc, rest}
-        else
-          {from_acc, [k_v | rest]}
-        end
-      end)
+    {fn_map, state} = pop_in(state, [:waiting, module])
 
-    Enum.each(waitlist, fn from ->
-      GenServer.reply(from, {:error, reason})
+    Enum.each(fn_map || [], fn {_, waitlist} ->
+      Enum.each(waitlist, fn {_, from} ->
+        GenServer.reply(from, {:error, reason})
+      end)
     end)
 
-    Map.put(state, :waiting, Map.new(rest))
+    state
   end
 
-  defp maybe_compile(state, module) do
+  defp async_compile(state, module) do
     state
     |> start_module_compile(module)
-    |> update_in([:public_functions, module], fn
-      nil ->
-        %{}
-
-      other ->
-        other
-    end)
+    |> nested_put([:public_functions, module], %{})
   end
 
   defp wait_for(state, module, signature, from) do
-    update_in(state, [:waiting, {module, signature}], fn
-      nil -> [from]
-      list -> [from | list]
-    end)
+    keys = [
+      Access.key(:waiting, %{}),
+      Access.key(module, %{}),
+      Access.key(signature.function, [])
+    ]
+
+    update_in(state, keys, fn list -> [{signature, from} | list] end)
   end
 
   defp init_state do
     %{
-      public_functions: default_functions(),
+      public_functions: %{},
       waiting: %{},
       compile_result: %{},
       parent_pid: nil,
       binaries: []
     }
+    |> put_default_types(DefaultTypes.kernel())
+    |> put_default_types(DefaultTypes.io())
   end
 
   defp reset_binaries(state) do
     Map.put(state, :binaries, [])
-  end
-
-  defp default_functions do
-    %{
-      "fika/kernel" => insert_ok(DefaultTypes.kernel()),
-      "fika/io" => insert_ok(DefaultTypes.io())
-    }
-  end
-
-  defp insert_ok(signature_map) do
-    Enum.map(signature_map, fn {k, v} ->
-      {k, {:ok, v}}
-    end)
-    |> Map.new()
   end
 
   defp start_module_compile(state, module) do
@@ -278,5 +266,15 @@ defmodule Fika.Compiler.CodeServer do
     if result && parent_pid do
       GenServer.reply(parent_pid, result)
     end
+  end
+
+  defp put_default_types(state, signatures) do
+    Enum.reduce(signatures, state, fn s, acc ->
+      set_type(acc, s, {:ok, s.return})
+    end)
+  end
+
+  defp nested_put(map, keys, value) do
+    put_in(map, Enum.map(keys, &Access.key(&1, %{})), value)
   end
 end
