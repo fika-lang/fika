@@ -121,7 +121,6 @@ defmodule Fika.Compiler.CodeServer do
         _ ->
           state
           |> async_compile(module)
-          # TODO: Check match when notifying waiting type checks.
           |> wait_for(module, signature, from)
       end
 
@@ -179,10 +178,6 @@ defmodule Fika.Compiler.CodeServer do
       [:public_functions, signature.module, signature.function, signature],
       result
     )
-  end
-
-  defp nested_put(map, keys, value) do
-    put_in(map, Enum.map(keys, &Access.key(&1, %{})), value)
   end
 
   defp notify_waiting_type_checks(state, module, signature, result) do
@@ -244,12 +239,6 @@ defmodule Fika.Compiler.CodeServer do
     Map.put(state, :binaries, [])
   end
 
-  defp put_default_types(state, signatures) do
-    Enum.reduce(signatures, state, fn s, acc ->
-      set_type(acc, s, {:ok, s.return})
-    end)
-  end
-
   defp start_module_compile(state, module) do
     Task.start(fn ->
       ModuleCompiler.compile(module)
@@ -277,5 +266,15 @@ defmodule Fika.Compiler.CodeServer do
     if result && parent_pid do
       GenServer.reply(parent_pid, result)
     end
+  end
+
+  defp put_default_types(state, signatures) do
+    Enum.reduce(signatures, state, fn s, acc ->
+      set_type(acc, s, {:ok, s.return})
+    end)
+  end
+
+  defp nested_put(map, keys, value) do
+    put_in(map, Enum.map(keys, &Access.key(&1, %{})), value)
   end
 end
