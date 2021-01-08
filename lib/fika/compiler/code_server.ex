@@ -174,7 +174,11 @@ defmodule Fika.Compiler.CodeServer do
   end
 
   defp set_type(state, signature, result) do
-    nested_put(state, [:public_functions, signature.module, signature.function, signature], result)
+    nested_put(
+      state,
+      [:public_functions, signature.module, signature.function, signature],
+      result
+    )
   end
 
   defp nested_put(map, keys, value) do
@@ -182,33 +186,30 @@ defmodule Fika.Compiler.CodeServer do
   end
 
   defp notify_waiting_type_checks(state, module, signature, result) do
-    {waitlist, waiting} = Map.pop(state.waiting, {module, signature})
+    keys = [
+      Access.key(:waiting, %{}),
+      Access.key(module, %{}),
+      Access.key(signature.function, [])
+    ]
 
-    if waitlist do
-      Enum.each(waitlist, fn from ->
-        GenServer.reply(from, result)
+    update_in(state, keys, fn waitlist ->
+      Enum.reject(waitlist, fn {s, from} ->
+        TypeChecker.signature_matches_call?(signature, s) &&
+          GenServer.reply(from, result)
       end)
-    end
-
-    Map.put(state, :waiting, waiting)
+    end)
   end
 
   defp fail_waiting_type_checks(state, module, reason) do
-    {waitlist, rest} =
-      Enum.reduce(state.waiting, {[], []}, fn {{waited_module, _}, waitlist} = k_v,
-                                              {from_acc, rest} ->
-        if waited_module == module do
-          {waitlist ++ from_acc, rest}
-        else
-          {from_acc, [k_v | rest]}
-        end
-      end)
+    {fn_map, state} = pop_in(state, [:waiting, module])
 
-    Enum.each(waitlist, fn from ->
-      GenServer.reply(from, {:error, reason})
+    Enum.each(fn_map || [], fn {_, waitlist} ->
+      Enum.each(waitlist, fn {_, from} ->
+        GenServer.reply(from, {:error, reason})
+      end)
     end)
 
-    Map.put(state, :waiting, Map.new(rest))
+    state
   end
 
   defp async_compile(state, module) do
@@ -218,10 +219,13 @@ defmodule Fika.Compiler.CodeServer do
   end
 
   defp wait_for(state, module, signature, from) do
-    update_in(state, [:waiting, {module, signature}], fn
-      nil -> [from]
-      list -> [from | list]
-    end)
+    keys = [
+      Access.key(:waiting, %{}),
+      Access.key(module, %{}),
+      Access.key(signature.function, [])
+    ]
+
+    update_in(state, keys, fn list -> [{signature, from} | list] end)
   end
 
   defp init_state do
