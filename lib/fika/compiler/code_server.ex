@@ -109,7 +109,8 @@ defmodule Fika.Compiler.CodeServer do
 
   def handle_call({:get_type, signature}, from, state) do
     module = signature.module
-    signature_map = get_in(state, [:public_functions, module])
+    function = signature.function
+    signature_map = get_in(state, [:public_functions, module, function])
 
     state =
       case TypeChecker.find_by_call(signature_map, signature) do
@@ -119,7 +120,7 @@ defmodule Fika.Compiler.CodeServer do
 
         _ ->
           state
-          |> maybe_compile(module)
+          |> async_compile(module)
           # TODO: Check match when notifying waiting type checks.
           |> wait_for(module, signature, from)
       end
@@ -173,10 +174,11 @@ defmodule Fika.Compiler.CodeServer do
   end
 
   defp set_type(state, signature, result) do
-    update_in(state, [:public_functions, signature.module], fn
-      nil -> %{signature => result}
-      signatures -> Map.put(signatures, signature, result)
-    end)
+    nested_put(state, [:public_functions, signature.module, signature.function, signature], result)
+  end
+
+  defp nested_put(map, keys, value) do
+    put_in(map, Enum.map(keys, &Access.key(&1, %{})), value)
   end
 
   defp notify_waiting_type_checks(state, module, signature, result) do
@@ -209,16 +211,10 @@ defmodule Fika.Compiler.CodeServer do
     Map.put(state, :waiting, Map.new(rest))
   end
 
-  defp maybe_compile(state, module) do
+  defp async_compile(state, module) do
     state
     |> start_module_compile(module)
-    |> update_in([:public_functions, module], fn
-      nil ->
-        %{}
-
-      other ->
-        other
-    end)
+    |> nested_put([:public_functions, module], %{})
   end
 
   defp wait_for(state, module, signature, from) do
@@ -230,30 +226,24 @@ defmodule Fika.Compiler.CodeServer do
 
   defp init_state do
     %{
-      public_functions: default_functions(),
+      public_functions: %{},
       waiting: %{},
       compile_result: %{},
       parent_pid: nil,
       binaries: []
     }
+    |> put_default_types(DefaultTypes.kernel())
+    |> put_default_types(DefaultTypes.io())
   end
 
   defp reset_binaries(state) do
     Map.put(state, :binaries, [])
   end
 
-  defp default_functions do
-    %{
-      "fika/kernel" => insert_ok(DefaultTypes.kernel()),
-      "fika/io" => insert_ok(DefaultTypes.io())
-    }
-  end
-
-  defp insert_ok(signature_map) do
-    Enum.map(signature_map, fn {k, v} ->
-      {k, {:ok, v}}
+  defp put_default_types(state, signatures) do
+    Enum.reduce(signatures, state, fn s, acc ->
+      set_type(acc, s, {:ok, s.return})
     end)
-    |> Map.new()
   end
 
   defp start_module_compile(state, module) do
