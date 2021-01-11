@@ -5,6 +5,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
 
   alias Fika.Compiler.{
     TypeChecker,
+    TypeChecker.FunctionMatch,
     CodeServer
   }
 
@@ -68,8 +69,9 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   end
 
   def handle_call({:get_result, signature}, from, state) do
-    if {s, _} = TypeChecker.find_by_call(state.local_functions, signature) do
-      if {_, result} = TypeChecker.find_by_call(state.checked_functions, signature) do
+    if {s, _, vars} = FunctionMatch.find_by_call(state.local_functions, signature) do
+      if result = Map.get(state.checked_functions, s) do
+        result = FunctionMatch.replace_vars(result, vars)
         {:reply, result, state}
       else
         state =

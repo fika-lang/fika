@@ -801,20 +801,74 @@ defmodule Fika.Compiler.TypeCheckerTest do
     end
   end
 
-  test "find_by_call" do
-    s1 = signature("foo", "bar", [T.Union.new([:a, :b]), :Int])
-    s2 = signature("foo", "baz", [T.Union.new([:c, :d])])
+  describe "generics" do
+    test "multiple type variables" do
+      str = """
+      fn foo(list: List(a), fun: Fn(List(a) -> List(b))) do
+        fun.(list)
+      end
+      """
 
-    map = %{
-      s1 => "value1",
-      s2 => "value2"
-    }
+      {:ok, ast} = Parser.parse_module(str)
 
-    assert TypeChecker.find_by_call(map, signature("foo", "bar", [:d])) == nil
-    assert TypeChecker.find_by_call(map, signature("foo", "bar", [:a, :Int])) == {s1, "value1"}
-    assert TypeChecker.find_by_call(map, signature("foo", "bar", [:b, :Int])) == {s1, "value1"}
-    assert TypeChecker.find_by_call(map, signature("foo", "baz", [:c])) == {s2, "value2"}
-    assert TypeChecker.find_by_call(map, signature("foo", "baz", [:d])) == {s2, "value2"}
+      [function] = ast[:function_defs]
+
+      assert {:ok, %T.List{type: "b"}} = TypeChecker.infer(function, %{})
+    end
+
+    test "can't call incompatible functions on type variables" do
+      str = """
+      fn foo(x: a) do
+        x + 100
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [function] = ast[:function_defs]
+
+      assert {:error, "Function fika/kernel.+(a, Int) does not exist"} =
+               TypeChecker.infer(function, %{})
+    end
+
+    test "infers return types of functions with type variables" do
+      str = """
+      fn foo(x: a) : a do
+        x
+      end
+
+      fn bar do
+        foo(123)
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [_foo, bar] = ast[:function_defs]
+
+      assert {:ok, :Int} = TypeChecker.infer(bar, %{ast: ast})
+    end
+
+    test "infers return types of functions when type variables are passed as args" do
+      str = """
+      fn foo(x: a) : a do
+        case 123 do
+          123 -> x
+          y -> "Hello"
+        end
+      end
+
+      fn bar(x: z) do
+        foo(x)
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [_foo, bar] = ast[:function_defs]
+
+      assert TypeChecker.infer(bar, %{ast: ast}) == {:ok, T.Union.new([:String, "z"])}
+    end
   end
 
   defp signature(m, f, t) do

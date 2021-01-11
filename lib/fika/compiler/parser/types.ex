@@ -115,6 +115,10 @@ defmodule Fika.Compiler.Parser.Types do
     |> label("boolean")
     |> reduce({Helper, :to_atom, []})
 
+  type_variable =
+    identifier_str
+    |> label("type variable")
+
   base_type =
     choice([
       string_type,
@@ -128,7 +132,8 @@ defmodule Fika.Compiler.Parser.Types do
       effect_type,
       record_type,
       map_type,
-      tuple_type
+      tuple_type,
+      type_variable
     ])
 
   union_type =

@@ -7,7 +7,7 @@ defmodule Fika.Compiler.CodeServer do
     DefaultTypes,
     ModuleCompiler,
     ErlTranslate,
-    TypeChecker
+    TypeChecker.FunctionMatch
   }
 
   def start_link(_) do
@@ -113,15 +113,22 @@ defmodule Fika.Compiler.CodeServer do
     signature_map = get_in(state, [:public_functions, module, function])
 
     state =
-      case TypeChecker.find_by_call(signature_map, signature) do
-        {_, result} ->
+      case FunctionMatch.find_by_call(signature_map, signature) do
+        {_, result, vars} ->
+          result = FunctionMatch.replace_vars(result, vars)
           GenServer.reply(from, result)
           state
 
         _ ->
-          state
-          |> async_compile(module)
-          |> wait_for(module, signature, from)
+          if get_in(state, [:public_functions, module]) do
+            msg = "Function #{signature} does not exist"
+            GenServer.reply(from, {:error, msg})
+            state
+          else
+            state
+            |> async_compile(module)
+            |> wait_for(module, signature, from)
+          end
       end
 
     {:noreply, state}
@@ -189,8 +196,12 @@ defmodule Fika.Compiler.CodeServer do
 
     update_in(state, keys, fn waitlist ->
       Enum.reject(waitlist, fn {s, from} ->
-        TypeChecker.signature_matches_call?(signature, s) &&
+        if vars = FunctionMatch.match_signatures(signature, s) do
+          result = FunctionMatch.replace_vars(result, vars)
           GenServer.reply(from, result)
+        end
+
+        # TypeChecker.signature_matches_call?(signature, s) &&
       end)
     end)
   end

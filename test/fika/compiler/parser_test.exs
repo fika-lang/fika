@@ -917,6 +917,16 @@ defmodule Fika.Compiler.ParserTest do
 
       assert {:type, {1, 0, 10}, %T.List{type: :foo}} == TestParser.type_str!(str)
     end
+
+    test "type variables" do
+      str = "List(a)"
+      assert {:type, {1, 0, 7}, %T.List{type: "a"}} == TestParser.type_str!(str)
+
+      str = "Fn(a -> b)"
+
+      assert {:type, {1, 0, 10}, %T.FunctionRef{arg_types: ["a"], return_type: "b"}} ==
+               TestParser.type_str!(str)
+    end
   end
 
   describe "function reference" do
