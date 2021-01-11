@@ -1,4 +1,4 @@
-defmodule Fika.Compiler.TypeChecker.Types.MatchTest do
+defmodule Fika.Compiler.TypeChecker.MatchTest do
   use ExUnit.Case, async: true
 
   alias Fika.Compiler.TypeChecker.Types, as: T

@@ -318,56 +318,6 @@ defmodule Fika.Compiler.TypeChecker do
     %{ast: ast, scope: %{}}
   end
 
-  # Given a map of signatures to values and a signature,
-  # finds the value for the signature which is a supertype of the second arg.
-  def find_by_call(map, signature) when is_map(map) do
-    Enum.find(map, fn {s, _} ->
-      signature_matches_call?(s, signature)
-    end)
-  end
-
-  def find_by_call(_, _), do: nil
-
-  def signature_matches_call?(s1, s2) do
-    if s1.module == s2.module && s1.function == s2.function &&
-         length(s1.types) == length(s2.types) do
-      all_subtype?(s2.types, s1.types)
-    end
-  end
-
-  defp all_subtype?([], []) do
-    true
-  end
-
-  defp all_subtype?([t1 | t1s], [t2 | t2s]) do
-    if subtype?(t1, t2) do
-      all_subtype?(t1s, t2s)
-    else
-      false
-    end
-  end
-
-  # Returns true if t1 is a subtype of t2 (t1 <: t2)
-  # Cheese <: Food
-  # Food -> Int <: Cheese -> Int
-  # Int -> Cheese <: Int -> Food
-  def subtype?(t1, t2) do
-    do_subtype?(t1, t2)
-  end
-
-  defp do_subtype?(t1, t2) when t1 == t2 do
-    true
-  end
-
-  defp do_subtype?(t1, %T.Union{types: ts}) do
-    Enum.any?(ts, &do_subtype?(t1, &1))
-  end
-
-  # TODO: also check subtypes of remaining types
-  defp do_subtype?(_, _) do
-    false
-  end
-
   # TODO: made it work, now make it pretty.
   defp infer_case_clauses(env, rhs, clauses) do
     all_rhs_types = Match.expand_unions(rhs)
