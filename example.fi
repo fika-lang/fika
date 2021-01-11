@@ -35,7 +35,7 @@ end
 
 # A tuple is a small group of values of different types.
 # A tuple does not grow dynamically and it's shape is fixed.
-fn tuple : {Int,Bool} do
+fn tuple : {Int, Bool} do
   {1, true}
 end
 
@@ -88,6 +88,12 @@ fn call_sum_ref : Int do
   # As we saw in the case of anonymous functions, references can be used
   # to call functions using .()
   sum_ref().(1, 2)
+end
+
+# Use type variables when your function is generic and needs to work with
+# a variety of types
+fn make_pair(x: a, y: b) : {a, b} do
+  {x, y}
 end
 
 # Effect type
