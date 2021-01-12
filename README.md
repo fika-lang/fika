@@ -9,27 +9,13 @@ Fika is a modern programming language for the web.
 It is statically typed, functional and runs on the BEAM (Erlang VM).
 
 Project status: Actively developed. Not ready for production use or HackerNews.
+Currently, Fika is an early prototype and hence has many hacky implementations.
 
 If you'd like to keep tabs on our progress, please [subscribe to our updates here](https://tinyletter.com/fika).
 
 ### Syntax
 
 Here's a quick walkthrough of Fika's syntax: [example.fi](https://github.com/fika-lang/fika/blob/main/example.fi)
-
-#### Interop with Elixir and Erlang
-
-Fika makes it easy to call functions defined externally in the BEAM:
-
-```
-# Inside module foo
-ext str_length(str: String) : Int = {"Elixir.String", "length", [str]}
-
-# Can be called using `foo.str_length("Hello world")`
-```
-
-When reaching out to functions external to Fika, the compiler
-blindly trusts the type signature provided by the developer, so be careful here!
-
 
 ### Running Fika programs
 
