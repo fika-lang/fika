@@ -138,7 +138,7 @@ defmodule Fika.Compiler.Parser.Helper do
   end
 
   def do_to_ast({fields, _line}, :record_type) do
-    %T.Record{fields: fields}
+    %T.Record{fields: Enum.sort_by(fields, &elem(&1, 0))}
   end
 
   def do_to_ast({[{:atom, _, atom}], _line}, :atom_type) do
