@@ -205,7 +205,7 @@ defmodule Fika.Compiler.TypeChecker do
     else
       case do_infer_key_values(key_values, env) do
         {:ok, k_v_types, env} ->
-          {:ok, %T.Record{fields: k_v_types}, env}
+          {:ok, %T.Record{fields: Enum.sort_by(k_v_types, &elem(&1, 0))}, env}
 
         error ->
           error

@@ -199,8 +199,8 @@ defmodule Fika.Compiler.TypeChecker.MatchTest do
     assert {:ok, env, unmatched} = Match.match_case(%{}, pattern, rhs)
 
     assert unmatched == [
-             %T.Record{fields: [name: :String, id: :Int, x: :b]},
-             %T.Record{fields: [name: :String, id: :Int, x: :c]}
+             %T.Record{fields: [id: :Int, name: :String, x: :b]},
+             %T.Record{fields: [id: :Int, name: :String, x: :c]}
            ]
   end
 
@@ -237,8 +237,8 @@ defmodule Fika.Compiler.TypeChecker.MatchTest do
     {:type, _, type} = TestParser.type_str!(str)
 
     assert Match.expand_unions(type) == [
-             %T.Record{fields: [name: :String, id: :Int, x: :a]},
-             %T.Record{fields: [name: :String, id: :Int, x: :b]}
+             %T.Record{fields: [id: :Int, name: :String, x: :a]},
+             %T.Record{fields: [id: :Int, name: :String, x: :b]}
            ]
   end
 

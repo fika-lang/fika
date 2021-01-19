@@ -902,7 +902,7 @@ defmodule Fika.Compiler.ParserTest do
     test "record type" do
       str = "{foo: Int, bar: String}"
 
-      assert {:type, {1, 0, 23}, %T.Record{fields: [foo: :Int, bar: :String]}} ==
+      assert {:type, {1, 0, 23}, %T.Record{fields: [bar: :String, foo: :Int]}} ==
                TestParser.type_str!(str)
     end
 
