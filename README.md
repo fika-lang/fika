@@ -42,11 +42,16 @@ iex -S mix
 
 ```
 # Create the executable
-mix escript.build
+mix release
 
+# The above command creates an executable in the path ./_build/prod/rel/bakeware/fika
 # Call the function example.sum(1, 2) from the file example.fi
-./fika exec --function="sum(1, 2)" example.fi
+./_build/prod/rel/bakeware/fika exec --function="foo()" example
 ```
+
+PS: If you're developing Fika, the recommended way to try Fika code is to use
+the Elixir shell which is documented above because this is faster.
+
 
 ### Your first HTTP server
 
@@ -86,10 +91,10 @@ Now start the webserver in one of two ways:
 
 ```
 # Create the executable
-mix escript.build
+mix release
 
 # router.fi is in the `examples` folder
-./fika start examples
+./_build/prod/rel/bakeware/fika start examples
 
 # Re-run the command after making changes to routes.fi
 ```
