@@ -851,7 +851,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
     test "infers return types of functions when type variables are passed as args" do
       str = """
-      fn foo(x: a) : a do
+      fn foo(x: a) do
         case 123 do
           123 -> x
           y -> "Hello"
@@ -868,6 +868,31 @@ defmodule Fika.Compiler.TypeCheckerTest do
       [_foo, bar] = ast[:function_defs]
 
       assert TypeChecker.infer(bar, %{ast: ast}) == {:ok, T.Union.new([:String, "z"])}
+    end
+
+    test "type variables used in function ref calls" do
+      str = """
+      fn foo(x: a) do
+        case 123 do
+          123 -> x
+          y -> "Hello"
+        end
+      end
+
+      fn bar(x: Fn(b -> b | String | Int), z: b) do
+        x.(z)
+      end
+
+      fn baz(x: c) do
+        bar(&foo(c), x)
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [_foo, _bar, baz] = ast[:function_defs]
+
+      assert TypeChecker.infer(baz, %{ast: ast}) == {:ok, T.Union.new([:String, "c", :Int])}
     end
   end
 

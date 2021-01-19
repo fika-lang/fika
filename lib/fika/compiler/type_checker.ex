@@ -486,6 +486,7 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
+  # TODO: This can be merged with do_infer_args
   defp do_infer_args_without_name(env, args) do
     Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, acc, env} ->
       case infer_exp(env, arg) do
