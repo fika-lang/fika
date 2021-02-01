@@ -7,18 +7,25 @@ defmodule Fika.Watcher do
   end
 
   def init([]) do
-    Logger.debug("Initializing Watcher")
     dir = File.cwd!()
-    {:ok, watcher_pid} = FileSystem.start_link(dirs: [dir])
-    FileSystem.subscribe(watcher_pid)
 
-    state = %{
-      watcher_pid: watcher_pid,
-      paths: MapSet.new(),
-      timer: nil
-    }
+    case FileSystem.start_link(dirs: [dir]) do
+      {:ok, watcher_pid} ->
+        Logger.debug("Initializing Watcher")
+        FileSystem.subscribe(watcher_pid)
 
-    {:ok, state}
+        state = %{
+          watcher_pid: watcher_pid,
+          paths: MapSet.new(),
+          timer: nil
+        }
+
+        {:ok, state}
+
+      _other ->
+        Logger.error("Watcher disabled.")
+        :ignore
+    end
   end
 
   def handle_info({:file_event, _watcher_pid, {path, _events}}, state) do
