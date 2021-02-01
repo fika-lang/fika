@@ -7,7 +7,8 @@ defmodule Fika.Application do
 
   def start(_type, _args) do
     children = [
-      Fika.Compiler.CodeServer
+      Fika.Compiler.CodeServer,
+      Fika.Watcher
     ]
 
     children =
