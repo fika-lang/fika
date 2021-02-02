@@ -45,6 +45,12 @@ defmodule Fika.Watcher do
 
   def handle_info(:trigger, %{paths: paths} = state) do
     Logger.debug("Files changed: #{inspect(paths)}")
+
+    router = Application.get_env(:fika, :router_path)
+    if router in paths do
+      Fika.Router.Store.reload_routes(router)
+    end
+
     {:noreply, %{state | paths: MapSet.new(), timer: nil}}
   end
 

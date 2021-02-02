@@ -55,23 +55,26 @@ the Elixir shell which is documented above because this is faster.
 
 ### Your first HTTP server
 
-Fika comes with a webserver which allows you to quickly create HTTP request
-handlers. By default, Fika looks for routes in a function called
-`router.routes()`, so you need to define that first:
-
-Note: This webserver is a prototype for now and only responds with strings and
-a 200 status code.
+Fika comes with a web server which allows you to quickly create HTTP request
+handlers. Note: This web server is a prototype currently and only responds with
+strings and a 200 status code.
 
 ```elixir
-# Inside router.fi
+# Inside examples/router.fi
+
 fn routes : List({method: String, path: String, handler: Fn(->String)}) do
   [
-    {method: "GET", path: "/", handler: &greet}
+    {method: "GET", path: "/", handler: &hello},
+    {method: "GET", path: "/foo", handler: &bar}
   ]
 end
 
-fn greet : String do
+fn hello : String do
   "Hello world"
+end
+
+fn bar : String do
+  "Bar"
 end
 ```
 
@@ -80,11 +83,8 @@ Now start the webserver in one of two ways:
 #### Using Elixir shell
 
 ```
-# router.fi is in the `examples` folder
-> Fika.start("examples")
-
-# Reload routes after changing routes.fi
-> Fika.RouteStore.reload_routes()
+iex -S mix
+# A web server is started automatically using the router `examples/router.fi`
 ```
 
 #### Using `fika` executable
@@ -94,13 +94,12 @@ Now start the webserver in one of two ways:
 mix release
 
 # router.fi is in the `examples` folder
-./_build/prod/rel/bakeware/fika start examples
-
-# Re-run the command after making changes to routes.fi
+cd examples
+../_build/prod/rel/bakeware/fika
 ```
 
-Now open `http://localhost:6060` in the browser to see "Hello world" served
-by Fika.
+Now open `http://localhost:9090` in the browser to see "Hello world" served
+by Fika. Changes to the router are picked up automatically.
 
 ### Fika together!
 
