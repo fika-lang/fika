@@ -42,7 +42,7 @@ defmodule Fika.Router.Store do
   end
 
   def reload_routes(router) do
-    Logger.debug "Reloading routes"
+    Logger.debug("Reloading routes")
 
     router
     |> load_routes()

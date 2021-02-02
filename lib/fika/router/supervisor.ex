@@ -13,7 +13,7 @@ defmodule Fika.Router.Supervisor do
   def init(_) do
     children = [
       {Fika.Router.Store, []},
-      {Plug.Cowboy, scheme: :http, plug: Fika.Router, options: [port: 9090, ip: {127, 0, 0, 1}]},
+      {Plug.Cowboy, scheme: :http, plug: Fika.Router, options: [port: 9090, ip: {127, 0, 0, 1}]}
     ]
 
     Supervisor.init(children, strategy: :one_for_one, name: __MODULE__)
