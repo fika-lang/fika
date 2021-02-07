@@ -16,7 +16,7 @@ defmodule Fika.Router.Supervisor do
   @impl true
   def init(_) do
     unless File.exists?("router.fi") do
-      IO.puts "router.fi not found. Creating an example router in file router.fi"
+      IO.puts("router.fi not found. Creating an example router in file router.fi")
       Fika.Router.create_example_router()
     end
 
