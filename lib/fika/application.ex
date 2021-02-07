@@ -9,6 +9,7 @@ defmodule Fika.Application do
     children = [
       Fika.Compiler.CodeServer,
       Fika.Watcher,
+      {Finch, name: FikaFinch},
       Fika.Router.Supervisor
     ]
 

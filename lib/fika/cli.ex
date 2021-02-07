@@ -51,10 +51,6 @@ defmodule Fika.Cli do
   end
 
   defp parse_args([]) do
-    if not File.exists?("router.fi") do
-      raise "Cannot start web server: file 'router.fi' not found in directory '#{File.cwd!()}'"
-    end
-
     IO.puts("Press Ctrl+C to exit")
     :timer.sleep(:infinity)
   end

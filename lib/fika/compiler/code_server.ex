@@ -18,6 +18,18 @@ defmodule Fika.Compiler.CodeServer do
     GenServer.call(__MODULE__, {:compile_module, module})
   end
 
+  def compile_file(module, content) do
+    GenServer.call(__MODULE__, {:compile_file, module, content})
+  end
+
+  def deploy_file(file, dev_token, remote_endpoint) do
+    content = File.read!(file)
+    Logger.debug("Deploying file #{file}")
+    headers = [{"content-type", "application/json"}]
+    params = Jason.encode!(%{file: file, content: content, dev_token: dev_token})
+    Finch.build(:post, remote_endpoint, headers, params) |> Finch.request(FikaFinch)
+  end
+
   def get_type(signature) do
     GenServer.call(__MODULE__, {:get_type, signature})
   end
@@ -143,6 +155,15 @@ defmodule Fika.Compiler.CodeServer do
     {:noreply, state}
   end
 
+  def handle_call({:compile_file, module, content}, from, _state) do
+    state =
+      init_state()
+      |> start_file_compile(module, content)
+      |> Map.put(:parent_pid, from)
+
+    {:noreply, state}
+  end
+
   def handle_call(:load_binaries, _from, state) do
     Logger.debug("Loading binaries into beam")
 
@@ -150,9 +171,18 @@ defmodule Fika.Compiler.CodeServer do
       Enum.map(state.binaries, fn {module, file, binary} ->
         module_name = ErlTranslate.erl_module_name(module)
 
+        Logger.debug("Loading #{module_name}")
+
         case :code.load_binary(module_name, String.to_charlist(file), binary) do
-          {:module, module} -> {:ok, module}
-          {:error, _reason} -> {:error, module}
+          {:module, module} ->
+            if state.dev_token do
+              deploy_file(file, state.dev_token, state.remote_endpoint)
+            end
+
+            {:ok, module}
+
+          {:error, _reason} ->
+            {:error, module}
         end
       end)
 
@@ -240,6 +270,8 @@ defmodule Fika.Compiler.CodeServer do
       waiting: %{},
       compile_result: %{},
       parent_pid: nil,
+      dev_token: Application.get_env(:fika, :dev_token),
+      remote_endpoint: Application.get_env(:fika, :remote_endpoint),
       binaries: []
     }
     |> put_default_types(DefaultTypes.kernel())
@@ -252,7 +284,17 @@ defmodule Fika.Compiler.CodeServer do
 
   defp start_module_compile(state, module) do
     Task.start(fn ->
+      Logger.debug("Compiling #{module}")
       ModuleCompiler.compile(module)
+    end)
+
+    put_in(state, [:compile_result, module], nil)
+  end
+
+  defp start_file_compile(state, module, content) do
+    Task.start(fn ->
+      Logger.debug("Compiling #{module}")
+      ModuleCompiler.compile_file(module, content)
     end)
 
     put_in(state, [:compile_result, module], nil)

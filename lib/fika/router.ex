@@ -10,8 +10,20 @@ defmodule Fika.Router do
     send_resp(conn, status, resp)
   end
 
-  def home do
-    "It's fika time!"
+  def create_example_router do
+    content = """
+    fn routes : List({method: String, path: String, handler: Fn(->String)}) do
+      [
+        {method: "GET", path: "/", handler: &greet}
+      ]
+    end
+
+    fn greet : String do
+      "Hello world"
+    end
+    """
+
+    File.write("router.fi", content)
   end
 
   defp get_resp(method, path) do

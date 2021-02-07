@@ -10,19 +10,15 @@ defmodule Fika.Compiler.ModuleCompiler do
 
   # Returns {:ok, module_name, file, binary} | {:error, message}
   def compile(module_name) do
-    Logger.debug("Compiling #{module_name}")
+    module_name
+    |> do_compile()
+    |> store_compile_result(module_name)
+  end
 
-    result = do_compile(module_name)
-
-    case result do
-      {:ok, module_name, file, binary} ->
-        CodeServer.put_result(module_name, {:ok, {file, binary}})
-
-      {:error, reason} ->
-        CodeServer.put_result(module_name, {:error, reason})
-    end
-
-    result
+  def compile_file(module_name, content) do
+    module_name
+    |> do_compile_file(content)
+    |> store_compile_result(module_name)
   end
 
   defp do_compile(module_name) do
@@ -30,6 +26,16 @@ defmodule Fika.Compiler.ModuleCompiler do
 
     with {:ok, str} <- read_file(state.file),
          {:ok, state} <- parse(str, state),
+         :ok <- type_check(state),
+         {:ok, forms} <- erl_translate(state) do
+      compile_forms(forms, state)
+    end
+  end
+
+  defp do_compile_file(module_name, content) do
+    state = init(module_name)
+
+    with {:ok, state} <- parse(content, state),
          :ok <- type_check(state),
          {:ok, forms} <- erl_translate(state) do
       compile_forms(forms, state)
@@ -89,5 +95,17 @@ defmodule Fika.Compiler.ModuleCompiler do
       {:error, _errors, _warnings} ->
         {:error, "Load error"}
     end
+  end
+
+  defp store_compile_result(result, module_name) do
+    case result do
+      {:ok, module_name, file, binary} ->
+        CodeServer.put_result(module_name, {:ok, {file, binary}})
+
+      {:error, reason} ->
+        CodeServer.put_result(module_name, {:error, reason})
+    end
+
+    result
   end
 end

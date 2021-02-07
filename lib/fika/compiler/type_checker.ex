@@ -64,13 +64,10 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   def infer_block(env, [exp]) do
-    Logger.debug("Block has one exp left")
     infer_exp(env, exp)
   end
 
   def infer_block(env, [exp | exp_list]) do
-    Logger.debug("Block has multiple exps")
-
     case infer_exp(env, exp) do
       {:ok, _type, env} -> infer_block(env, exp_list)
       error -> error

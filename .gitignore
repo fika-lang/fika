@@ -23,3 +23,5 @@ erl_crash.dump
 
 # Ignore package tarball (built via "mix hex.build").
 fika-*.tar
+/router.fi
+/.iex.exs
