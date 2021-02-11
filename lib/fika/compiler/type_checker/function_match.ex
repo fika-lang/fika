@@ -5,8 +5,6 @@ defmodule Fika.Compiler.TypeChecker.FunctionMatch do
   # finds the value for the signature which is a supertype of the second arg.
   def find_by_call(map, signature) when is_map(map) do
     Enum.find_value(map, fn {s, v} ->
-      # signature_matches_call?(s, signature)
-
       if vars = match_signatures(s, signature) do
         {s, v, vars}
       end
@@ -31,7 +29,7 @@ defmodule Fika.Compiler.TypeChecker.FunctionMatch do
   end
 
   defp do_replace_vars(var, vars) when is_binary(var) do
-    vars[var]
+    vars[var] || var
   end
 
   defp do_replace_vars(%T.Union{types: ts}, vars) do
@@ -91,13 +89,11 @@ defmodule Fika.Compiler.TypeChecker.FunctionMatch do
          %T.FunctionRef{arg_types: a_t2s, return_type: r_t2},
          vars
        ) do
-    if new_vars = match_all_subtypes(a_t2s, a_t1s, %{}) do
-      r_t2 = do_replace_vars(r_t2, new_vars)
+    if new_vars = match_all_subtypes(a_t1s, a_t2s, vars) do
+      r_t1 = do_replace_vars(r_t1, new_vars)
 
       if new_vars = do_match_subtype(r_t1, r_t2, new_vars) do
-        new_vars
-        |> invert_bindings()
-        |> merge_vars(vars)
+        merge_vars(new_vars, vars)
       end
     end
   end
@@ -119,6 +115,10 @@ defmodule Fika.Compiler.TypeChecker.FunctionMatch do
     do_match_all_subtype(t1s, t2s, vars)
   end
 
+  defp do_match_subtype(%T.List{type: t1}, %T.List{type: t2}, vars) do
+    do_match_subtype(t1, t2, vars)
+  end
+
   defp do_match_subtype(_, _, _) do
     nil
   end
@@ -132,10 +132,6 @@ defmodule Fika.Compiler.TypeChecker.FunctionMatch do
       nil -> nil
       vars -> do_match_all_subtype(t1s, t2s, vars)
     end
-  end
-
-  defp invert_bindings(vars) do
-    for {k, v} <- vars, into: %{}, do: {v, k}
   end
 
   defp merge_vars(arg_vars, vars) do

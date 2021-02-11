@@ -62,6 +62,52 @@ defmodule Fika.Compiler.TypeChecker.FunctionMatchTest do
     assert FunctionMatch.match_signatures(s1, s2) == %{"a" => :a}
   end
 
+  # This tests function matching of list.map/2
+  test "match_signatures with function refs and type variables - list.map" do
+    t1 = [
+      %T.List{type: "a"},
+      %T.FunctionRef{
+        return_type: "b",
+        arg_types: ["a"]
+      }
+    ]
+
+    t2 = [
+      %T.List{type: :Int},
+      %T.FunctionRef{
+        return_type: :String,
+        arg_types: [:Int]
+      }
+    ]
+    s1 = signature("foo", "map", t1)
+    s2 = signature("foo", "map", t2)
+    assert FunctionMatch.match_signatures(s1, s2) == %{"a" => :Int, "b" => :String}
+  end
+
+  # This tests function matching of list.reduce/3
+  test "match_signatures with function refs and type variables - list.reduce" do
+    t1 = [
+      %T.List{type: "a"},
+      "b",
+      %T.FunctionRef{
+        return_type: "b",
+        arg_types: ["a", "b"]
+      }
+    ]
+
+    t2 = [
+      %T.List{type: :Int},
+      :Int,
+      %T.FunctionRef{
+        return_type: :Int,
+        arg_types: [:Int, :Int]
+      }
+    ]
+    s1 = signature("foo", "reduce", t1)
+    s2 = signature("foo", "reduce", t2)
+    assert FunctionMatch.match_signatures(s1, s2) == %{"a" => :Int, "b" => :Int}
+  end
+
   test "replace_vars" do
     result = {:ok, :Int}
     assert FunctionMatch.replace_vars(result, %{"a" => :String}) == {:ok, :Int}

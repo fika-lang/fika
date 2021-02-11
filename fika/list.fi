@@ -1,0 +1,5 @@
+ext map(list: List(a), fun: Fn(a->b)) : b = {"Elixir.Enum", "map", [list, fun]}
+ext length(list: List(a)) : Int = {"Elixir.Enum", "count", [list]}
+ext filter(list: List(a), fun: Fn(a->Bool)) : List(a) = {"Elixir.Enum", "filter", [list, fun]}
+ext reduce(list: List(a), fun: Fn(a,b->b)) : b = {"Elixir.Enum", "reduce", [list, fun]}
+ext reduce(list: List(a), acc: b, fun: Fn(a,b->b)) : b = {"Elixir.Enum", "reduce", [list, acc, fun]}
