@@ -10,7 +10,7 @@ defmodule Fika.Router do
     send_resp(conn, status, resp)
   end
 
-  def create_example_router do
+  def create_example_router(path) do
     content = """
     fn routes : List({method: String, path: String, handler: Fn(->String)}) do
       [
@@ -23,7 +23,7 @@ defmodule Fika.Router do
     end
     """
 
-    File.write("router.fi", content)
+    File.write(path, content)
   end
 
   defp get_resp(method, path) do

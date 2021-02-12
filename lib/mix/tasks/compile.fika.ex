@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Compile.Fika do
 
     "fika/**/*.fi"
     |> Path.wildcard()
-    |> Enum.each(& compile_to_path(&1, dest))
+    |> Enum.each(&compile_to_path(&1, dest))
 
     Application.stop(:fika)
     Logger.configure(level: level)

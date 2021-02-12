@@ -79,6 +79,7 @@ defmodule Fika.Compiler.TypeChecker.FunctionMatchTest do
         arg_types: [:Int]
       }
     ]
+
     s1 = signature("foo", "map", t1)
     s2 = signature("foo", "map", t2)
     assert FunctionMatch.match_signatures(s1, s2) == %{"a" => :Int, "b" => :String}
@@ -103,6 +104,7 @@ defmodule Fika.Compiler.TypeChecker.FunctionMatchTest do
         arg_types: [:Int, :Int]
       }
     ]
+
     s1 = signature("foo", "reduce", t1)
     s2 = signature("foo", "reduce", t2)
     assert FunctionMatch.match_signatures(s1, s2) == %{"a" => :Int, "b" => :Int}

@@ -56,40 +56,56 @@ defmodule Fika.Compiler.DefaultTypes do
     m = "fika/list"
 
     [
-      s(m, "map", [
-        %T.List{type: "a"},
-        %T.FunctionRef{
-          return_type: "b",
-          arg_types: ["a"]
-        }
-      ], %T.List{type: "b"}),
-
+      s(
+        m,
+        "map",
+        [
+          %T.List{type: "a"},
+          %T.FunctionRef{
+            return_type: "b",
+            arg_types: ["a"]
+          }
+        ],
+        %T.List{type: "b"}
+      ),
       s(m, "length", [%T.List{type: "a"}], :Int),
-
-      s(m, "filter", [
-        %T.List{type: "a"},
-        %T.FunctionRef{
-          return_type: :Bool,
-          arg_types: ["a"]
-        }
-      ], %T.List{type: "a"}),
-
-      s(m, "reduce", [
-        %T.List{type: "a"},
-        %T.FunctionRef{
-          return_type: "b",
-          arg_types: ["a", "b"]
-        }
-      ], "b"),
-
-      s(m, "reduce", [
-        %T.List{type: "a"},
-        "b",
-        %T.FunctionRef{
-          arg_types: ["a", "b"],
-          return_type: "b"
-        }
-      ], "b"),
+      s(
+        m,
+        "filter",
+        [
+          %T.List{type: "a"},
+          %T.FunctionRef{
+            return_type: :Bool,
+            arg_types: ["a"]
+          }
+        ],
+        %T.List{type: "a"}
+      ),
+      s(
+        m,
+        "reduce",
+        [
+          %T.List{type: "a"},
+          %T.FunctionRef{
+            return_type: "b",
+            arg_types: ["a", "b"]
+          }
+        ],
+        "b"
+      ),
+      s(
+        m,
+        "reduce",
+        [
+          %T.List{type: "a"},
+          "b",
+          %T.FunctionRef{
+            arg_types: ["a", "b"],
+            return_type: "b"
+          }
+        ],
+        "b"
+      )
     ]
   end
 
