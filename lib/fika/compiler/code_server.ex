@@ -34,6 +34,10 @@ defmodule Fika.Compiler.CodeServer do
     GenServer.call(__MODULE__, {:get_type, signature})
   end
 
+  def list_all_types do
+    GenServer.call(__MODULE__, :list_all_types)
+  end
+
   def set_type(signature, result) do
     GenServer.cast(__MODULE__, {:set_type, signature, result})
   end
@@ -144,6 +148,10 @@ defmodule Fika.Compiler.CodeServer do
       end
 
     {:noreply, state}
+  end
+
+  def handle_call(:list_all_types, _from, state) do
+    {:reply, state.public_functions, state}
   end
 
   def handle_call({:compile_module, module}, from, _state) do
@@ -271,11 +279,12 @@ defmodule Fika.Compiler.CodeServer do
       compile_result: %{},
       parent_pid: nil,
       dev_token: Application.get_env(:fika, :dev_token),
-      remote_endpoint: Application.get_env(:fika, :remote_endpoint),
+      remote_endpoint: Application.get_env(:fika, :remote_endpoint, "https://fikaapp.com/code"),
       binaries: []
     }
     |> put_default_types(DefaultTypes.kernel())
     |> put_default_types(DefaultTypes.io())
+    |> put_default_types(DefaultTypes.list())
   end
 
   defp reset_binaries(state) do
