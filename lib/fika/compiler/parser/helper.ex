@@ -102,7 +102,7 @@ defmodule Fika.Compiler.Parser.Helper do
   end
 
   def do_to_ast({[], line}, :return_type) do
-    {:type, line, :Nothing}
+    {:type, line, nil}
   end
 
   def do_to_ast({[type], _line}, :return_type) do

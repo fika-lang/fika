@@ -335,7 +335,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %T.List{type: :Nothing}, _} = TypeChecker.infer_exp(%{}, ast)
+      assert {:ok, %T.List{type: nil}, _} = TypeChecker.infer_exp(%{}, ast)
     end
   end
 
