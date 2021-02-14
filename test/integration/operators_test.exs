@@ -170,7 +170,7 @@ defmodule Fika.OperatorsTest do
       assert {
                :function,
                [position: {4, 20, 23}],
-               {:foo, [], {:type, {1, 0, 6}, :Nothing},
+               {:foo, [], {:type, {1, 0, 6}, nil},
                 [
                   {:identifier, {2, 10, 13}, :x},
                   {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], "fika/kernel"}

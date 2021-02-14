@@ -60,7 +60,7 @@ defmodule Fika.Compiler.TypeChecker do
 
   def infer_block(env, []) do
     Logger.debug("Block is empty.")
-    {:ok, :Nothing, env}
+    {:ok, nil, env}
   end
 
   def infer_block(env, [exp]) do
