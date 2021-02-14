@@ -279,11 +279,13 @@ defmodule Fika.Compiler.Parser.Helper do
   end
 
   defp expand_module({:module_name, line, module}, context) do
+    fika_modules = ["kernel", "io", "list"]
+
     module =
-      case module do
-        "kernel" -> "fika/kernel"
-        "io" -> "fika/io"
-        _ -> context[module]
+      if module in fika_modules do
+        "fika/#{module}"
+      else
+        context[module]
       end
 
     module && {:identifier, line, module}

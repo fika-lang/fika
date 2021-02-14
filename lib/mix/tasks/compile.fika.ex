@@ -10,16 +10,20 @@ defmodule Mix.Tasks.Compile.Fika do
     {:ok, _} = Application.ensure_all_started(:fika)
 
     dest = Mix.Project.compile_path()
-    default_modules = ["fika/io"]
 
-    Enum.each(default_modules, fn module ->
-      Logger.info("Compiling #{module}")
-      Code.compile_to_path(module, dest)
-    end)
+    "fika/**/*.fi"
+    |> Path.wildcard()
+    |> Enum.each(&compile_to_path(&1, dest))
 
     Application.stop(:fika)
     Logger.configure(level: level)
 
     :ok
+  end
+
+  defp compile_to_path(file, dest) do
+    module = String.replace_suffix(file, ".fi", "")
+    Logger.info("Compiling stdlib module: #{module}")
+    Code.compile_to_path(module, dest)
   end
 end

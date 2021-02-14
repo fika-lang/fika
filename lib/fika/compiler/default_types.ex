@@ -40,12 +40,72 @@ defmodule Fika.Compiler.DefaultTypes do
     ]
   end
 
+  # TODO: currently, the type signatures of stdlib functions are set
+  # using the functions below. In the future, we should load these type
+  # signatures automatically.
   def io do
     m = "fika/io"
 
     [
       s(m, "gets", [:String], %T.Effect{type: :String}),
       s(m, "puts", [:String], %T.Effect{type: :String})
+    ]
+  end
+
+  def list do
+    m = "fika/list"
+
+    [
+      s(
+        m,
+        "map",
+        [
+          %T.List{type: "a"},
+          %T.FunctionRef{
+            return_type: "b",
+            arg_types: ["a"]
+          }
+        ],
+        %T.List{type: "b"}
+      ),
+      s(m, "length", [%T.List{type: "a"}], :Int),
+      s(
+        m,
+        "filter",
+        [
+          %T.List{type: "a"},
+          %T.FunctionRef{
+            return_type: :Bool,
+            arg_types: ["a"]
+          }
+        ],
+        %T.List{type: "a"}
+      ),
+      s(
+        m,
+        "reduce",
+        [
+          %T.List{type: "a"},
+          %T.FunctionRef{
+            return_type: "b",
+            arg_types: ["a", "b"]
+          }
+        ],
+        "b"
+      ),
+      s(
+        m,
+        "reduce",
+        [
+          %T.List{type: "a"},
+          "b",
+          %T.FunctionRef{
+            arg_types: ["a", "b"],
+            return_type: "b"
+          }
+        ],
+        "b"
+      )
     ]
   end
 
