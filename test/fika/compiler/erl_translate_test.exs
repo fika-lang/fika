@@ -184,6 +184,25 @@ defmodule Fika.Compiler.ErlTranslateTest do
             ]} = result
   end
 
+  test "case expression" do
+    str = """
+    case result do
+      {:ok, score} -> score
+      :error -> 0
+    end
+    """
+
+    ast = TestParser.expression!(str)
+    result = ErlTranslate.translate_expression(ast)
+
+    assert {:case, 4, {:var, 1, :result},
+            [
+              {:clause, 4, [{:tuple, 2, [{:atom, 2, :ok}, {:var, 2, :score}]}], '',
+               [{:var, 2, :score}]},
+              {:clause, 4, [{:atom, 3, :error}], '', [{:integer, 3, 0}]}
+            ]} = result
+  end
+
   describe "string interpolation" do
     test "replaces with string" do
       str = ~S"""

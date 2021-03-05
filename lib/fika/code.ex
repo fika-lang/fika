@@ -20,6 +20,16 @@ defmodule Fika.Code do
     end
   end
 
+  def load_file(module, content) do
+    case CodeServer.compile_file(module, content) do
+      {:ok, _} ->
+        {:ok, CodeServer.load_binaries()}
+
+      error ->
+        error
+    end
+  end
+
   def compile_to_path(module_name_str, dest) do
     CodeServer.reset()
 

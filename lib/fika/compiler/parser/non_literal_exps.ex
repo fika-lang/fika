@@ -1,7 +1,7 @@
 defmodule Fika.Compiler.Parser.NonLiteralExps do
   import NimbleParsec
 
-  alias Fika.Compiler.Parser.{Common, Helper, Expressions, FunctionDef}
+  alias Fika.Compiler.Parser.{Common, Helper, Expressions, FunctionDef, Pattern}
 
   allow_space = parsec({Common, :allow_space})
   require_space = parsec({Common, :require_space})
@@ -9,7 +9,9 @@ defmodule Fika.Compiler.Parser.NonLiteralExps do
   module_name = parsec({Common, :module_name})
   exp = parsec({Expressions, :exp})
   exps = parsec({Expressions, :exps})
+  exp_delimiter = parsec({Expressions, :exp_delimiter})
   args = parsec({FunctionDef, :args})
+  pattern = parsec({Pattern, :pattern})
 
   exp_paren =
     ignore(string("("))
@@ -87,6 +89,37 @@ defmodule Fika.Compiler.Parser.NonLiteralExps do
     |> label("if-else expression")
     |> Helper.to_ast(:exp_if_else)
 
+  case_exp =
+    exp
+    |> lookahead_not(string(" ->"))
+
+  case_block =
+    case_exp
+    |> repeat(
+      times(exp_delimiter, min: 1)
+      |> concat(case_exp)
+    )
+
+  case_clause =
+    pattern
+    |> concat(allow_space)
+    |> ignore(string("->"))
+    |> concat(allow_space)
+    |> wrap(case_block)
+    |> concat(allow_space)
+
+  exp_case =
+    ignore(string("case"))
+    |> concat(require_space)
+    |> concat(exp)
+    |> concat(require_space)
+    |> ignore(string("do"))
+    |> concat(require_space)
+    |> wrap(times(wrap(case_clause), min: 1))
+    |> ignore(string("end"))
+    |> label("case expression")
+    |> Helper.to_ast(:exp_case)
+
   function_ref_call =
     ignore(string("."))
     |> ignore(string("("))
@@ -99,6 +132,7 @@ defmodule Fika.Compiler.Parser.NonLiteralExps do
       function_call,
       identifier,
       exp_if_else,
+      exp_case,
       anonymous_function
     ])
     |> optional(function_ref_call)

@@ -3,7 +3,7 @@ defmodule Fika.Compiler.Parser.Helper do
 
   alias Fika.Compiler.TypeChecker.Types, as: T
 
-  @keywords ~w(fn do if else end)
+  @keywords ~w(fn do if else end case)
 
   def to_ast(c, kind) do
     c
@@ -54,6 +54,10 @@ defmodule Fika.Compiler.Parser.Helper do
     {{:if, line}, condition, true_block, false_block}
   end
 
+  def do_to_ast({[exp, clauses], line}, :exp_case) do
+    {{:case, line}, exp, clauses}
+  end
+
   def do_to_ast({[args, exps], line}, :anonymous_function) do
     {:anonymous_function, line, args, exps}
   end
@@ -98,7 +102,7 @@ defmodule Fika.Compiler.Parser.Helper do
   end
 
   def do_to_ast({[], line}, :return_type) do
-    {:type, line, :Nothing}
+    {:type, line, nil}
   end
 
   def do_to_ast({[type], _line}, :return_type) do
@@ -142,7 +146,7 @@ defmodule Fika.Compiler.Parser.Helper do
   end
 
   def do_to_ast({fields, _line}, :record_type) do
-    %T.Record{fields: fields}
+    %T.Record{fields: Enum.sort_by(fields, &elem(&1, 0))}
   end
 
   def do_to_ast({[{:atom, _, atom}], _line}, :atom_type) do
@@ -283,11 +287,13 @@ defmodule Fika.Compiler.Parser.Helper do
   end
 
   defp expand_module({:module_name, line, module}, context) do
+    fika_modules = ["kernel", "io", "list"]
+
     module =
-      case module do
-        "kernel" -> "fika/kernel"
-        "io" -> "fika/io"
-        _ -> context[module]
+      if module in fika_modules do
+        "fika/#{module}"
+      else
+        context[module]
       end
 
     module && {:identifier, line, module}

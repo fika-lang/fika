@@ -112,22 +112,20 @@ defmodule Fika.Compiler.Parser.Types do
     |> label("float")
     |> reduce({Helper, :to_atom, []})
 
-  nothing_type =
-    string("Nothing")
-    |> label("nothing")
-    |> reduce({Helper, :to_atom, []})
-
   bool_type =
     string("Bool")
     |> label("boolean")
     |> reduce({Helper, :to_atom, []})
+
+  type_variable =
+    identifier_str
+    |> label("type variable")
 
   base_type =
     choice([
       string_type,
       int_type,
       float_type,
-      nothing_type,
       atom_type,
       bool_type,
       function_type,
@@ -136,7 +134,8 @@ defmodule Fika.Compiler.Parser.Types do
       loop_type,
       record_type,
       map_type,
-      tuple_type
+      tuple_type,
+      type_variable
     ])
 
   union_type =

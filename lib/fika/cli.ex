@@ -8,11 +8,11 @@ defmodule Fika.Cli do
     parse_args(args)
   end
 
-  defp parse_args([]) do
+  defp parse_args(["help"]) do
     IO.puts("""
     Usage:
-      fika start <directory>
-        Starts the router.fi file inside <directory>.
+      fika
+        Starts a web server using router.fi file inside the current directory.
 
       fika exec [<module> [--function <function_call>]]
         Executes the function call <function_call> inside the module <module>.
@@ -50,19 +50,7 @@ defmodule Fika.Cli do
     end
   end
 
-  defp parse_args(["start" | rest]) do
-    path = List.first(rest)
-
-    if path do
-      File.cd!(path)
-    end
-
-    if not File.exists?("router.fi") do
-      raise "cannot start webserver: file 'router.fi' not found in directory '#{path}'"
-    end
-
-    {:ok, _} = Fika.Router.start(nil, nil)
-
+  defp parse_args([]) do
     IO.puts("Press Ctrl+C to exit")
     :timer.sleep(:infinity)
   end

@@ -5,6 +5,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
 
   alias Fika.Compiler.{
     TypeChecker,
+    TypeChecker.FunctionMatch,
     CodeServer
   }
 
@@ -76,12 +77,13 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   end
 
   def handle_call({:get_result, signature}, from, state) do
-    if Map.has_key?(state.local_functions, signature) do
-      if result = Map.get(state.checked_functions, signature) do
+    if {s, _, vars} = FunctionMatch.find_by_call(state.local_functions, signature) do
+      if result = Map.get(state.checked_functions, s) do
+        result = FunctionMatch.replace_vars(result, vars)
         {:reply, result, state}
       else
         state =
-          update_in(state, [:waiting, signature], fn
+          update_in(state, [:waiting, s], fn
             nil -> [from]
             list -> [from | list]
           end)
@@ -95,7 +97,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
   end
 
   def handle_cast({:post_result, signature, result}, state) do
-    Logger.debug("Result of type checking #{state.module_name}.#{signature} = #{inspect(result)}")
+    Logger.debug("Result of type checking #{signature} = #{inspect(result)}")
 
     state =
       state
@@ -105,7 +107,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
       |> maybe_finish()
 
     # TODO: when we have private functions, do this conditionally.
-    CodeServer.set_type(state.module_name, signature, result)
+    CodeServer.set_type(signature, result)
 
     {:noreply, state}
   end
@@ -176,9 +178,9 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     state
   end
 
-  defp signature_map(ast) do
-    Enum.map(ast[:function_defs], fn function ->
-      signature = TypeChecker.function_ast_signature(function)
+  defp signature_map(module, function_asts) do
+    Enum.map(function_asts, fn function ->
+      signature = TypeChecker.function_ast_signature(module, function)
       {signature, function}
     end)
     |> Map.new()

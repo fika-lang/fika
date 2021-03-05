@@ -1,5 +1,5 @@
 defmodule Fika.Compiler.TypeChecker.Types.Effect do
-  defstruct type: :Nothing
+  defstruct type: nil
 
   alias Fika.Compiler.TypeChecker.Types, as: T
 

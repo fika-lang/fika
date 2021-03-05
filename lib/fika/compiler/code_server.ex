@@ -6,7 +6,8 @@ defmodule Fika.Compiler.CodeServer do
   alias Fika.Compiler.{
     DefaultTypes,
     ModuleCompiler,
-    ErlTranslate
+    ErlTranslate,
+    TypeChecker.FunctionMatch
   }
 
   alias Fika.Compiler.TypeChecker.Types, as: T
@@ -19,12 +20,28 @@ defmodule Fika.Compiler.CodeServer do
     GenServer.call(__MODULE__, {:compile_module, module})
   end
 
-  def get_type(module, signature) do
-    GenServer.call(__MODULE__, {:get_type, module, signature})
+  def compile_file(module, content) do
+    GenServer.call(__MODULE__, {:compile_file, module, content})
   end
 
-  def set_type(module, signature, result) do
-    GenServer.cast(__MODULE__, {:set_type, module, signature, result})
+  def deploy_file(file, dev_token, remote_endpoint) do
+    content = File.read!(file)
+    Logger.debug("Deploying file #{file}")
+    headers = [{"content-type", "application/json"}]
+    params = Jason.encode!(%{file: file, content: content, dev_token: dev_token})
+    Finch.build(:post, remote_endpoint, headers, params) |> Finch.request(FikaFinch)
+  end
+
+  def get_type(signature) do
+    GenServer.call(__MODULE__, {:get_type, signature})
+  end
+
+  def list_all_types do
+    GenServer.call(__MODULE__, :list_all_types)
+  end
+
+  def set_type(signature, result) do
+    GenServer.cast(__MODULE__, {:set_type, signature, result})
   end
 
   def put_binary(module, file, binary) do
@@ -75,15 +92,15 @@ defmodule Fika.Compiler.CodeServer do
     {:ok, state}
   end
 
-  def handle_cast({:set_type, module, signature, result}, state) do
+  def handle_cast({:set_type, signature, result}, state) do
     Logger.debug(
-      "Setting typecheck result of public function: #{module}.#{signature} as #{inspect(result)}"
+      "Setting typecheck result of public function: #{signature} as #{inspect(result)}"
     )
 
     state =
       state
-      |> set_type(module, signature, result)
-      |> notify_waiting_type_checks(module, signature, result)
+      |> set_type(signature, result)
+      |> notify_waiting_type_checks(signature.module, signature, result)
 
     {:noreply, state}
   end
@@ -134,24 +151,50 @@ defmodule Fika.Compiler.CodeServer do
     {:reply, deps, state}
   end
 
-  def handle_call({:get_type, module, signature}, from, state) do
+  def handle_call({:get_type, signature}, from, state) do
+    module = signature.module
+    function = signature.function
+    signature_map = get_in(state, [:public_functions, module, function])
+
     state =
-      if result = get_in(state, [:public_functions, module, signature]) do
-        GenServer.reply(from, result)
-        state
-      else
-        state
-        |> maybe_compile(module)
-        |> wait_for(module, signature, from)
+      case FunctionMatch.find_by_call(signature_map, signature) do
+        {_, result, vars} ->
+          result = FunctionMatch.replace_vars(result, vars)
+          GenServer.reply(from, result)
+          state
+
+        _ ->
+          if get_in(state, [:public_functions, module]) do
+            msg = "Function #{signature} does not exist"
+            GenServer.reply(from, {:error, msg})
+            state
+          else
+            state
+            |> async_compile(module)
+            |> wait_for(module, signature, from)
+          end
       end
 
     {:noreply, state}
+  end
+
+  def handle_call(:list_all_types, _from, state) do
+    {:reply, state.public_functions, state}
   end
 
   def handle_call({:compile_module, module}, from, _state) do
     state =
       init_state()
       |> start_module_compile(module)
+      |> Map.put(:parent_pid, from)
+
+    {:noreply, state}
+  end
+
+  def handle_call({:compile_file, module, content}, from, _state) do
+    state =
+      init_state()
+      |> start_file_compile(module, content)
       |> Map.put(:parent_pid, from)
 
     {:noreply, state}
@@ -164,9 +207,18 @@ defmodule Fika.Compiler.CodeServer do
       Enum.map(state.binaries, fn {module, file, binary} ->
         module_name = ErlTranslate.erl_module_name(module)
 
+        Logger.debug("Loading #{module_name}")
+
         case :code.load_binary(module_name, String.to_charlist(file), binary) do
-          {:module, module} -> {:ok, module}
-          {:error, _reason} -> {:error, module}
+          {:module, module} ->
+            if state.dev_token do
+              deploy_file(file, state.dev_token, state.remote_endpoint)
+            end
+
+            {:ok, module}
+
+          {:error, _reason} ->
+            {:error, module}
         end
       end)
 
@@ -223,100 +275,93 @@ defmodule Fika.Compiler.CodeServer do
     |> Kernel.<>(".beam")
   end
 
-  defp set_type(state, module, signature, result) do
-    type =
-      case result do
-        %T.Loop{type: t} -> t
-        t -> t
-      end
-
-    update_in(state, [:public_functions, module], fn
-      nil -> %{signature => result}
-      signatures -> Map.put(signatures, signature, result)
-    end)
+  defp set_type(state, signature, result) do
+    nested_put(
+      state,
+      [:public_functions, signature.module, signature.function, signature],
+      result
+    )
   end
 
   defp notify_waiting_type_checks(state, module, signature, result) do
-    {waitlist, waiting} = Map.pop(state.waiting, {module, signature})
+    keys = [
+      Access.key(:waiting, %{}),
+      Access.key(module, %{}),
+      Access.key(signature.function, [])
+    ]
 
-    if waitlist do
-      Enum.each(waitlist, fn from ->
-        GenServer.reply(from, result)
+    update_in(state, keys, fn waitlist ->
+      Enum.reject(waitlist, fn {s, from} ->
+        if vars = FunctionMatch.match_signatures(signature, s) do
+          result = FunctionMatch.replace_vars(result, vars)
+          GenServer.reply(from, result)
+        end
+
+        # TypeChecker.signature_matches_call?(signature, s) &&
       end)
-    end
-
-    Map.put(state, :waiting, waiting)
+    end)
   end
 
   defp fail_waiting_type_checks(state, module, reason) do
-    {waitlist, rest} =
-      Enum.reduce(state.waiting, {[], []}, fn {{waited_module, _}, waitlist} = k_v,
-                                              {from_acc, rest} ->
-        if waited_module == module do
-          {waitlist ++ from_acc, rest}
-        else
-          {from_acc, [k_v | rest]}
-        end
-      end)
+    {fn_map, state} = pop_in(state, [:waiting, module])
 
-    Enum.each(waitlist, fn from ->
-      GenServer.reply(from, {:error, reason})
+    Enum.each(fn_map || [], fn {_, waitlist} ->
+      Enum.each(waitlist, fn {_, from} ->
+        GenServer.reply(from, {:error, reason})
+      end)
     end)
 
-    Map.put(state, :waiting, Map.new(rest))
+    state
   end
 
-  defp maybe_compile(state, module) do
+  defp async_compile(state, module) do
     state
     |> start_module_compile(module)
-    |> update_in([:public_functions, module], fn
-      nil ->
-        %{}
-
-      other ->
-        other
-    end)
+    |> nested_put([:public_functions, module], %{})
   end
 
   defp wait_for(state, module, signature, from) do
-    update_in(state, [:waiting, {module, signature}], fn
-      nil -> [from]
-      list -> [from | list]
-    end)
+    keys = [
+      Access.key(:waiting, %{}),
+      Access.key(module, %{}),
+      Access.key(signature.function, [])
+    ]
+
+    update_in(state, keys, fn list -> [{signature, from} | list] end)
   end
 
   defp init_state do
     %{
-      public_functions: default_functions(),
+      public_functions: %{},
       waiting: %{},
       compile_result: %{},
       parent_pid: nil,
-      binaries: [],
-      function_dependencies: __MODULE__.FunctionDependencies.new_graph()
+      dev_token: Application.get_env(:fika, :dev_token),
+      remote_endpoint: Application.get_env(:fika, :remote_endpoint, "https://fikaapp.com/code"),
+      binaries: []
     }
+    |> put_default_types(DefaultTypes.kernel())
+    |> put_default_types(DefaultTypes.io())
+    |> put_default_types(DefaultTypes.list())
   end
 
   defp reset_binaries(state) do
     Map.put(state, :binaries, [])
   end
 
-  defp default_functions do
-    %{
-      "fika/kernel" => insert_ok(DefaultTypes.kernel()),
-      "fika/io" => insert_ok(DefaultTypes.io())
-    }
-  end
-
-  defp insert_ok(signature_map) do
-    Enum.map(signature_map, fn {k, v} ->
-      {k, {:ok, v}}
-    end)
-    |> Map.new()
-  end
-
   defp start_module_compile(state, module) do
     Task.start(fn ->
+      Logger.debug("Compiling #{module}")
       ModuleCompiler.compile(module)
+    end)
+
+    put_in(state, [:compile_result, module], nil)
+  end
+
+  defp start_file_compile(state, module, content) do
+    Task.start(fn ->
+      Logger.debug("Compiling #{module}")
+      ModuleCompiler.compile_file(module, content)
     end)
 
     put_in(state, [:compile_result, module], nil)
@@ -341,5 +386,15 @@ defmodule Fika.Compiler.CodeServer do
     if result && parent_pid do
       GenServer.reply(parent_pid, result)
     end
+  end
+
+  defp put_default_types(state, signatures) do
+    Enum.reduce(signatures, state, fn s, acc ->
+      set_type(acc, s, {:ok, s.return})
+    end)
+  end
+
+  defp nested_put(map, keys, value) do
+    put_in(map, Enum.map(keys, &Access.key(&1, %{})), value)
   end
 end

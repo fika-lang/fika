@@ -60,6 +60,10 @@ defmodule Fika.Compiler.TypeChecker.Types.Union do
     {has_loop, expanded_types}
   end
 
+  def to_list(types) do
+    MapSet.to_list(types)
+  end
+
   defimpl String.Chars, for: Fika.Compiler.TypeChecker.Types.Union do
     def to_string(%{types: types}) do
       Enum.join(types, " | ")

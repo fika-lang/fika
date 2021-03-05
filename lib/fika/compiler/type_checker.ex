@@ -1,12 +1,15 @@
 defmodule Fika.Compiler.TypeChecker do
   alias Fika.Compiler.TypeChecker.Types, as: T
 
-  alias Fika.Compiler.CodeServer
-  alias Fika.Compiler.CodeServer.FunctionDependencies
+  alias Fika.Compiler.{
+    CodeServer,
+    FunctionSignature
+  }
 
   alias Fika.Compiler.TypeChecker.{
     ParallelTypeChecker,
-    SequentialTypeChecker
+    SequentialTypeChecker,
+    Match
   }
 
   require Logger
@@ -94,17 +97,14 @@ defmodule Fika.Compiler.TypeChecker do
 
   def infer_block(env, []) do
     Logger.debug("Block is empty.")
-    {:ok, :Nothing, env}
+    {:ok, nil, env}
   end
 
   def infer_block(env, [exp]) do
-    Logger.debug("Block has one exp left")
     infer_exp(env, exp)
   end
 
   def infer_block(env, [exp | exp_list]) do
-    Logger.debug("Block has multiple exps")
-
     case infer_exp(env, exp) do
       {:ok, _type, env} -> infer_block(env, exp_list)
       error -> error
@@ -239,7 +239,7 @@ defmodule Fika.Compiler.TypeChecker do
     else
       case do_infer_key_values(key_values, env) do
         {:ok, k_v_types, env} ->
-          {:ok, %T.Record{fields: k_v_types}, env}
+          {:ok, %T.Record{fields: Enum.sort_by(k_v_types, &elem(&1, 0))}, env}
 
         error ->
           error
@@ -283,7 +283,7 @@ defmodule Fika.Compiler.TypeChecker do
   def infer_exp(env, {:function_ref, _, {module, function_name, arg_types}}) do
     Logger.debug("Inferring type of function: #{function_name}")
 
-    signature = get_function_signature(function_name, arg_types)
+    signature = get_function_signature(module || env[:module], function_name, arg_types)
 
     case get_type(module, signature, env) do
       {:ok, type} ->
@@ -311,6 +311,18 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
+  # case expression
+  def infer_exp(env, {{:case, _line}, exp, clauses}) do
+    Logger.debug("Inferring a case expression")
+
+    # Check the type of exp.
+    # For each clause, ensure all of the patterns return {:ok, env}
+    with {:ok, rhs_type, env} <- infer_exp(env, exp),
+         {:ok, type, env} <- infer_case_clauses(env, rhs_type, clauses) do
+      {:ok, type, env}
+    end
+  end
+
   # anonymous function
   def infer_exp(env, {:anonymous_function, _line, args, exps}) do
     Logger.debug("Inferring type of anonymous function")
@@ -331,13 +343,50 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
-  def function_ast_signature({:function, _line, {name, args, _type, _exprs}}) do
+  def function_ast_signature(module, {:function, _line, {name, args, _type, _exprs}}) do
     arg_types = Enum.map(args, fn {_, {:type, _, type}} -> type end)
-    get_function_signature(name, arg_types)
+    get_function_signature(module, name, arg_types)
   end
 
   def init_env(ast) do
     %{ast: ast, scope: %{}}
+  end
+
+  # TODO: made it work, now make it pretty.
+  defp infer_case_clauses(env, rhs, clauses) do
+    all_rhs_types = Match.expand_unions(rhs)
+
+    result =
+      Enum.reduce_while(clauses, {env, [], all_rhs_types}, fn [pattern, block],
+                                                              {env, types, unmatched} ->
+        case Match.match_case(env, pattern, unmatched) do
+          {:ok, env, unmatched} ->
+            case infer_block(env, block) do
+              {:ok, type, env} -> {:cont, {env, [type | types], unmatched}}
+              error -> {:halt, error}
+            end
+
+          :error ->
+            {:halt, {:error, "Non-matching pattern"}}
+        end
+      end)
+
+    case result do
+      {:error, _} = error ->
+        error
+
+      {env, types, []} ->
+        type =
+          case Enum.uniq(types) do
+            [type] -> type
+            types -> T.Union.new(types)
+          end
+
+        {:ok, type, env}
+
+      {_env, _types, unmatched} ->
+        {:error, "Missing pattern: #{Enum.join(unmatched, ", ")}"}
+    end
   end
 
   defp infer_if_else_condition(env, condition) do
@@ -398,7 +447,7 @@ defmodule Fika.Compiler.TypeChecker do
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->
-        signature = get_function_signature(exp.name, type_acc)
+        signature = get_function_signature(module || env[:module], exp.name, type_acc)
 
         case get_type(module, signature, env) do
           {:ok, %T.Effect{type: type}} ->
@@ -471,6 +520,7 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
+  # TODO: This can be merged with do_infer_args
   defp do_infer_args_without_name(env, args) do
     Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, acc, env} ->
       case infer_exp(env, arg) do
@@ -499,14 +549,8 @@ defmodule Fika.Compiler.TypeChecker do
     end)
   end
 
-  defp set_latest_call(env, mfa) do
-    env
-    |> Map.put(:latest_called_function, mfa)
-    |> Map.put_new(:callstack, FunctionDependencies.new_graph())
-  end
-
-  defp get_function_signature(function_name, arg_types) do
-    "#{function_name}(#{Enum.join(arg_types, ", ")})"
+  defp get_function_signature(module, function_name, arg_types) do
+    %FunctionSignature{module: module, function: to_string(function_name), types: arg_types}
   end
 
   defp get_arg_types(arg_expression) do

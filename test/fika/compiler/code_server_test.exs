@@ -3,6 +3,10 @@ defmodule Fika.Compiler.CodeServerTest do
 
   alias Fika.Compiler.CodeServer
 
+  setup do
+    CodeServer.reset()
+  end
+
   test "when module has a dependency" do
     tmp_dir = System.tmp_dir!()
     temp_file_1 = Path.join(tmp_dir, "foo.fi")
@@ -11,7 +15,7 @@ defmodule Fika.Compiler.CodeServerTest do
     use bar
 
     fn foo : String do
-      bar.hello()
+      bar.hello(:a)
     end
     """
 
@@ -20,8 +24,11 @@ defmodule Fika.Compiler.CodeServerTest do
     temp_file_2 = Path.join(tmp_dir, "bar.fi")
 
     str = """
-    fn hello : String do
-      "Hello world"
+    fn hello(x: :a | :b) : String do
+      case x do
+        :a -> "A"
+        :b -> "B"
+      end
     end
     """
 

@@ -1,5 +1,8 @@
-# A function definition
-# that takes two args - an integer "a", another integer "b"
+# Here's a walkthrough of Fika's syntax. Please be warned that Fika is still
+# an early prototype and the syntax you see here will likely change
+# based on feedback from the users.
+
+# A function definition that takes two integers as arguments
 # and returns an integer.
 fn sum(a: Int, b: Int) : Int do
   a + b
@@ -10,20 +13,19 @@ fn hello : String do
   "World"
 end
 
-# Anonymous function
-fn anonymous_call : Int do
-  f = (x: Int, y: Int) do
-    x + y
-  end
-
-  f.(10, 20)
+# true and false are keywords that of the type Bool
+fn bool : Bool do
+  true
 end
 
-# Strings support interpolations
+# Strings
 fn hello_interpolation : String do
+  # Here's a string
   hello = "Hello!"
   world = "World"
-  "#{hello}, Greetings to the #{world}"
+
+  # String can be interpolated using #{}
+  "#{hello} Greetings to the #{world}"
 end
 
 # This function returns a list of integers.
@@ -31,63 +33,92 @@ fn foo : List(Int) do
   [1, 2, 3]
 end
 
-# This function returns a function reference.
-fn sum_ref : Fn(Int, Int -> Int) do
-  &sum(Int, Int)
-end
-
-# Function references can be used to invoke the functions
-# they refer.
-fn call_sum_ref : Int do
-  sum_ref().(1, 2)
-end
-
-# true and false are keywords that are of type Bool
-fn bool : Bool do
-  true
-end
-
-# Here's an example of the if-else expression.
-# Notice that an if should always be followed by an else.
-fn simple_if : String do
-  if true do
-    "this is a passing if!"
-  else
-    "you can't see me \m/"
-  end
-end
-
 # A tuple is a small group of values of different types.
-# A tuple does not grow dynamically and is useful to hold
-# values of different types together.
-fn tuple : {Int,Bool} do
+# A tuple does not grow dynamically and it's shape is fixed.
+fn tuple : {Int, Bool} do
   {1, true}
 end
 
 # Records are useful for holding data with known keys,
 # for example, records from a table in a relational DB.
+# Think of them as "named tuples" where each element gets a unique name.
 fn rec : {foo: List(Int)} do
   {foo: [1, 2, 3]}
 end
 
-# Maps are useful for holding data when keys are only know at runtime
-# A map can hold key-value data that grows dynamically but have the same type
+# Union types
+fn interval(start: Int, finish: Int) : {:error, String} | {:ok, Int} do
+  if start <= finish do
+    {:ok, finish - start}
+  else
+    {:error, "Interval cannot end before it's started"}
+  end
+end
+
+# The Map type holds key-value data that grows dynamically.
+# Maps are useful when the types of keys and values are known
+# already, but their contents change dynamically during runtime.
 fn map : Map(String, List(Int)) do
   {"james-bond" => [0, 0, 7]}
 end
 
-# Logical operator - or
+# Anonymous functions
+fn anonymous_call : Int do
+  # f is a reference to an anonymous function
+  f = (x: Int, y: Int) do
+    x + y
+  end
+
+  # The anonymous function can be called using .()
+  f.(10, 20)
+end
+
+# This function returns a function reference.
+# The signature of this function can be read as:
+# "sum_ref takes no arguments and returns a function.
+# The function that it returns takes two integers
+# and returns another integer."
+fn sum_ref : Fn(Int, Int -> Int) do
+  # Create reference to a named function using &
+  &sum(Int, Int)
+end
+
+# Calling functions using references
+fn call_sum_ref : Int do
+  # As we saw in the case of anonymous functions, references can be used
+  # to call functions using .()
+  sum_ref().(1, 2)
+end
+
+# Use type variables when your function is generic and needs to work with
+# a variety of types
+fn make_pair(x: a, y: b) : {a, b} do
+  {x, y}
+end
+
+# Effect type
+# Fika separates functions with side effects so they can be safely executed.
+# Such functions are marked by the "Effect" type.
+fn greet : Effect(String) do
+  name = io.gets("What's your name? ")
+  io.puts("Hello #{name}")
+end
+
+# Or operator
 fn or(a: Bool, b: Bool) : Bool do
+  # Returns true if either a or b is true
   a | b
 end
 
-# Logical operator - and
+# And operator
 fn and(a: Bool, b: Bool) : Bool do
+  # Returns true if both a and b are true
   a & b
 end
 
-# Logical unary "not" operator
+# Not operator
 fn not(a: Bool) : Bool do
+  # Returns true if a is false
   !a
 end
 
@@ -97,6 +128,7 @@ fn unary_minus(a: Int) : Int do
 end
 
 # Comparison operators
+# >, <, ==, <=, >=, !=
 fn max(a: Int, b: Int) : Int do
   if a > b do
     a
@@ -105,12 +137,22 @@ fn max(a: Int, b: Int) : Int do
   end
 end
 
-# Union types
-fn interval(start: Int, finish: Int) : {:error, String} | {:ok, Int} do
-  if start <= finish do
-    {:ok, finish - start}
+# Here's an example of the if-else expression.
+# Notice that an if should always be followed by an else.
+fn simple_if : String do
+  if true do
+    "I am the return value because the condition is true"
   else
-    {:error, "Interval cannot end before it's started"}
+    "If the condition was false, It would have been me"
+  end
+end
+
+# Case expressions allow you to pattern match expressions and conditionally
+# execute statements
+fn get_score(result: {:ok, Int} | :error) : Int do
+  case result do
+    {:ok, score} -> score
+    :error -> 0
   end
 end
 
@@ -124,10 +166,4 @@ end
 
 fn list_length : Int do
   list_size([1, 2, 3])
-end
-
-# Side effect
-fn greet : Effect(String) do
-  name = io.gets("What's your name? ")
-  io.puts("Hello #{name}")
 end

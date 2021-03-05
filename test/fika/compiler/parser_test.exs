@@ -101,7 +101,7 @@ defmodule Fika.Compiler.ParserTest do
       assert {
                :function,
                [position: {4, 20, 23}],
-               {:foo, [], {:type, {1, 0, 6}, :Nothing},
+               {:foo, [], {:type, {1, 0, 6}, nil},
                 [
                   {:identifier, {2, 10, 13}, :x},
                   {:call, {:-, {3, 14, 19}}, [{:identifier, {3, 14, 19}, :y}], "fika/kernel"}
@@ -121,7 +121,7 @@ defmodule Fika.Compiler.ParserTest do
       assert {
                :function,
                [position: {4, 20, 23}],
-               {:foo, [], {:type, {1, 0, 6}, :Nothing},
+               {:foo, [], {:type, {1, 0, 6}, nil},
                 [
                   {:call, {:-, {3, 16, 19}},
                    [
@@ -254,7 +254,7 @@ defmodule Fika.Compiler.ParserTest do
       """
 
       assert {:function, [position: {3, 18, 21}],
-              {:fnfoo, [], {:type, {1, 0, 8}, :Nothing}, [{:integer, {2, 12, 17}, 123}]}} ==
+              {:fnfoo, [], {:type, {1, 0, 8}, nil}, [{:integer, {2, 12, 17}, 123}]}} ==
                TestParser.function_def!(str)
     end
 
@@ -284,18 +284,18 @@ defmodule Fika.Compiler.ParserTest do
 
     test "with type params" do
       str = """
-      fn foo(a: List(List(List(String)))) : List(Nothing) do
+      fn foo(a: List(List(List(String)))) : List(:nil) do
         x
       end
       """
 
-      assert {:function, [position: {3, 59, 62}],
+      assert {:function, [position: {3, 56, 59}],
               {:foo,
                [
                  {{:identifier, {1, 0, 8}, :a},
                   {:type, {1, 0, 34}, %T.List{type: %T.List{type: %T.List{type: :String}}}}}
-               ], {:type, {1, 0, 51}, %T.List{type: :Nothing}},
-               [{:identifier, {2, 55, 58}, :x}]}} ==
+               ], {:type, {1, 0, 48}, %T.List{type: nil}},
+               [{:identifier, {2, 52, 55}, :x}]}} ==
                TestParser.function_def!(str)
     end
 
@@ -321,7 +321,7 @@ defmodule Fika.Compiler.ParserTest do
 
     test "with union types" do
       code = """
-      fn foo(a: Int | Float, b: Nothing) : :ok | {:error, String} do
+      fn foo(a: Int | Float, b: :nil) : :ok | {:error, String} do
         if true do
           :ok
         else
@@ -338,22 +338,22 @@ defmodule Fika.Compiler.ParserTest do
           %T.Tuple{elements: [:error, :String]}
         ])
 
-      assert {:function, [position: {7, 120, 123}],
+      assert {:function, [position: {7, 117, 120}],
               {:foo,
                [
                  {{:identifier, {1, 0, 8}, :a}, {:type, {1, 0, 21}, %T.Union{types: ^arg_union}}},
-                 {{:identifier, {1, 0, 24}, :b}, {:type, {1, 0, 33}, :Nothing}}
+                 {{:identifier, {1, 0, 24}, :b}, {:type, {1, 0, 30}, nil}}
                ],
-               {:type, {1, 0, 59},
+               {:type, {1, 0, 56},
                 %T.Union{
                   types: ^return_union
                 }},
                [
-                 {{:if, {6, 114, 119}}, {:boolean, {2, 63, 72}, true},
-                  [{:atom, {3, 76, 83}, :ok}],
+                 {{:if, {6, 111, 116}}, {:boolean, {2, 60, 69}, true},
+                  [{:atom, {3, 73, 80}, :ok}],
                   [
-                    {:tuple, {5, 91, 113},
-                     [{:atom, {5, 91, 102}, :error}, {:string, {5, 91, 112}, ["not ok"]}]}
+                    {:tuple, {5, 88, 110},
+                     [{:atom, {5, 88, 99}, :error}, {:string, {5, 88, 109}, ["not ok"]}]}
                   ]}
                ]}} = TestParser.function_def!(code)
     end
@@ -464,6 +464,136 @@ defmodule Fika.Compiler.ParserTest do
       assert [
                {{:=, {5, 32, 39}}, {:identifier, {5, 32, 35}, :c}, {:integer, {5, 32, 39}, 3}}
              ] = parsed_else_block
+    end
+  end
+
+  describe "case expression" do
+    test "case expression with two blocks" do
+      str = """
+      case result do
+        {:ok, x} ->
+          123
+          "Okay"
+        {:error, msg} ->
+          456
+          "Error"
+      end
+      """
+
+      assert {
+               {:case, {8, 87, 90}},
+               exp,
+               [clause_1, clause_2]
+             } = TestParser.expression!(str)
+
+      assert {:identifier, {1, 0, 11}, :result} = exp
+
+      assert [
+               {:tuple, {2, 15, 25}, [{:atom, {2, 15, 21}, :ok}, {:identifier, {2, 15, 24}, :x}]},
+               [{:integer, {3, 29, 36}, 123}, {:string, {4, 37, 47}, ["Okay"]}]
+             ] = clause_1
+
+      assert [
+               {:tuple, {5, 48, 63},
+                [{:atom, {5, 48, 57}, :error}, {:identifier, {5, 48, 62}, :msg}]},
+               [{:integer, {6, 67, 74}, 456}, {:string, {7, 75, 86}, ["Error"]}]
+             ] = clause_2
+    end
+
+    test "case expression with single line blocks" do
+      str = """
+      case result do
+        {:ok, x} -> "Okay"
+        {:error, msg} -> "Error"
+      end
+      """
+
+      assert {
+               {:case, {4, 63, 66}},
+               exp,
+               [clause_1, clause_2]
+             } = TestParser.expression!(str)
+
+      assert {:identifier, {1, 0, 11}, :result} = exp
+
+      assert [
+               {:tuple, {2, 15, 25}, [{:atom, {2, 15, 21}, :ok}, {:identifier, {2, 15, 24}, :x}]},
+               [{:string, {2, 15, 35}, ["Okay"]}]
+             ] = clause_1
+
+      assert [
+               {:tuple, {3, 36, 51},
+                [{:atom, {3, 36, 45}, :error}, {:identifier, {3, 36, 50}, :msg}]},
+               [{:string, {3, 36, 62}, ["Error"]}]
+             ] = clause_2
+    end
+
+    test "nested case expressions" do
+      inner_case = """
+      case x do
+        1 -> 1
+        2 -> 2
+      end
+      """
+
+      str = """
+      case result do
+        {:ok, x} ->
+          #{inner_case}
+        {:error, msg} -> "Error"
+      end
+      """
+
+      assert {
+               {:case, {4, 28, 31}},
+               exp,
+               [clause_1, clause_2]
+             } = TestParser.expression!(inner_case)
+
+      assert [
+               {:integer, {2, 10, 13}, 1},
+               [{:integer, {2, 10, 18}, 1}]
+             ] = clause_1
+
+      assert [
+               {:integer, {3, 19, 22}, 2},
+               [{:integer, {3, 19, 27}, 2}]
+             ] = clause_2
+
+      assert {
+               {:case, {9, 93, 96}},
+               exp,
+               [clause_1, clause_2]
+             } = TestParser.expression!(str)
+
+      assert {:identifier, {1, 0, 11}, :result} = exp
+
+      assert [
+               {:tuple, {2, 15, 25}, [{:atom, {2, 15, 21}, :ok}, {:identifier, {2, 15, 24}, :x}]},
+               [inner_case_ast]
+             ] = clause_1
+
+      assert inner_case_ast ==
+               {{:case, {6, 61, 64}}, {:identifier, {3, 29, 39}, :x},
+                [
+                  [{:integer, {4, 43, 46}, 1}, [{:integer, {4, 43, 51}, 1}]],
+                  [{:integer, {5, 52, 55}, 2}, [{:integer, {5, 52, 60}, 2}]]
+                ]}
+
+      assert [
+               {:tuple, {8, 66, 81},
+                [{:atom, {8, 66, 75}, :error}, {:identifier, {8, 66, 80}, :msg}]},
+               [{:string, {8, 66, 92}, ["Error"]}]
+             ] = clause_2
+    end
+
+    test "case expression with no clauses" do
+      str = """
+      case result do
+      end
+      """
+
+      assert {:error, _, _, _, _, _} = TestParser.expression(str)
     end
   end
 
@@ -824,7 +954,7 @@ defmodule Fika.Compiler.ParserTest do
     test "record type" do
       str = "{foo: Int, bar: String}"
 
-      assert {:type, {1, 0, 23}, %T.Record{fields: [foo: :Int, bar: :String]}} ==
+      assert {:type, {1, 0, 23}, %T.Record{fields: [bar: :String, foo: :Int]}} ==
                TestParser.type_str!(str)
     end
 
@@ -838,6 +968,16 @@ defmodule Fika.Compiler.ParserTest do
       str = "List(:foo)"
 
       assert {:type, {1, 0, 10}, %T.List{type: :foo}} == TestParser.type_str!(str)
+    end
+
+    test "type variables" do
+      str = "List(a)"
+      assert {:type, {1, 0, 7}, %T.List{type: "a"}} == TestParser.type_str!(str)
+
+      str = "Fn(a -> b)"
+
+      assert {:type, {1, 0, 10}, %T.FunctionRef{arg_types: ["a"], return_type: "b"}} ==
+               TestParser.type_str!(str)
     end
   end
 
@@ -892,7 +1032,7 @@ defmodule Fika.Compiler.ParserTest do
       """
 
       assert {:function, [position: {4, 36, 39}],
-              {:foo, [], {:type, {2, 20, 26}, :Nothing}, [{:integer, {3, 30, 35}, 123}]}} ==
+              {:foo, [], {:type, {2, 20, 26}, nil}, [{:integer, {3, 30, 35}, 123}]}} ==
                TestParser.function_def!(str)
     end
 
@@ -904,7 +1044,7 @@ defmodule Fika.Compiler.ParserTest do
       """
 
       assert {:function, [position: {3, 40, 43}],
-              {:foo, [], {:type, {1, 0, 6}, :Nothing}, [{:integer, {2, 22, 27}, 123}]}} ==
+              {:foo, [], {:type, {1, 0, 6}, nil}, [{:integer, {2, 22, 27}, 123}]}} ==
                TestParser.function_def!(str)
     end
 
@@ -926,7 +1066,7 @@ defmodule Fika.Compiler.ParserTest do
       """
 
       assert {:function, [position: {3, 22, 25}],
-              {:foo, [], {:type, {1, 0, 6}, :Nothing}, [{:string, {2, 10, 21}, ["foo#bar"]}]}} ==
+              {:foo, [], {:type, {1, 0, 6}, nil}, [{:string, {2, 10, 21}, ["foo#bar"]}]}} ==
                TestParser.function_def!(str)
     end
 
@@ -959,7 +1099,7 @@ defmodule Fika.Compiler.ParserTest do
                {
                  :foo,
                  '',
-                 {:type, {1, 0, 6}, :Nothing},
+                 {:type, {1, 0, 6}, nil},
                  [
                    {{:=, {2, 10, 17}}, {:identifier, {2, 10, 13}, :x},
                     {:integer, {2, 10, 17}, 1}},
@@ -1186,8 +1326,8 @@ defmodule Fika.Compiler.ParserTest do
                use_modules: [{"foo/bar", {1, 0, 11}}],
                function_defs: [
                  {:function, [position: {3, 13, 43}],
-                  {:ext1, [], {:type, {3, 13, 21}, :Nothing},
-                   [{:ext_call, {3, 13, 43}, {:Test, :foo, [], :Nothing}}]}},
+                  {:ext1, [], {:type, {3, 13, 21}, nil},
+                   [{:ext_call, {3, 13, 43}, {:Test, :foo, [], nil}}]}},
                  {
                    :function,
                    [position: {4, 44, 107}],
@@ -1207,11 +1347,10 @@ defmodule Fika.Compiler.ParserTest do
                    }
                  },
                  {:function, [position: {8, 131, 134}],
-                  {:foo, [], {:type, {6, 109, 115}, :Nothing},
+                  {:foo, [], {:type, {6, 109, 115}, nil},
                    [{:call, {:baz, {7, 119, 130}}, [], "foo/bar"}]}},
                  {:function, [position: {12, 153, 156}],
-                  {:foo2, [], {:type, {10, 136, 143}, :Nothing},
-                   [{:integer, {11, 147, 152}, 123}]}}
+                  {:foo2, [], {:type, {10, 136, 143}, nil}, [{:integer, {11, 147, 152}, 123}]}}
                ]
              ]
            }

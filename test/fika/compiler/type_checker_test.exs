@@ -4,10 +4,15 @@ defmodule Fika.Compiler.TypeCheckerTest do
   alias Fika.Compiler.{
     TypeChecker,
     Parser,
-    CodeServer
+    CodeServer,
+    FunctionSignature
   }
 
   alias Fika.Compiler.TypeChecker.Types, as: T
+
+  setup do
+    CodeServer.reset()
+  end
 
   test "infer type of integer literals" do
     str = "123"
@@ -265,15 +270,34 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
     {:ok, ast} = Parser.parse_module(str)
 
-    CodeServer.set_type("test2", "div(Float, Int)", {:ok, :Float})
-    CodeServer.set_type("test2", "div(Int, Float)", {:ok, :Float})
-    CodeServer.set_type("test2", "add(Int, Float)", {:ok, :Float})
-    CodeServer.set_type("test2", "add(Int, Int)", {:ok, :Int})
+    CodeServer.set_type(signature("test2", "div", [:Float, :Int]), {:ok, :Float})
+    CodeServer.set_type(signature("test2", "div", [:Int, :Float]), {:ok, :Float})
+    CodeServer.set_type(signature("test2", "add", [:Int, :Float]), {:ok, :Float})
+    CodeServer.set_type(signature("test2", "add", [:Int, :Int]), {:ok, :Int})
 
     [function] = ast[:function_defs]
 
     assert {:ok, :Float} = TypeChecker.infer(function, %{})
     assert {:ok, :Float} = TypeChecker.check(function, %{})
+  end
+
+  test "infer function calls considering union types" do
+    str = """
+    use test2
+
+    fn foo : :ok do
+      test2.div(:a)
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+
+    arg_type = T.Union.new([:a, :b])
+    CodeServer.set_type(signature("test2", "div", [arg_type]), {:ok, :ok})
+
+    [function] = ast[:function_defs]
+
+    assert {:ok, :ok} = TypeChecker.infer(function, %{})
   end
 
   describe "string" do
@@ -392,7 +416,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       ast = TestParser.expression!(str)
 
-      assert {:ok, %T.List{type: :Nothing}, _} = TypeChecker.infer_exp(%{}, ast)
+      assert {:ok, %T.List{type: nil}, _} = TypeChecker.infer_exp(%{}, ast)
     end
   end
 
@@ -500,7 +524,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       {:ok, [_, ast], _, _, _, _} = TestParser.exp_with_expanded_modules(str)
 
-      CodeServer.set_type("bar", "sum(Int, Int)", {:ok, :Int})
+      CodeServer.set_type(signature("bar", "sum", [:Int, :Int]), {:ok, :Int})
 
       assert {:ok,
               %T.FunctionRef{
@@ -517,7 +541,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       {:ok, [_, ast], _, _, _, _} = TestParser.exp_with_expanded_modules(str)
 
-      CodeServer.set_type("bar", "sum()", {:ok, :Int})
+      CodeServer.set_type(signature("bar", "sum", []), {:ok, :Int})
 
       assert {:ok, %T.FunctionRef{arg_types: [], return_type: :Int}, _} =
                TypeChecker.infer_exp(%{}, ast)
@@ -603,6 +627,74 @@ defmodule Fika.Compiler.TypeCheckerTest do
     end
   end
 
+  describe "case expression" do
+    test "when patterns match" do
+      str = """
+      case {:ok, 123} do
+        {:ok, 1} -> 1
+        {:ok, x} -> "x"
+      end
+      """
+
+      ast = TestParser.expression!(str)
+      env = TypeChecker.init_env(ast)
+
+      expected_type = T.Union.new([:Int, :String])
+      assert {:ok, ^expected_type, _env} = TypeChecker.infer_exp(env, ast)
+    end
+
+    test "when patterns match a union type" do
+      str = """
+      e =
+        if true do
+          {:ok, 123}
+        else
+          {:error, "Message"}
+        end
+
+      case e do
+        {:ok, x} -> x
+        {:error, str} -> 0
+      end
+      """
+
+      {:ok, ast, _, _, _, _} = TestParser.exps(str)
+      env = TypeChecker.init_env(ast)
+      assert {:ok, :Int, _} = TypeChecker.infer_block(env, ast)
+    end
+
+    test "when patterns are not exhaustive" do
+      str = """
+      e =
+        if true do
+          {:ok, 123}
+        else
+          {:error, "Message"}
+        end
+
+      case e do
+        {:ok, x} -> x
+      end
+      """
+
+      {:ok, ast, _, _, _, _} = TestParser.exps(str)
+      env = TypeChecker.init_env(ast)
+      assert {:error, "Missing pattern: {error, String}"} = TypeChecker.infer_block(env, ast)
+    end
+
+    test "when a pattern does not match" do
+      str = """
+      case 123 do
+        "hello" -> :ok
+      end
+      """
+
+      {:ok, ast, _, _, _, _} = TestParser.exps(str)
+      env = TypeChecker.init_env(ast)
+      assert {:error, "Non-matching pattern"} = TypeChecker.infer_block(env, ast)
+    end
+  end
+
   describe "function calls using reference" do
     test "valid reference" do
       str = """
@@ -616,7 +708,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       {:ok, ast} = Parser.parse_module(str)
 
-      CodeServer.set_type("test2", "bar(String, Int)", {:ok, :Bool})
+      CodeServer.set_type(signature("test2", "bar", [:String, :Int]), {:ok, :Bool})
 
       [function] = ast[:function_defs]
 
@@ -638,8 +730,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
       """
 
       {:ok, ast} = Parser.parse_module(str)
-      CodeServer.reset()
-      CodeServer.set_type("test2", "bar(String, Int)", {:ok, :Bool})
+      CodeServer.set_type(signature("test2", "bar", [:String, :Int]), {:ok, :Bool})
       types = MapSet.new([:ok, :error])
       [function] = ast[:function_defs]
 
@@ -661,8 +752,11 @@ defmodule Fika.Compiler.TypeCheckerTest do
       env = TypeChecker.init_env(ast)
 
       types = MapSet.new([:error, :ok])
-      CodeServer.reset()
-      CodeServer.set_type("test2", "bar(String, Int)", {:ok, %T.Union{types: types}})
+
+      CodeServer.set_type(
+        signature("test2", "bar", [:String, :Int]),
+        {:ok, %T.Union{types: types}}
+      )
 
       assert {:ok, %T.Union{types: ^types}} = TypeChecker.infer(function, env)
       assert {:ok, %T.Union{types: ^types}} = TypeChecker.check(function, env)
@@ -696,8 +790,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
       {:ok, ast} = Parser.parse_module(str)
       [function] = ast[:function_defs]
-      CodeServer.reset()
-      CodeServer.set_type("test2", "bar(String, Int)", {:ok, :Bool})
+      CodeServer.set_type(signature("test2", "bar", [:String, :Int]), {:ok, :Bool})
 
       error =
         "Expected function reference to be called with arguments (String, Int), but it was called with arguments (Int)"
@@ -742,8 +835,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
       """
 
       {:ok, ast} = Parser.parse_module(str)
-      CodeServer.reset()
-      CodeServer.set_type("test", "to_int(String)", {:ok, %T.Effect{type: :Int}})
+      CodeServer.set_type(signature("test", "to_int", [:String]), {:ok, %T.Effect{type: :Int}})
 
       [function] = ast[:function_defs]
 
@@ -765,8 +857,7 @@ defmodule Fika.Compiler.TypeCheckerTest do
       [function] = ast[:function_defs]
       env = TypeChecker.init_env(ast)
 
-      CodeServer.reset()
-      CodeServer.set_type("test2", "bar()", {:ok, %T.Effect{type: :String}})
+      CodeServer.set_type(signature("test2", "bar", []), {:ok, %T.Effect{type: :String}})
 
       assert {:ok, %T.Effect{type: :String}} = TypeChecker.infer(function, env)
       assert {:ok, %T.Effect{type: :String}} = TypeChecker.check(function, env)
@@ -789,5 +880,104 @@ defmodule Fika.Compiler.TypeCheckerTest do
                 return_type: :Int
               }, _} = TypeChecker.infer_exp(%{}, ast)
     end
+  end
+
+  describe "generics" do
+    test "multiple type variables" do
+      str = """
+      fn foo(list: List(a), fun: Fn(List(a) -> List(b))) do
+        fun.(list)
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [function] = ast[:function_defs]
+
+      assert {:ok, %T.List{type: "b"}} = TypeChecker.infer(function, %{})
+    end
+
+    test "can't call incompatible functions on type variables" do
+      str = """
+      fn foo(x: a) do
+        x + 100
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [function] = ast[:function_defs]
+
+      assert {:error, "Function fika/kernel.+(a, Int) does not exist"} =
+               TypeChecker.infer(function, %{})
+    end
+
+    test "infers return types of functions with type variables" do
+      str = """
+      fn foo(x: a) : a do
+        x
+      end
+
+      fn bar do
+        foo(123)
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [_foo, bar] = ast[:function_defs]
+
+      assert {:ok, :Int} = TypeChecker.infer(bar, %{ast: ast})
+    end
+
+    test "infers return types of functions when type variables are passed as args" do
+      str = """
+      fn foo(x: a) do
+        case 123 do
+          123 -> x
+          y -> "Hello"
+        end
+      end
+
+      fn bar(x: z) do
+        foo(x)
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [_foo, bar] = ast[:function_defs]
+
+      assert TypeChecker.infer(bar, %{ast: ast}) == {:ok, T.Union.new([:String, "z"])}
+    end
+
+    test "type variables used in function ref calls" do
+      str = """
+      fn foo(x: a) do
+        case 123 do
+          123 -> x
+          y -> "Hello"
+        end
+      end
+
+      fn bar(x: Fn(b -> b | String | Int), z: b) do
+        x.(z)
+      end
+
+      fn baz(x: c) do
+        bar(&foo(c), x)
+      end
+      """
+
+      {:ok, ast} = Parser.parse_module(str)
+
+      [_foo, _bar, baz] = ast[:function_defs]
+
+      assert TypeChecker.infer(baz, %{ast: ast}) == {:ok, T.Union.new([:String, "c", :Int])}
+    end
+  end
+
+  defp signature(m, f, t) do
+    %FunctionSignature{module: m, function: f, types: t}
   end
 end
