@@ -46,14 +46,41 @@ defmodule Fika.Compiler.TypeChecker do
         result
 
       {:ok, inferred_type} ->
-        {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
+        unwrap_type(env, expected_type, inferred_type, unwrap_union: true)
 
       error ->
         error
     end
   end
 
-  defp unwrap_loop(env, t, %T.Loop{type: t} = loop_type) do
+  defp unwrap_type(%Env{} = env, t, %T.Union{types: union_types}, unwrap_union: true) do
+    case Enum.split_with(union_types, &match?(%T.Loop{}, &1)) do
+      {[], union_types} ->
+        unwrap_type(env, t, %T.Union{types: union_types}, unwrap_union: false)
+
+      {loops, union_types} ->
+        left_union =
+          loops |> Enum.reject(&T.Loop.is_empty_loop/1) |> Enum.map(& &1.type) |> T.Union.new()
+
+        if Enum.empty?(union_types) do
+          unwrap_type(
+            env,
+            t,
+            %T.Loop{is_empty_loop: false, type: T.Union.new(left_union)},
+            unwrap_union: false
+          )
+        else
+          unwrap_type(
+            env,
+            t,
+            %T.Loop{is_empty_loop: false, type: T.Union.new([left_union, union_types])},
+            unwrap_union: false
+          )
+        end
+    end
+  end
+
+  defp unwrap_type(%Env{} = env, t, %T.Loop{type: t} = loop_type, _) do
     # The function can be a top-level function which depends on a loop
     # In this case, we can unwrap the loop
 
@@ -66,10 +93,14 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
-  defp unwrap_loop(_env, t, t), do: {:ok, t}
+  defp unwrap_type(_env, %T.Loop{type: t}, %T.Loop{type: t}, _),
+    do: {:ok, %T.Loop{type: t, is_empty_loop: false}}
 
-  defp unwrap_loop(_env, expected_type, inferred_type),
-    do: {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
+  defp unwrap_type(_env, t, t, _), do: {:ok, t}
+
+  defp unwrap_type(_env, expected_type, inferred_type, _) do
+    {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
+  end
 
   # Given the AST of a function definition, this function infers the
   # return type of the body of the function.
@@ -552,10 +583,6 @@ defmodule Fika.Compiler.TypeChecker do
       Logger.debug("Adding arg type to scope: #{name}:#{type}")
       Env.add_variable_to_scope(env, name, type)
     end)
-  end
-
-  defp set_latest_call(env, signature) do
-    Map.put(env, :latest_called_function, signature)
   end
 
   defp get_function_signature(module, function_name, arg_types) do

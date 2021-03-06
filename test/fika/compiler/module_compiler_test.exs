@@ -167,27 +167,27 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     temp_file = "#{module}.fi"
 
     str = """
-    fn factorial(x: Int) : Int | Loop(:nil) do
+    fn factorial(x: Int) : Loop(Int) do
       do_factorial(x, 0)
     end
-    fn do_factorial(x: Int, acc: Int) : Int | Loop(:nil) do
+    fn do_factorial(x: Int, acc: Int) : Loop(Int) do
       if x <= 1 do
         acc
       else
         do_factorial(x - 1, acc * x)
       end
     end
-    fn top_level(x: Int) : Int | Loop(:nil) do
+    fn top_level(x: Int) : Loop(Int) do
       second_level_a(x)
     end
-    fn second_level_a(x: Int) : Int | Loop(:nil) do
+    fn second_level_a(x: Int) : Loop(Int) do
       if x > 1 do
         second_level_b(x - 1)
       else
         1
       end
     end
-    fn second_level_b(x: Int) : Int | Loop(:nil) do
+    fn second_level_b(x: Int) : Loop(Int) do
       second_level_a(x - 1)
     end
     """
