@@ -167,9 +167,10 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     temp_file = "#{module}.fi"
 
     str = """
-    fn factorial(x: Int) : Loop(Int) do
+    fn factorial(x: Int) : Int do
       do_factorial(x, 0)
     end
+
     fn do_factorial(x: Int, acc: Int) : Loop(Int) do
       if x <= 1 do
         acc
@@ -177,7 +178,8 @@ defmodule Fika.Compiler.ModuleCompilerTest do
         do_factorial(x - 1, acc * x)
       end
     end
-    fn top_level(x: Int) : Loop(Int) do
+
+    fn top_level(x: Int) : Int do
       second_level_a(x)
     end
     fn second_level_a(x: Int) : Loop(Int) do
@@ -196,6 +198,8 @@ defmodule Fika.Compiler.ModuleCompilerTest do
 
     File.cd!(tmp_dir, fn ->
       assert {:ok, "foo", "foo.fi", _binary} = ModuleCompiler.compile("foo")
+
+      Fika.Compiler.CodeServer.list_all_types() |> IO.inspect()
     end)
 
     File.rm!(temp_file)
