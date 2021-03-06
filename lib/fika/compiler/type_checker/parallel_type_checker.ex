@@ -58,7 +58,8 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
         result =
           TypeChecker.check(function, %{
             type_checker_pid: pid,
-            module: state.module_name
+            module: state.module_name,
+            current_signature: signature
           })
 
         __MODULE__.post_result(pid, signature, result)

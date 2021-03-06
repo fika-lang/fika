@@ -92,25 +92,25 @@ defmodule Fika.Compiler.ModuleCompilerTest do
   end
 
   test "does not hang when there is local recursion with both direct and indirect cycles" do
-    module = Path.join(System.tmp_dir!(), "foo") |> String.to_atom()
+    module = Path.join(System.tmp_dir!(), "foo")
 
     temp_file = "#{module}.fi"
 
     str = """
-    fn f : Loop(nil) do
+    fn f : Loop(:nil) do
       g()
     end
-    fn g : Loop(nil) do
+    fn g : Loop(:nil) do
       h()
     end
-    fn h : Loop(nil) do
+    fn h : Loop(:nil) do
       f()
     end
-    fn a : Loop(nil) do
+    fn a : Loop(:nil) | Int do
       c()
       b()
     end
-    fn b : Loop(nil) do
+    fn b : Loop(:nil) | Int do
       c()
       a()
     end
@@ -136,7 +136,7 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     foo_str = """
     use bar
 
-    fn f : Loop(nil) do
+    fn f : Loop(:nil) do
       bar.g()
     end
     """
@@ -144,7 +144,7 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     bar_str = """
     use foo
 
-    fn g : Loop(nil) do
+    fn g : Loop(:nil) do
       foo.f()
     end
     """
@@ -167,27 +167,27 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     temp_file = "#{module}.fi"
 
     str = """
-    fn factorial(x: Int) : Int do
+    fn factorial(x: Int) : Int | Loop(:nil) do
       do_factorial(x, 0)
     end
-    fn do_factorial(x: Int, acc: Int) : Loop(Int) do
+    fn do_factorial(x: Int, acc: Int) : Int | Loop(:nil) do
       if x <= 1 do
         acc
       else
         do_factorial(x - 1, acc * x)
       end
     end
-    fn top_level(x: Int) : Int do
+    fn top_level(x: Int) : Int | Loop(:nil) do
       second_level_a(x)
     end
-    fn second_level_a(x: Int) : Loop(Int) do
+    fn second_level_a(x: Int) : Int | Loop(:nil) do
       if x > 1 do
         second_level_b(x - 1)
       else
         1
       end
     end
-    fn second_level_b(x: Int) : Loop(Int) do
+    fn second_level_b(x: Int) : Int | Loop(:nil) do
       second_level_a(x - 1)
     end
     """

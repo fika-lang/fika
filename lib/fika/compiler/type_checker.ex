@@ -516,17 +516,32 @@ defmodule Fika.Compiler.TypeChecker do
     %FunctionSignature{module: module, function: to_string(function_name), types: arg_types}
   end
 
-  # Local function
-  defp get_type(nil, signature, env) do
-    if pid = env[:type_checker_pid] do
-      ParallelTypeChecker.get_result(pid, signature)
-    else
-      SequentialTypeChecker.get_result(signature, env)
-    end
-  end
+  defp get_type(module, target_signature, env) do
+    is_local_call = is_nil(module) or module == env[:module_name]
 
-  # Remote function
-  defp get_type(_module, signature, _env) do
-    CodeServer.get_type(signature)
+    current_signature = env[:current_signature]
+
+    pid = env[:type_checker_pid]
+
+    function_dependency =
+      if current_signature do
+        CodeServer.set_function_dependency(current_signature, target_signature)
+      else
+        :ok
+      end
+
+    case {is_local_call, function_dependency, pid} do
+      {true, :ok, pid} when is_pid(pid) ->
+        ParallelTypeChecker.get_result(pid, target_signature)
+
+      {true, :ok, nil} ->
+        SequentialTypeChecker.get_result(target_signature, env)
+
+      {_, {:error, :cycle_encountered}, _} ->
+        {:ok, T.Loop.new()}
+
+      {false, _, _} ->
+        CodeServer.get_type(target_signature)
+    end
   end
 end

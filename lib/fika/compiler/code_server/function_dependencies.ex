@@ -1,4 +1,4 @@
-defmodule CodeServer.FunctionDependencies do
+defmodule Fika.Compiler.CodeServer.FunctionDependencies do
   alias Fika.Compiler.FunctionSignature
 
   def new_graph, do: :digraph.new()
