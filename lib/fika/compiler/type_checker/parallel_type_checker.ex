@@ -56,7 +56,7 @@ defmodule Fika.Compiler.TypeChecker.ParallelTypeChecker do
     Enum.each(state.unchecked_functions, fn {signature, function} ->
       Task.start_link(fn ->
         result =
-          TypeChecker.check(function, %{
+          TypeChecker.check(function, %TypeChecker.Env{
             type_checker_pid: pid,
             module: state.module_name,
             current_signature: signature

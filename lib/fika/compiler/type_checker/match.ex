@@ -15,6 +15,8 @@ defmodule Fika.Compiler.TypeChecker.Match do
 
   """
 
+  alias Fika.Compiler.TypeChecker.Env
+
   # Returns:
   # {:ok, env, unmatched_types} | :error
   def match_case(env, lhs_ast, rhs_types) when is_list(rhs_types) do
@@ -126,7 +128,7 @@ defmodule Fika.Compiler.TypeChecker.Match do
 
   defp do_match_case(env, {:identifier, _, name}, rhs) do
     env =
-      update_in(env, [:scope, name], fn
+      Env.update_scope(env, name, fn
         nil -> rhs
         %T.Union{types: types} -> T.Union.new([rhs | T.Union.to_list(types)])
         type -> T.Union.new([rhs, type])
