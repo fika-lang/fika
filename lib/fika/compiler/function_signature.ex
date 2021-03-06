@@ -1,6 +1,8 @@
 defmodule Fika.Compiler.FunctionSignature do
   defstruct [:module, :function, :return, types: []]
 
+  @type t :: %__MODULE__{}
+
   alias Fika.Compiler.TypeChecker.Types, as: T
 
   defimpl String.Chars, for: __MODULE__ do

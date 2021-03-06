@@ -125,6 +125,14 @@ defmodule Fika.Compiler.Parser.Helper do
     %T.Effect{type: inner_type}
   end
 
+  def do_to_ast({[{_, _, inner_type}], _line}, :loop_type) when is_struct(inner_type) do
+    %T.Loop{type: inner_type}
+  end
+
+  def do_to_ast({[inner_type], _line}, :loop_type) do
+    %T.Loop{type: inner_type}
+  end
+
   def do_to_ast({inner_types, _line}, :tuple_type) do
     %T.Tuple{elements: inner_types}
   end
