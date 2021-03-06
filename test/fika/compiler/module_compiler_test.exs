@@ -154,6 +154,7 @@ defmodule Fika.Compiler.ModuleCompilerTest do
 
     File.cd!(System.tmp_dir!(), fn ->
       assert {:ok, _, _, _} = ModuleCompiler.compile("foo")
+      assert {:ok, _, _, _} = ModuleCompiler.compile("bar")
     end)
 
     File.rm!(foo_temp_file)
@@ -199,7 +200,7 @@ defmodule Fika.Compiler.ModuleCompilerTest do
     File.cd!(tmp_dir, fn ->
       assert {:ok, "foo", "foo.fi", _binary} = ModuleCompiler.compile("foo")
 
-      Fika.Compiler.CodeServer.list_all_types() |> IO.inspect()
+      Fika.Compiler.CodeServer.list_all_types()
     end)
 
     File.rm!(temp_file)

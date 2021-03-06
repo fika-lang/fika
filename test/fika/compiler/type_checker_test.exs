@@ -158,6 +158,81 @@ defmodule Fika.Compiler.TypeCheckerTest do
     assert {:ok, :Int} = TypeChecker.infer(foo, env)
   end
 
+  test "infer return type when there is simple recursion" do
+    str = """
+    fn factorial(x: Int, acc: Int) : Loop(Int) do
+      if x <= 1 do
+        acc
+      else
+        factorial(x - 1, acc * x)
+      end
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+    [factorial] = ast[:function_defs]
+
+    env = TypeChecker.init_env(ast)
+
+    assert {:ok, %T.Loop{type: :Int}} = TypeChecker.infer(factorial, env)
+  end
+
+  test "infer return type when there is intra-module recursion" do
+    str = """
+      fn foo(a: Int) : :nil do
+        bar(a)
+      end
+      fn bar(a: Int) : :nil do
+        if a <= 1 do
+          foobar()
+        else
+          baz(a - 1)
+        end
+      end
+      fn baz(a: Int) : :nil do
+        if a == 1 do
+          1
+        else
+          foo(a - 1)
+        end
+      end
+      fn foobar : :nil do
+        :nil
+      end
+    """
+
+    {:ok, ast} = Parser.parse_module(str)
+    [foo, bar, baz, foobar] = ast[:function_defs]
+
+    env = TypeChecker.init_env(ast)
+
+    assert {:ok, nil} = TypeChecker.infer(foobar, env)
+
+    types = MapSet.new([:Int, nil])
+    assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(foo, env)
+    assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(bar, env)
+    assert {:ok, %T.Loop{type: %T.Union{types: ^types}}} = TypeChecker.infer(baz, env)
+  end
+
+  test "infer empty-function recursion" do
+    str = """
+    fn foo : Loop(:nil) do
+      bar()
+    end
+    fn bar : Loop(:nil) do
+      foo()
+    end
+    """
+
+    {:ok, ast} = Parser.parse_module(str) |> IO.inspect(label: "parsed")
+    [foo, bar] = ast[:function_defs]
+
+    env = TypeChecker.init_env(ast) |> IO.inspect(label: "env")
+
+    assert {:ok, %T.Loop{type: nil}} = TypeChecker.infer(foo, env) |> IO.inspect(label: "tc foo")
+    assert {:ok, %T.Loop{type: nil}} = TypeChecker.infer(bar, env) |> IO.inspect(label: "tc bar")
+  end
+
   test "infer calls with multiple args" do
     str = """
     fn foo(a: Int, b: String) : Int do

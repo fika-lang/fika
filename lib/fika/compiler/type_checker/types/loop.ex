@@ -14,6 +14,9 @@ defmodule Fika.Compiler.TypeChecker.Types.Loop do
   def is_loop(%__MODULE__{}), do: true
   def is_loop(_), do: false
 
+  def equals?(%__MODULE__{type: t}, %__MODULE__{type: t}), do: true
+  def equals?(_, _), do: false
+
   def is_empty_loop(%__MODULE__{is_empty_loop: is_empty_loop}), do: is_empty_loop == true
 
   defimpl String.Chars, for: T.Loop do
