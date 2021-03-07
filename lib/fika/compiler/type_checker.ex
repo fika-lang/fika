@@ -90,10 +90,23 @@ defmodule Fika.Compiler.TypeChecker do
          wrapped_expected_type,
          wrapped_inferred_type
        ) do
-    is_top_level_function = CodeServer.check_cycle(current_signature) == :ok
+    {is_top_level_function, cycle} =
+      case CodeServer.get_cycle(current_signature) do
+        {:ok, cycle} ->
+          {false, cycle}
+
+        _ ->
+          {true, []}
+      end
 
     expected_type = do_unwrap_type(wrapped_expected_type)
-    inferred_type = do_unwrap_type(wrapped_inferred_type)
+
+    types =
+      cycle
+      |> Enum.map(&CodeServer.get_type/1)
+      |> Keyword.get_values(:ok)
+
+    inferred_type = [wrapped_inferred_type | types] |> T.Union.new() |> do_unwrap_type()
 
     cond do
       is_top_level_function and T.Loop.is_loop(expected_type) ->
@@ -124,7 +137,7 @@ defmodule Fika.Compiler.TypeChecker do
           loops |> Enum.reject(&T.Loop.is_empty_loop/1) |> Enum.map(& &1.type) |> T.Union.new()
 
         if Enum.empty?(union_types) do
-          %T.Loop{is_empty_loop: false, type: T.Union.new(left_union)}
+          %T.Loop{is_empty_loop: false, type: T.Union.new([left_union])}
         else
           %T.Loop{is_empty_loop: false, type: T.Union.new([left_union, union_types])}
         end
@@ -142,6 +155,8 @@ defmodule Fika.Compiler.TypeChecker do
 
     with :ok <-
            CodeServer.set_function_dependency(env.latest_called_function, env.current_signature),
+         {:cycle, {:error, :no_cycle_found}} <-
+           {:cycle, CodeServer.get_cycle(env.current_signature)},
          {:ok, type, env} <-
            infer_block(env, exprs) do
       type =
@@ -153,8 +168,14 @@ defmodule Fika.Compiler.TypeChecker do
 
       {:ok, do_unwrap_type(type)}
     else
-      {:error, :cycle_encountered} ->
-        {:ok, T.Loop.new()}
+      {:cycle, {:ok, cycle}} ->
+        types =
+          cycle
+          |> Enum.map(&CodeServer.get_type/1)
+          |> Keyword.get_values(:ok)
+
+        result = [T.Loop.new() | types] |> T.Union.new() |> do_unwrap_type()
+        {:ok, result}
 
       error ->
         error
@@ -516,7 +537,6 @@ defmodule Fika.Compiler.TypeChecker do
           {:ok, %T.Effect{type: type}} ->
             env = Map.put(env, :has_effect, true)
             {:ok, type, env}
-            1
 
           {:ok, type} ->
             {:ok, type, env}

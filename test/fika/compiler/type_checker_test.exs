@@ -179,17 +179,17 @@ defmodule Fika.Compiler.TypeCheckerTest do
 
   test "infer return type when there is intra-module recursion" do
     str = """
-      fn foo(a: Int) : :nil do
+      fn foo(a: Int) : Int | :nil do
         bar(a)
       end
-      fn bar(a: Int) : :nil do
+      fn bar(a: Int) : Loop(Int | :nil) do
         if a <= 1 do
           foobar()
         else
           baz(a - 1)
         end
       end
-      fn baz(a: Int) : :nil do
+      fn baz(a: Int) : Loop(Int | :nil) do
         if a == 1 do
           1
         else

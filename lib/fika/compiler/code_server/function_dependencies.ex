@@ -7,7 +7,7 @@ defmodule Fika.Compiler.CodeServer.FunctionDependencies do
           graph :: :digraph.graph(),
           source_function :: FunctionSignature.t(),
           sink_function :: FunctionSignature.t()
-        ) :: :digraph.graph()
+        ) :: :ok | {:error, :cycle_encountered}
   def set_function_dependency(graph, source_function, sink_function) do
     graph
     |> add_vertex(source_function)
@@ -16,13 +16,29 @@ defmodule Fika.Compiler.CodeServer.FunctionDependencies do
     |> check_cycle(source_function, sink_function)
   end
 
-  def check_cycle(graph, source_function, sink_function) do
+  def get_cycle(graph, function) do
+    if vertices = :digraph.get_cycle(graph, function) do
+      {:ok, vertices}
+    else
+      {:error, :no_cycle_found}
+    end
+  end
+
+  def check_cycle(graph, source_function, sink_function \\ nil) do
     vertices = :digraph.get_cycle(graph, source_function)
 
-    if vertices && sink_function in vertices do
-      {:error, :cycle_encountered}
-    else
-      :ok
+    cond do
+      !vertices ->
+        :ok
+
+      is_nil(sink_function) ->
+        {:error, :cycle_encountered}
+
+      sink_function in vertices ->
+        {:error, :cycle_encountered}
+
+      true ->
+        :ok
     end
   end
 
