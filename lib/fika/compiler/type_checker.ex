@@ -24,6 +24,7 @@ defmodule Fika.Compiler.TypeChecker do
       :file,
       :current_signature,
       has_effect: false,
+      first_pass: false,
       scope: %{}
     ]
 
@@ -46,7 +47,8 @@ defmodule Fika.Compiler.TypeChecker do
         | scope: %{},
           has_effect: false,
           current_signature: current_signature,
-          latest_called_function: env.current_signature
+          latest_called_function: if(env.first_pass, do: env.current_signature),
+          first_pass: false
       }
       |> add_args_to_scope(args)
     end
@@ -115,7 +117,7 @@ defmodule Fika.Compiler.TypeChecker do
   defp do_unwrap_type(%T.Union{types: union_types}) do
     case Enum.split_with(union_types, &match?(%T.Loop{}, &1)) do
       {[], union_types} ->
-        %T.Union{types: union_types}
+        T.Union.new(union_types)
 
       {loops, union_types} ->
         left_union =
@@ -129,6 +131,7 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
+  defp do_unwrap_type(%T.Effect{type: t}), do: %T.Effect{type: do_unwrap_type(t)}
   defp do_unwrap_type(t), do: t
 
   # Given the AST of a function definition, this function infers the
@@ -139,7 +142,8 @@ defmodule Fika.Compiler.TypeChecker do
 
     with :ok <-
            CodeServer.set_function_dependency(env.latest_called_function, env.current_signature),
-         {:ok, type, env} <- infer_block(env, exprs) do
+         {:ok, type, env} <-
+           infer_block(env, exprs) do
       type =
         if env.has_effect do
           %T.Effect{type: type}
@@ -147,7 +151,7 @@ defmodule Fika.Compiler.TypeChecker do
           type
         end
 
-      {:ok, type}
+      {:ok, do_unwrap_type(type)}
     else
       {:error, :cycle_encountered} ->
         {:ok, T.Loop.new()}
@@ -512,6 +516,7 @@ defmodule Fika.Compiler.TypeChecker do
           {:ok, %T.Effect{type: type}} ->
             env = Map.put(env, :has_effect, true)
             {:ok, type, env}
+            1
 
           {:ok, type} ->
             {:ok, type, env}

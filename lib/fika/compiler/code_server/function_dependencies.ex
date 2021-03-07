@@ -13,11 +13,13 @@ defmodule Fika.Compiler.CodeServer.FunctionDependencies do
     |> add_vertex(source_function)
     |> add_vertex(sink_function)
     |> add_edge(source_function, sink_function)
-    |> check_cycle(source_function)
+    |> check_cycle(source_function, sink_function)
   end
 
-  def check_cycle(graph, function) do
-    if :digraph.get_cycle(graph, function) do
+  def check_cycle(graph, source_function, sink_function) do
+    vertices = :digraph.get_cycle(graph, source_function)
+
+    if vertices && sink_function in vertices do
       {:error, :cycle_encountered}
     else
       :ok

@@ -224,13 +224,13 @@ defmodule Fika.Compiler.TypeCheckerTest do
     end
     """
 
-    {:ok, ast} = Parser.parse_module(str) |> IO.inspect(label: "parsed")
+    {:ok, ast} = Parser.parse_module(str)
     [foo, bar] = ast[:function_defs]
 
-    env = TypeChecker.init_env(ast) |> IO.inspect(label: "env")
+    env = TypeChecker.init_env(ast)
 
-    assert {:ok, %T.Loop{type: nil}} = TypeChecker.infer(foo, env) |> IO.inspect(label: "tc foo")
-    assert {:ok, %T.Loop{type: nil}} = TypeChecker.infer(bar, env) |> IO.inspect(label: "tc bar")
+    assert {:ok, %T.Loop{type: nil}} = TypeChecker.infer(foo, env)
+    assert {:ok, %T.Loop{type: nil}} = TypeChecker.infer(bar, env)
   end
 
   test "infer calls with multiple args" do
