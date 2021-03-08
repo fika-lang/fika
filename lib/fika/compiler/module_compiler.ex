@@ -4,7 +4,6 @@ defmodule Fika.Compiler.ModuleCompiler do
   alias Fika.Compiler.{
     Parser,
     TypeChecker.ParallelTypeChecker,
-    TypeChecker.Env,
     ErlTranslate,
     CodeServer
   }
@@ -44,7 +43,7 @@ defmodule Fika.Compiler.ModuleCompiler do
   end
 
   defp init(module_atom) do
-    %Env{
+    %{
       # Full name of the current module as atom
       module_name: module_atom,
       # Path of module file

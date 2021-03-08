@@ -128,7 +128,7 @@ defmodule Fika.Compiler.TypeChecker.Match do
 
   defp do_match_case(env, {:identifier, _, name}, rhs) do
     env =
-      Env.update_scope(env, name, fn
+      update_in(env, [:scope, name], fn
         nil -> rhs
         %T.Union{types: types} -> T.Union.new([rhs | T.Union.to_list(types)])
         type -> T.Union.new([rhs, type])

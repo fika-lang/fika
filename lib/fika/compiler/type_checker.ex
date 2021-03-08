@@ -14,63 +14,9 @@ defmodule Fika.Compiler.TypeChecker do
 
   require Logger
 
-  defmodule Env do
-    defstruct [
-      :ast,
-      :latest_called_function,
-      :type_checker_pid,
-      :module,
-      :module_name,
-      :file,
-      :current_signature,
-      has_effect: false,
-      first_pass: false,
-      scope: %{}
-    ]
-
-    def add_variable_to_scope(env, variable, type) do
-      %{env | scope: put_in(env.scope, [variable], type)}
-    end
-
-    def update_scope(env, variable, update_fn) do
-      %{env | scope: update_in(env.scope, [variable], update_fn)}
-    end
-
-    def reset_scope_and_set_signature(
-          %__MODULE__{} = env,
-          {:function, _, {_name, args, _type, _}} = ast
-        ) do
-      current_signature = Fika.Compiler.TypeChecker.function_ast_signature(env.module, ast)
-
-      %{
-        env
-        | scope: %{},
-          has_effect: false,
-          current_signature: current_signature,
-          latest_called_function: if(env.first_pass, do: env.current_signature),
-          first_pass: false
-      }
-      |> add_args_to_scope(args)
-    end
-
-    def reset_scope_and_set_signature(env, {:anonymous_function, _line, args, _}) do
-      %{env | scope: %{}}
-      |> add_args_to_scope(args)
-    end
-
-    def reset_scope_and_set_signature(env, _ast), do: env
-
-    defp add_args_to_scope(env, args) do
-      Enum.reduce(args, env, fn {{:identifier, _, name}, {:type, _, type}}, env ->
-        Logger.debug("Adding arg type to scope: #{name}:#{type}")
-        Env.add_variable_to_scope(env, name, type)
-      end)
-    end
-  end
-
   # Given the AST of a function definition, this function checks if the return
   # type is indeed the type that's inferred from the body of the function.
-  def check({:function, _line, {_, _, return_type, _}} = function, %Env{} = env) do
+  def check({:function, _line, {_, _, return_type, _}} = function, env) do
     {:type, _line, expected_type} = return_type
 
     case infer(function, env) do
@@ -86,10 +32,12 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   defp unwrap_type(
-         %Env{current_signature: current_signature},
+         env,
          wrapped_expected_type,
          wrapped_inferred_type
        ) do
+    current_signature = env[:current_signature]
+
     {is_top_level_function, cycle} =
       case CodeServer.get_cycle(current_signature) do
         {:ok, cycle} ->
@@ -149,8 +97,8 @@ defmodule Fika.Compiler.TypeChecker do
 
   # Given the AST of a function definition, this function infers the
   # return type of the body of the function.
-  def infer({:function, _line, {_name, _args, _type, exprs}} = ast, %Env{} = env) do
-    env = Env.reset_scope_and_set_signature(env, ast)
+  def infer({:function, _line, {_name, _args, _type, exprs}} = ast, env) do
+    env = reset_scope_and_set_signature(env, ast)
     Logger.debug("Inferring type of function: #{env.current_signature}")
 
     with :ok <-
@@ -182,37 +130,37 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
-  def infer_block(%Env{} = env, []) do
+  def infer_block(env, []) do
     Logger.debug("Block is empty.")
     {:ok, nil, env}
   end
 
-  def infer_block(%Env{} = env, [exp]) do
-    infer_exp(%Env{} = env, exp)
+  def infer_block(env, [exp]) do
+    infer_exp(env, exp)
   end
 
-  def infer_block(%Env{} = env, [exp | exp_list]) do
-    case infer_exp(%Env{} = env, exp) do
-      {:ok, _type, env} -> infer_block(%Env{} = env, exp_list)
+  def infer_block(env, [exp | exp_list]) do
+    case infer_exp(env, exp) do
+      {:ok, _type, env} -> infer_block(env, exp_list)
       error -> error
     end
   end
 
   # Integer literals
-  def infer_exp(%Env{} = env, {:integer, _line, integer}) do
+  def infer_exp(env, {:integer, _line, integer}) do
     Logger.debug("Integer #{integer} found. Type: Int")
     {:ok, :Int, env}
   end
 
   # Booleans
-  def infer_exp(%Env{} = env, {:boolean, _line, boolean}) do
+  def infer_exp(env, {:boolean, _line, boolean}) do
     Logger.debug("Boolean #{boolean} found. Type: Bool")
     {:ok, :Bool, env}
   end
 
   # Variables
-  def infer_exp(%Env{} = env, {:identifier, _line, name}) do
-    type = env.scope[name]
+  def infer_exp(env, {:identifier, _line, name}) do
+    type = get_in(env, [:scope, name])
 
     if type do
       Logger.debug("Variable type found from scope: #{name}:#{type}")
@@ -224,13 +172,13 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # External function calls
-  def infer_exp(%Env{} = env, {:ext_call, _line, {m, f, _, type}}) do
+  def infer_exp(env, {:ext_call, _line, {m, f, _, type}}) do
     Logger.debug("Return type of ext function #{m}.#{f} specified as #{type}")
     {:ok, type, env}
   end
 
   # Function calls
-  def infer_exp(%Env{} = env, {:call, {name, _line}, args, module}) do
+  def infer_exp(env, {:call, {name, _line}, args, module}) do
     exp = %{args: args, name: name}
     # module_name = module || Env.current_module(env)
     Logger.debug("Inferring type of function: #{name}")
@@ -239,8 +187,8 @@ defmodule Fika.Compiler.TypeChecker do
 
   # Function calls using reference
   # exp has to be a function ref type
-  def infer_exp(%Env{} = env, {:call, {exp, _line}, args}) do
-    case infer_exp(%Env{} = env, exp) do
+  def infer_exp(env, {:call, {exp, _line}, args}) do
+    case infer_exp(env, exp) do
       {:ok, %T.FunctionRef{arg_types: arg_types, return_type: type}, env} ->
         case do_infer_args_without_name(env, args) do
           {:ok, ^arg_types, env} ->
@@ -264,11 +212,11 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # =
-  def infer_exp(%Env{} = env, {{:=, _}, {:identifier, _line, left}, right}) do
-    case infer_exp(%Env{} = env, right) do
+  def infer_exp(env, {{:=, _}, {:identifier, _line, left}, right}) do
+    case infer_exp(env, right) do
       {:ok, type, env} ->
         Logger.debug("Adding variable to scope: #{left}:#{type}")
-        env = Env.add_variable_to_scope(env, left, type)
+        env = add_variable_to_scope(env, left, type)
         {:ok, type, env}
 
       error ->
@@ -277,7 +225,7 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # String
-  def infer_exp(%Env{} = env, {:string, _line, string_parts}) do
+  def infer_exp(env, {:string, _line, string_parts}) do
     Enum.reduce_while(string_parts, {:ok, nil, env}, fn
       string, {:ok, _acc_type, acc_env} when is_binary(string) ->
         Logger.debug("String #{string} found. Type: String")
@@ -303,12 +251,12 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # List
-  def infer_exp(%Env{} = env, {:list, _, exps}) do
+  def infer_exp(env, {:list, _, exps}) do
     infer_list_exps(env, exps)
   end
 
   # Tuple
-  def infer_exp(%Env{} = env, {:tuple, _, exps}) do
+  def infer_exp(env, {:tuple, _, exps}) do
     case do_infer_tuple_exps(exps, env) do
       {:ok, exp_types, env} ->
         {:ok, %T.Tuple{elements: exp_types}, env}
@@ -319,7 +267,7 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # Record
-  def infer_exp(%Env{} = env, {:record, _, name, key_values}) do
+  def infer_exp(env, {:record, _, name, key_values}) do
     if name do
       # Lookup type of name, ensure it matches.
       Logger.error("Not implemented")
@@ -336,18 +284,18 @@ defmodule Fika.Compiler.TypeChecker do
 
   # Map
   # TODO: refactor this when union types are available
-  def infer_exp(%Env{} = env, {:map, _, [kv | rest_kvs]}) do
+  def infer_exp(env, {:map, _, [kv | rest_kvs]}) do
     {key, value} = kv
 
-    with {:ok, key_type, env} <- infer_exp(%Env{} = env, key),
-         {:ok, value_type, env} <- infer_exp(%Env{} = env, value) do
+    with {:ok, key_type, env} <- infer_exp(env, key),
+         {:ok, value_type, env} <- infer_exp(env, value) do
       map_type = %T.Map{key_type: key_type, value_type: value_type}
 
       Enum.reduce_while(rest_kvs, {:ok, map_type, env}, fn {k, v}, {:ok, type, env} ->
         %{key_type: key_type, value_type: value_type} = type
 
-        with {:key, {:ok, ^key_type, env}} <- {:key, infer_exp(%Env{} = env, k)},
-             {:value, {:ok, ^value_type, env}} <- {:value, infer_exp(%Env{} = env, v)} do
+        with {:key, {:ok, ^key_type, env}} <- {:key, infer_exp(env, k)},
+             {:value, {:ok, ^value_type, env}} <- {:value, infer_exp(env, v)} do
           {:cont, {:ok, type, env}}
         else
           {:key, {:ok, diff_type, _}} ->
@@ -367,10 +315,10 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # Function ref
-  def infer_exp(%Env{} = env, {:function_ref, _, {module, function_name, arg_types}}) do
+  def infer_exp(env, {:function_ref, _, {module, function_name, arg_types}}) do
     Logger.debug("Inferring type of function: #{function_name}")
 
-    signature = get_function_signature(module || env.module, function_name, arg_types)
+    signature = get_function_signature(module || env[:module], function_name, arg_types)
 
     case get_type(module, signature, env) do
       {:ok, type} ->
@@ -383,13 +331,13 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # Atom value
-  def infer_exp(%Env{} = env, {:atom, _line, atom}) do
+  def infer_exp(env, {:atom, _line, atom}) do
     Logger.debug("Atom value found. Type: #{atom}")
     {:ok, atom, env}
   end
 
   # if-else expression
-  def infer_exp(%Env{} = env, {{:if, _line}, condition, if_block, else_block}) do
+  def infer_exp(env, {{:if, _line}, condition, if_block, else_block}) do
     Logger.debug("Inferring an if-else expression")
 
     case infer_if_else_condition(env, condition) do
@@ -399,24 +347,24 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # case expression
-  def infer_exp(%Env{} = env, {{:case, _line}, exp, clauses}) do
+  def infer_exp(env, {{:case, _line}, exp, clauses}) do
     Logger.debug("Inferring a case expression")
 
     # Check the type of exp.
     # For each clause, ensure all of the patterns return {:ok, env}
-    with {:ok, rhs_type, env} <- infer_exp(%Env{} = env, exp),
+    with {:ok, rhs_type, env} <- infer_exp(env, exp),
          {:ok, type, env} <- infer_case_clauses(env, rhs_type, clauses) do
       {:ok, type, env}
     end
   end
 
   # anonymous function
-  def infer_exp(%Env{} = env, {:anonymous_function, _line, args, exps} = ast) do
+  def infer_exp(env, {:anonymous_function, _line, args, exps} = ast) do
     Logger.debug("Inferring type of anonymous function")
 
-    env = Env.reset_scope_and_set_signature(env, ast)
+    env = reset_scope_and_set_signature(env, ast)
 
-    case infer_block(%Env{} = env, exps) do
+    case infer_block(env, exps) do
       {:ok, return_type, _env} ->
         arg_types = Enum.map(args, fn {_, {:type, _, type}} -> type end)
         type = %T.FunctionRef{arg_types: arg_types, return_type: return_type}
@@ -432,8 +380,20 @@ defmodule Fika.Compiler.TypeChecker do
     get_function_signature(module, name, arg_types)
   end
 
-  def init_env(ast) do
-    %Env{ast: ast, scope: %{}}
+  def init_env(ast, args \\ %{}) do
+    %{
+      ast: ast,
+      latest_called_function: nil,
+      type_checker_pid: nil,
+      module: nil,
+      module_name: nil,
+      file: nil,
+      current_signature: nil,
+      has_effect: false,
+      first_pass: false,
+      scope: %{}
+    }
+    |> Map.merge(args)
   end
 
   # TODO: made it work, now make it pretty.
@@ -445,7 +405,7 @@ defmodule Fika.Compiler.TypeChecker do
                                                               {env, types, unmatched} ->
         case Match.match_case(env, pattern, unmatched) do
           {:ok, env, unmatched} ->
-            case infer_block(%Env{} = env, block) do
+            case infer_block(env, block) do
               {:ok, type, env} -> {:cont, {env, [type | types], unmatched}}
               error -> {:halt, error}
             end
@@ -498,7 +458,7 @@ defmodule Fika.Compiler.TypeChecker do
 
   defp do_infer_key_values(key_values, env) do
     Enum.reduce_while(key_values, {:ok, [], env}, fn {k, v}, {:ok, acc, env} ->
-      case infer_exp(%Env{} = env, v) do
+      case infer_exp(env, v) do
         {:ok, type, env} ->
           {:identifier, _, key} = k
           {:cont, {:ok, [{key, type} | acc], env}}
@@ -511,7 +471,7 @@ defmodule Fika.Compiler.TypeChecker do
 
   defp do_infer_tuple_exps(exps, env) do
     Enum.reduce_while(exps, {:ok, [], env}, fn exp, {:ok, acc, env} ->
-      case infer_exp(%Env{} = env, exp) do
+      case infer_exp(env, exp) do
         {:ok, exp_type, env} ->
           {:cont, {:ok, [exp_type | acc], env}}
 
@@ -531,7 +491,7 @@ defmodule Fika.Compiler.TypeChecker do
   def infer_args(env, exp, module) do
     case do_infer_args(env, exp) do
       {:ok, type_acc, env} ->
-        signature = get_function_signature(module || env.module, exp.name, type_acc)
+        signature = get_function_signature(module || env[:module], exp.name, type_acc)
 
         case get_type(module, signature, env) do
           {:ok, %T.Effect{type: type}} ->
@@ -550,19 +510,52 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
+  defp reset_scope_and_set_signature(env, {:function, _, {_name, args, _type, _}} = ast) do
+    current_signature = Fika.Compiler.TypeChecker.function_ast_signature(env[:module], ast)
+
+    env
+    |> Map.merge(%{
+      scope: %{},
+      has_effect: false,
+      current_signature: current_signature,
+      latest_called_function: if(env[:first_pass], do: env[:current_signature]),
+      first_pass: false
+    })
+    |> add_args_to_scope(args)
+  end
+
+  defp reset_scope_and_set_signature(env, {:anonymous_function, _line, args, _}) do
+    env
+    |> Map.put(:scope, %{})
+    |> add_args_to_scope(args)
+  end
+
+  defp reset_scope_and_set_signature(env, _ast), do: env
+
+  defp add_variable_to_scope(env, variable, type) do
+    put_in(env, [:scope, variable], type)
+  end
+
+  defp add_args_to_scope(env, args) do
+    Enum.reduce(args, env, fn {{:identifier, _, name}, {:type, _, type}}, env ->
+      Logger.debug("Adding arg type to scope: #{name}:#{type}")
+      add_variable_to_scope(env, name, type)
+    end)
+  end
+
   defp infer_list_exps(env, []) do
     {:ok, %T.List{}, env}
   end
 
   defp infer_list_exps(env, [exp]) do
-    case infer_exp(%Env{} = env, exp) do
+    case infer_exp(env, exp) do
       {:ok, type, env} -> {:ok, %T.List{type: type}, env}
       error -> error
     end
   end
 
   defp infer_list_exps(env, [exp | rest]) do
-    {:ok, type, env} = infer_exp(%Env{} = env, exp)
+    {:ok, type, env} = infer_exp(env, exp)
 
     Enum.reduce_while(rest, {:ok, %T.List{type: type}, env}, fn exp, {:ok, acc_type, acc_env} ->
       case infer_exp(acc_env, exp) do
@@ -585,7 +578,7 @@ defmodule Fika.Compiler.TypeChecker do
 
   defp do_infer_args(env, exp) do
     Enum.reduce_while(exp.args, {:ok, [], env}, fn arg, {:ok, type_acc, env} ->
-      case infer_exp(%Env{} = env, arg) do
+      case infer_exp(env, arg) do
         {:ok, type, env} ->
           Logger.debug("Argument of #{exp.name} is type: #{type}")
           {:cont, {:ok, [type | type_acc], env}}
@@ -607,7 +600,7 @@ defmodule Fika.Compiler.TypeChecker do
   # TODO: This can be merged with do_infer_args
   defp do_infer_args_without_name(env, args) do
     Enum.reduce_while(args, {:ok, [], env}, fn arg, {:ok, acc, env} ->
-      case infer_exp(%Env{} = env, arg) do
+      case infer_exp(env, arg) do
         {:ok, type, env} ->
           Logger.debug("Argument is type: #{type}")
           {:cont, {:ok, [type | acc], env}}
@@ -631,11 +624,11 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   defp get_type(module, target_signature, env) do
-    is_local_call = is_nil(module) or module == env.module_name
+    is_local_call = is_nil(module) or module == env[:module_name]
 
-    current_signature = env.current_signature
+    current_signature = env[:current_signature]
 
-    pid = env.type_checker_pid
+    pid = env[:type_checker_pid]
 
     function_dependency =
       if current_signature do
