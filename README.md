@@ -8,8 +8,11 @@
 Fika is a modern programming language for the web.
 It is statically typed, functional and runs on the BEAM (Erlang VM).
 
-Project status: Actively developed. Not ready for production use or HackerNews.
-Currently, Fika is an early prototype and hence has many hacky implementations.
+
+### Current status
+
+Actively developed. Not ready for production use or HackerNews.
+Currently I'm working on an incremental compiler on a long running branch.
 
 If you'd like to keep tabs on our progress, please [subscribe to our updates here](https://tinyletter.com/fika).
 
