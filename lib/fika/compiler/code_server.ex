@@ -65,6 +65,29 @@ defmodule Fika.Compiler.CodeServer do
     GenServer.call(__MODULE__, {:write_binaries, dest})
   end
 
+  @doc false
+  def get_dependency_graph do
+    GenServer.call(__MODULE__, :get_dependency_graph)
+  end
+
+  @spec set_function_dependency(source :: String.t() | nil, target :: String.t() | nil) ::
+          :ok | {:error, :cycle_encountered}
+  def set_function_dependency(source, target) do
+    GenServer.call(__MODULE__, {:set_function_dependency, source, target})
+  end
+
+  @spec check_cycle(source :: String.t() | nil) ::
+          :ok | {:error, :cycle_encountered}
+  def check_cycle(node) do
+    GenServer.call(__MODULE__, {:check_cycle, node})
+  end
+
+  @spec get_cycle(source :: String.t() | nil) ::
+          {:ok, list()} | {:error, :no_cycle_found}
+  def get_cycle(node) do
+    GenServer.call(__MODULE__, {:get_cycle, node})
+  end
+
   def init(_) do
     state = init_state()
 
@@ -123,6 +146,15 @@ defmodule Fika.Compiler.CodeServer do
     {:reply, :ok, init_state()}
   end
 
+  def handle_call(:get_dependency_graph, _from, %{function_dependencies: graph} = state) do
+    vertices = graph |> :digraph.vertices() |> Enum.sort()
+    edges = graph |> :digraph.edges() |> Enum.sort()
+
+    deps = %{vertices: vertices, edges: edges}
+
+    {:reply, deps, state}
+  end
+
   def handle_call({:get_type, signature}, from, state) do
     module = signature.module
     function = signature.function
@@ -148,6 +180,51 @@ defmodule Fika.Compiler.CodeServer do
       end
 
     {:noreply, state}
+  end
+
+  def handle_call({:set_function_dependency, source, target}, _from, state)
+      when is_nil(source) or is_nil(target) do
+    {:reply, :ok, state}
+  end
+
+  def handle_call(
+        {:set_function_dependency, source, target},
+        _from,
+        %{function_dependencies: graph} = state
+      ) do
+    response = __MODULE__.FunctionDependencies.set_function_dependency(graph, source, target)
+
+    {:reply, response, state}
+  end
+
+  def handle_call({:get_cycle, node}, _from, state)
+      when is_nil(node) do
+    {:reply, {:error, :no_cycle_found}, state}
+  end
+
+  def handle_call(
+        {:get_cycle, node},
+        _from,
+        %{function_dependencies: graph} = state
+      ) do
+    response = __MODULE__.FunctionDependencies.get_cycle(graph, node)
+
+    {:reply, response, state}
+  end
+
+  def handle_call({:check_cycle, node}, _from, state)
+      when is_nil(node) do
+    {:reply, :ok, state}
+  end
+
+  def handle_call(
+        {:check_cycle, node},
+        _from,
+        %{function_dependencies: graph} = state
+      ) do
+    response = __MODULE__.FunctionDependencies.check_cycle(graph, node)
+
+    {:reply, response, state}
   end
 
   def handle_call(:list_all_types, _from, state) do
@@ -280,7 +357,8 @@ defmodule Fika.Compiler.CodeServer do
       parent_pid: nil,
       dev_token: Application.get_env(:fika, :dev_token),
       remote_endpoint: Application.get_env(:fika, :remote_endpoint, "https://fikaapp.com/code"),
-      binaries: []
+      binaries: [],
+      function_dependencies: __MODULE__.FunctionDependencies.new_graph()
     }
     |> put_default_types(DefaultTypes.kernel())
     |> put_default_types(DefaultTypes.io())

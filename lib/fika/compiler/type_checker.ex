@@ -24,34 +24,106 @@ defmodule Fika.Compiler.TypeChecker do
         result
 
       {:ok, inferred_type} ->
-        {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
+        unwrap_type(env, expected_type, inferred_type)
 
       error ->
         error
     end
   end
 
+  defp unwrap_type(
+         env,
+         wrapped_expected_type,
+         wrapped_inferred_type
+       ) do
+    current_signature = env[:current_signature]
+
+    {is_top_level_function, cycle} =
+      case CodeServer.get_cycle(current_signature) do
+        {:ok, cycle} ->
+          {false, cycle}
+
+        _ ->
+          {true, []}
+      end
+
+    expected_type = do_unwrap_type(wrapped_expected_type)
+
+    types =
+      cycle
+      |> Enum.map(&CodeServer.get_type/1)
+      |> Keyword.get_values(:ok)
+
+    inferred_type = [wrapped_inferred_type | types] |> T.Union.new() |> do_unwrap_type()
+
+    cond do
+      is_top_level_function and T.Loop.is_loop(expected_type) ->
+        {:error, "Top level function cannot be a loop"}
+
+      is_top_level_function and T.Loop.is_loop(inferred_type) and
+          inferred_type.type == expected_type ->
+        {:ok, expected_type}
+
+      T.Loop.equals?(expected_type, inferred_type) ->
+        {:ok, %{expected_type | is_empty_loop: false}}
+
+      match?(^expected_type, inferred_type) ->
+        {:ok, expected_type}
+
+      true ->
+        {:error, "Expected type: #{expected_type}, got: #{inferred_type}"}
+    end
+  end
+
+  defp do_unwrap_type(%T.Union{types: union_types}) do
+    case Enum.split_with(union_types, &match?(%T.Loop{}, &1)) do
+      {[], union_types} ->
+        T.Union.new(union_types)
+
+      {loops, union_types} ->
+        left_union =
+          loops |> Enum.reject(&T.Loop.is_empty_loop/1) |> Enum.map(& &1.type) |> T.Union.new()
+
+        if Enum.empty?(union_types) do
+          %T.Loop{is_empty_loop: false, type: T.Union.new([left_union])}
+        else
+          %T.Loop{is_empty_loop: false, type: T.Union.new([left_union, union_types])}
+        end
+    end
+  end
+
+  defp do_unwrap_type(%T.Effect{type: t}), do: %T.Effect{type: do_unwrap_type(t)}
+  defp do_unwrap_type(t), do: t
+
   # Given the AST of a function definition, this function infers the
   # return type of the body of the function.
-  def infer({:function, _line, {name, args, _type, exprs}}, env) do
-    Logger.debug("Inferring type of function: #{name}")
+  def infer({:function, _line, {_name, _args, _type, exprs}} = ast, env) do
+    env = reset_scope_and_set_signature(env, ast)
+    Logger.debug("Inferring type of function: #{env.current_signature}")
 
-    env =
-      env
-      |> Map.put(:scope, %{})
-      |> Map.put(:has_effect, false)
-      |> add_args_to_scope(args)
+    with :ok <-
+           CodeServer.set_function_dependency(env.latest_called_function, env.current_signature),
+         {:cycle, {:error, :no_cycle_found}} <-
+           {:cycle, CodeServer.get_cycle(env.current_signature)},
+         {:ok, type, env} <-
+           infer_block(env, exprs) do
+      type =
+        if env.has_effect do
+          %T.Effect{type: type}
+        else
+          type
+        end
 
-    case infer_block(env, exprs) do
-      {:ok, type, env} ->
-        type =
-          if env[:has_effect] do
-            %T.Effect{type: type}
-          else
-            type
-          end
+      {:ok, do_unwrap_type(type)}
+    else
+      {:cycle, {:ok, cycle}} ->
+        types =
+          cycle
+          |> Enum.map(&CodeServer.get_type/1)
+          |> Keyword.get_values(:ok)
 
-        {:ok, type}
+        result = [T.Loop.new() | types] |> T.Union.new() |> do_unwrap_type()
+        {:ok, result}
 
       error ->
         error
@@ -144,7 +216,7 @@ defmodule Fika.Compiler.TypeChecker do
     case infer_exp(env, right) do
       {:ok, type, env} ->
         Logger.debug("Adding variable to scope: #{left}:#{type}")
-        env = put_in(env, [:scope, left], type)
+        env = add_variable_to_scope(env, left, type)
         {:ok, type, env}
 
       error ->
@@ -287,13 +359,10 @@ defmodule Fika.Compiler.TypeChecker do
   end
 
   # anonymous function
-  def infer_exp(env, {:anonymous_function, _line, args, exps}) do
+  def infer_exp(env, {:anonymous_function, _line, args, exps} = ast) do
     Logger.debug("Inferring type of anonymous function")
 
-    env =
-      env
-      |> Map.put(:scope, %{})
-      |> add_args_to_scope(args)
+    env = reset_scope_and_set_signature(env, ast)
 
     case infer_block(env, exps) do
       {:ok, return_type, _env} ->
@@ -311,8 +380,20 @@ defmodule Fika.Compiler.TypeChecker do
     get_function_signature(module, name, arg_types)
   end
 
-  def init_env(ast) do
-    %{ast: ast, scope: %{}}
+  def init_env(ast, args \\ %{}) do
+    %{
+      ast: ast,
+      latest_called_function: nil,
+      type_checker_pid: nil,
+      module: nil,
+      module_name: nil,
+      file: nil,
+      current_signature: nil,
+      has_effect: false,
+      first_pass: false,
+      scope: %{}
+    }
+    |> Map.merge(args)
   end
 
   # TODO: made it work, now make it pretty.
@@ -429,6 +510,39 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
+  defp reset_scope_and_set_signature(env, {:function, _, {_name, args, _type, _}} = ast) do
+    current_signature = Fika.Compiler.TypeChecker.function_ast_signature(env[:module], ast)
+
+    env
+    |> Map.merge(%{
+      scope: %{},
+      has_effect: false,
+      current_signature: current_signature,
+      latest_called_function: if(env[:first_pass], do: env[:current_signature]),
+      first_pass: false
+    })
+    |> add_args_to_scope(args)
+  end
+
+  defp reset_scope_and_set_signature(env, {:anonymous_function, _line, args, _}) do
+    env
+    |> Map.put(:scope, %{})
+    |> add_args_to_scope(args)
+  end
+
+  defp reset_scope_and_set_signature(env, _ast), do: env
+
+  defp add_variable_to_scope(env, variable, type) do
+    put_in(env, [:scope, variable], type)
+  end
+
+  defp add_args_to_scope(env, args) do
+    Enum.reduce(args, env, fn {{:identifier, _, name}, {:type, _, type}}, env ->
+      Logger.debug("Adding arg type to scope: #{name}:#{type}")
+      add_variable_to_scope(env, name, type)
+    end)
+  end
+
   defp infer_list_exps(env, []) do
     {:ok, %T.List{}, env}
   end
@@ -505,28 +619,36 @@ defmodule Fika.Compiler.TypeChecker do
     end
   end
 
-  defp add_args_to_scope(env, args) do
-    Enum.reduce(args, env, fn {{:identifier, _, name}, {:type, _, type}}, env ->
-      Logger.debug("Adding arg type to scope: #{name}:#{type}")
-      put_in(env, [:scope, name], type)
-    end)
-  end
-
   defp get_function_signature(module, function_name, arg_types) do
     %FunctionSignature{module: module, function: to_string(function_name), types: arg_types}
   end
 
-  # Local function
-  defp get_type(nil, signature, env) do
-    if pid = env[:type_checker_pid] do
-      ParallelTypeChecker.get_result(pid, signature)
-    else
-      SequentialTypeChecker.get_result(signature, env)
-    end
-  end
+  defp get_type(module, target_signature, env) do
+    is_local_call = is_nil(module) or module == env[:module_name]
 
-  # Remote function
-  defp get_type(_module, signature, _env) do
-    CodeServer.get_type(signature)
+    current_signature = env[:current_signature]
+
+    pid = env[:type_checker_pid]
+
+    function_dependency =
+      if current_signature do
+        CodeServer.set_function_dependency(current_signature, target_signature)
+      else
+        :ok
+      end
+
+    case {is_local_call, function_dependency, pid} do
+      {true, :ok, pid} when is_pid(pid) ->
+        ParallelTypeChecker.get_result(pid, target_signature)
+
+      {true, :ok, nil} ->
+        SequentialTypeChecker.get_result(target_signature, env)
+
+      {_, {:error, :cycle_encountered}, _} ->
+        {:ok, T.Loop.new()}
+
+      {false, _, _} ->
+        CodeServer.get_type(target_signature)
+    end
   end
 end
