@@ -11,7 +11,7 @@ It is statically typed, functional and runs on the BEAM (Erlang VM).
 
 ### Current status
 
-Actively developed. Not ready for production use or HackerNews.
+NOT actively developed. Not ready for production use or HackerNews.
 Currently I'm working on an incremental compiler on a long running branch.
 
 If you'd like to keep tabs on our progress, please [subscribe to our updates here](https://tinyletter.com/fika).
