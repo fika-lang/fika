@@ -15,6 +15,8 @@ defmodule Fika.Compiler.TypeChecker.Match do
 
   """
 
+  alias Fika.Compiler.TypeChecker.Env
+
   # Returns:
   # {:ok, env, unmatched_types} | :error
   def match_case(env, lhs_ast, rhs_types) when is_list(rhs_types) do

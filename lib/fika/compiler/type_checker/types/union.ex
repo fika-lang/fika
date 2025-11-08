@@ -5,7 +5,13 @@ defmodule Fika.Compiler.TypeChecker.Types.Union do
 
   @spec new(types :: Enumerable.t()) :: t()
   def new(types) do
-    %__MODULE__{types: flatten_types(types)}
+    union = %__MODULE__{types: flatten_types(types)}
+
+    if MapSet.size(union.types) == 1 do
+      Enum.at(union.types, 0)
+    else
+      union
+    end
   end
 
   @spec flatten_types(types :: Enumerable.t()) :: MapSet.t()
@@ -19,6 +25,7 @@ defmodule Fika.Compiler.TypeChecker.Types.Union do
       t ->
         [t]
     end)
+    |> List.flatten()
     |> MapSet.new()
   end
 

@@ -20,7 +20,7 @@ defmodule Fika.Compiler.ErlTranslate do
     translate_exp(exp)
   end
 
-  def erl_module_name(module_name_str) do
+  def erl_module_name(module_name_str) when is_binary(module_name_str) do
     module_name_str
     |> String.replace("/", ".")
     |> String.to_atom()

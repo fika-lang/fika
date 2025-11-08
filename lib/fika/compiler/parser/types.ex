@@ -114,6 +114,13 @@ defmodule Fika.Compiler.Parser.Types do
     identifier_str
     |> label("type variable")
 
+  loop_type =
+    ignore(string("Loop("))
+    |> concat(parsec(:type))
+    |> ignore(string(")"))
+    |> label("loop type")
+    |> Helper.to_ast(:loop_type)
+
   base_type =
     choice([
       string_type,
@@ -124,6 +131,7 @@ defmodule Fika.Compiler.Parser.Types do
       function_type,
       list_type,
       effect_type,
+      loop_type,
       record_type,
       map_type,
       tuple_type,
